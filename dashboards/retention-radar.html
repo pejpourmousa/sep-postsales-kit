@@ -1,0 +1,721 @@
+<title>Retention Radar</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --surface-raised: #ffffff;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --accent: #2a78d6;
+    --accent-2: #eb6834;
+    --accent-3: #1baf7a;
+    --seq-100: #cde2fb; --seq-200: #9ec5f4; --seq-300: #6da7ec;
+    --seq-400: #3987e5; --seq-500: #256abf; --seq-600: #184f95; --seq-700: #0d366b;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+    --success-text: #006300;
+    --font-head: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --surface-raised: #212120;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --ink-muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --accent: #3987e5;
+      --accent-2: #d95926;
+      --accent-3: #199e70;
+      --seq-100: #0d366b; --seq-200: #184f95; --seq-300: #1c5cab;
+      --seq-400: #256abf; --seq-500: #3987e5; --seq-600: #6da7ec; --seq-700: #9ec5f4;
+      --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #e66767;
+      --success-text: #0ca30c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-raised: #212120;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --ink-muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3987e5;
+    --accent-2: #d95926;
+    --accent-3: #199e70;
+    --seq-100: #0d366b; --seq-200: #184f95; --seq-300: #1c5cab;
+    --seq-400: #256abf; --seq-500: #3987e5; --seq-600: #6da7ec; --seq-700: #9ec5f4;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #e66767;
+    --success-text: #0ca30c;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--font-body);
+    padding-inline: 20px;
+    padding-block: 0 40px;
+  }
+  h1, h2, h3, .label-font { font-family: var(--font-head); }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  /* Top bar */
+  .topbar {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 20;
+    background: color-mix(in srgb, var(--page) 88%, transparent);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--border);
+    padding-block: 16px;
+    margin-inline: -20px;
+    padding-inline: 20px;
+  }
+  .topbar-inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .brand h1 { font-size: 19px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+  .brand .sub { font-size: 13px; color: var(--ink-muted); }
+  .sample-badge {
+    font-family: var(--font-head);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    background: color-mix(in srgb, var(--accent-2) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent-2) 35%, transparent);
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .topbar-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  select, .search-input {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px;
+  }
+
+  .note {
+    font-size: 13px;
+    color: var(--ink-2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-block: 20px;
+    line-height: 1.5;
+  }
+  .note b { color: var(--ink); }
+
+  section { margin-block: 28px; }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .section-head h2 { font-size: 15px; font-weight: 600; margin: 0; }
+  .section-head .hint { font-size: 12.5px; color: var(--ink-muted); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+  }
+
+  /* KPI tiles */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .kpi .kpi-label { font-family: var(--font-head); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); }
+  .kpi .kpi-value { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; }
+  .kpi .kpi-delta { font-size: 12.5px; display: flex; align-items: center; gap: 5px; }
+  .delta-good { color: var(--success-text); }
+  .delta-bad { color: var(--critical); }
+
+  /* Two column layout */
+  .grid-2 { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; align-items: stretch; }
+  @media (max-width: 860px) { .grid-2, .kpi-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px) { .kpi-grid { grid-template-columns: 1fr; } }
+
+  .toggle-group { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .toggle-group button {
+    font-family: var(--font-head);
+    font-size: 12.5px;
+    font-weight: 600;
+    background: var(--surface-raised);
+    color: var(--ink-2);
+    border: none;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  .toggle-group button + button { border-left: 1px solid var(--border); }
+  .toggle-group button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+
+  svg text { fill: var(--ink-2); font-family: var(--font-body); }
+  svg .axis-label { fill: var(--ink-muted); font-size: 10.5px; }
+  svg .value-label { fill: var(--ink); font-size: 11px; font-weight: 600; }
+  .gridline { stroke: var(--grid); stroke-width: 1; }
+  .baseline { stroke: var(--baseline); stroke-width: 1; }
+
+  /* Tooltip */
+  #tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: var(--ink);
+    color: var(--page);
+    font-size: 12px;
+    line-height: 1.4;
+    padding: 7px 10px;
+    border-radius: 8px;
+    max-width: 240px;
+    z-index: 100;
+    opacity: 0;
+    transform: translate(-50%, -100%);
+    transition: opacity 0.08s ease;
+  }
+  #tooltip b { display: block; }
+
+  /* Heatmap */
+  .heatmap-wrap { overflow-x: auto; }
+  .legend-row { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ink-muted); margin-top: 10px; }
+  .legend-ramp { display: flex; height: 8px; width: 120px; border-radius: 4px; overflow: hidden; }
+  .legend-ramp span { flex: 1; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    font-family: var(--font-head);
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--ink-muted);
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody td { padding: 10px 10px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .acct-name { font-weight: 600; }
+  .acct-seg { color: var(--ink-muted); font-size: 12px; }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-head);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .pill-good { color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
+  .pill-warning { color: color-mix(in srgb, var(--warning) 70%, var(--ink) 30%); background: color-mix(in srgb, var(--warning) 22%, transparent); }
+  .pill-critical { color: var(--critical); background: color-mix(in srgb, var(--critical) 14%, transparent); }
+  .win-pill { font-size: 11px; color: var(--ink-2); background: var(--surface-raised); border: 1px solid var(--border); padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+
+  .table-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .win-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+  .win-filter button {
+    font-family: var(--font-head);
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--surface-raised);
+    color: var(--ink-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 11px;
+    cursor: pointer;
+  }
+  .win-filter button[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+  .search-input { width: 200px; }
+
+  /* AI read-out */
+  .readout-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .readout-badge {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; font-family: var(--font-head);
+  }
+  .readout-head h3 { margin: 0; font-size: 14px; font-weight: 600; }
+  .readout-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 9px; font-size: 13.5px; line-height: 1.5; color: var(--ink-2); }
+  .readout-list b { color: var(--ink); }
+
+  footer { margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--ink-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+</style>
+
+<div id="tooltip"></div>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <h1>📡 Retention Radar</h1>
+        <span class="sub">Post-sales retention &amp; churn — trailing quarter</span>
+        <span class="sample-badge">Illustrative sample data</span>
+      </div>
+      <div class="topbar-controls">
+        <select id="portco-select" aria-label="Portfolio company">
+          <option>Sample PortCo — B2B SaaS</option>
+          <option disabled>+ Connect another portco (CSV import)</option>
+        </select>
+        <select id="period-select" aria-label="Period">
+          <option>Trailing quarter (Q3 2026)</option>
+          <option>Trailing 12 months</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>This is a template, not live data.</b> Every number on this page is illustrative sample data
+    so the dashboard renders end-to-end today. Point it at a real portco by replacing <code>SAMPLE_DATA</code>
+    near the bottom of this file with a CSV export (one row per account) — see the accompanying guide for the exact column mapping.
+  </div>
+
+  <section>
+    <div class="kpi-grid">
+      <div class="kpi">
+        <span class="kpi-label">Gross Revenue Retention</span>
+        <span class="kpi-value tabular">91.4%</span>
+        <span class="kpi-delta delta-bad">▼ 1.2 pts vs. prior qtr</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Net Revenue Retention</span>
+        <span class="kpi-value tabular">107.8%</span>
+        <span class="kpi-delta delta-good">▲ 2.1 pts vs. prior qtr</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Logo Retention</span>
+        <span class="kpi-value tabular">93.2%</span>
+        <span class="kpi-delta delta-bad">▼ 0.6 pts vs. prior qtr</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">At-Risk ARR</span>
+        <span class="kpi-value tabular">$340K</span>
+        <span class="kpi-delta delta-bad">7.7% of total ARR</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <div class="card">
+      <div class="section-head">
+        <h2>ARR Waterfall — Q3 2026</h2>
+        <span class="hint">Starting → ending ARR bridge</span>
+      </div>
+      <svg id="waterfall" viewBox="0 0 560 260" style="width:100%; height:auto; overflow:visible;"></svg>
+    </div>
+    <div class="card">
+      <div class="section-head">
+        <h2>Churned ARR by Reason</h2>
+        <span class="hint">Q3 2026 · $210K total</span>
+      </div>
+      <svg id="churnbars" viewBox="0 0 480 260" style="width:100%; height:auto; overflow:visible;"></svg>
+    </div>
+  </section>
+
+  <section>
+    <div class="card">
+      <div class="section-head">
+        <h2>Cohort Retention</h2>
+        <div class="toggle-group" role="group" aria-label="Cohort metric">
+          <button id="btn-revenue" aria-pressed="true">Revenue</button>
+          <button id="btn-logos" aria-pressed="false">Logos</button>
+        </div>
+      </div>
+      <div class="heatmap-wrap">
+        <svg id="heatmap" viewBox="0 0 720 220" style="width:100%; height:auto; min-width:560px; overflow:visible;"></svg>
+      </div>
+      <div class="legend-row">
+        <span>Lower retention</span>
+        <div class="legend-ramp">
+          <span style="background:var(--seq-100)"></span><span style="background:var(--seq-200)"></span>
+          <span style="background:var(--seq-300)"></span><span style="background:var(--seq-400)"></span>
+          <span style="background:var(--seq-500)"></span><span style="background:var(--seq-600)"></span>
+          <span style="background:var(--seq-700)"></span>
+        </div>
+        <span>Higher retention</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <div class="card" style="grid-column: 1 / -1;">
+      <div class="readout-head">
+        <span class="readout-badge">AI</span>
+        <h3>Sample read-out</h3>
+        <span class="hint" style="margin-left:auto;">Illustrative — generated by asking Claude to analyze this data</span>
+      </div>
+      <ol class="readout-list">
+        <li><b>Biggest leak:</b> budget/price-driven churn ($85K, 40% of the quarter's churned ARR), concentrated in Financial Services and Logistics accounts.</li>
+        <li><b>Second driver:</b> champion turnover — 2 of the 3 critical-health accounts had a primary contact change in the last 90 days.</li>
+        <li><b>Recommended action:</b> fast-track QBRs for Emberline Manufacturing and Cascadia Logistics before their renewal windows open — both are healthy today but sit in higher-churn segments.</li>
+        <li><b>Recommended action:</b> assign executive sponsor outreach to Acme Freight Co. and Northgate Financial within two weeks — both are critical-health with renewals inside six months.</li>
+        <li><b>Process fix:</b> trigger an automatic CSM check-in whenever a named contact's role changes in the CRM, to catch champion-turnover risk earlier.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Renewal Watchlist &amp; At-Risk Accounts</h2>
+      <span class="hint" id="table-count-hint"></span>
+    </div>
+    <div class="table-controls">
+      <input class="search-input" id="acct-search" type="text" placeholder="Search accounts or segment…">
+      <div class="win-filter" role="group" aria-label="Renewal window">
+        <button data-win="all" aria-pressed="true">All</button>
+        <button data-win="≤3 mo" aria-pressed="false">≤3 mo</button>
+        <button data-win="3–6 mo" aria-pressed="false">3–6 mo</button>
+        <button data-win="6–12 mo" aria-pressed="false">6–12 mo</button>
+      </div>
+    </div>
+    <div class="card" style="padding: 4px 8px; overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th>ARR</th>
+            <th>Renewal</th>
+            <th>Window</th>
+            <th>Health</th>
+            <th>CSAT</th>
+            <th>Primary risk</th>
+            <th>Owner</th>
+          </tr>
+        </thead>
+        <tbody id="acct-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>Retention Radar · Sumeru Equity Partners — post-sales common kit</span>
+    <span>Sample data generated for demonstration. Not a real portco.</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- SAMPLE_DATA ----------
+  // Replace this block with a real CSV import to point the dashboard at an
+  // actual portco. See the "Common kit" guide for the expected column shape.
+  var SAMPLE_DATA = {
+    cohorts: {
+      revenue: [
+        { label: "Mar 2025", values: [100, 98, 96, 95, 93, 92, 91] },
+        { label: "Apr 2025", values: [100, 98, 97, 95, 94, 92] },
+        { label: "May 2025", values: [100, 97, 95, 93, 91] },
+        { label: "Jun 2025", values: [100, 98, 96, 94] },
+        { label: "Jul 2025", values: [100, 96, 93] },
+        { label: "Aug 2025", values: [100, 97] }
+      ],
+      logos: [
+        { label: "Mar 2025", values: [100, 95, 92, 89, 87, 85, 84] },
+        { label: "Apr 2025", values: [100, 96, 93, 90, 88, 86] },
+        { label: "May 2025", values: [100, 94, 91, 88, 86] },
+        { label: "Jun 2025", values: [100, 95, 92, 89] },
+        { label: "Jul 2025", values: [100, 93, 90] },
+        { label: "Aug 2025", values: [100, 95] }
+      ]
+    },
+    waterfall: [
+      { label: "Starting ARR", value: 4215000, type: "total" },
+      { label: "New", value: 210000, type: "up" },
+      { label: "Expansion", value: 340000, type: "up" },
+      { label: "Contraction", value: -150000, type: "down" },
+      { label: "Churn", value: -210000, type: "down" },
+      { label: "Ending ARR", value: 4405000, type: "total" }
+    ],
+    churnReasons: [
+      { label: "Budget / price", value: 85000 },
+      { label: "Product fit gap", value: 55000 },
+      { label: "Lost to competitor", value: 40000 },
+      { label: "M&A / consolidation", value: 20000 },
+      { label: "Non-responsive", value: 10000 }
+    ],
+    accounts: [
+      { name: "Acme Freight Co.", segment: "Logistics", arr: 180000, renewal: "2026-10-30", window: "≤3 mo", health: "critical", csat: 2.8, reason: "Budget cut", owner: "J. Alvarez" },
+      { name: "Boreal Health Systems", segment: "Healthcare", arr: 95000, renewal: "2026-11-18", window: "≤3 mo", health: "warning", csat: 3.6, reason: "Champion departed", owner: "M. Chen" },
+      { name: "Emberline Manufacturing", segment: "Manufacturing", arr: 310000, renewal: "2026-12-08", window: "≤3 mo", health: "good", csat: 4.6, reason: "—", owner: "M. Chen" },
+      { name: "Cascadia Logistics", segment: "Logistics", arr: 260000, renewal: "2027-01-22", window: "3–6 mo", health: "good", csat: 4.4, reason: "—", owner: "J. Alvarez" },
+      { name: "Driftwood Retail Group", segment: "Retail", arr: 140000, renewal: "2027-02-14", window: "3–6 mo", health: "warning", csat: 3.3, reason: "Low adoption", owner: "S. Patel" },
+      { name: "Northgate Financial", segment: "Financial Services", arr: 220000, renewal: "2027-03-05", window: "3–6 mo", health: "critical", csat: 2.5, reason: "Competitor eval", owner: "S. Patel" },
+      { name: "Fernbridge Insurance", segment: "Insurance", arr: 175000, renewal: "2027-05-19", window: "6–12 mo", health: "good", csat: 4.2, reason: "—", owner: "J. Alvarez" },
+      { name: "Alderwood Education Group", segment: "Education", arr: 88000, renewal: "2027-06-30", window: "6–12 mo", health: "warning", csat: 3.4, reason: "Budget review pending", owner: "M. Chen" },
+      { name: "Silverline Utilities", segment: "Utilities", arr: 205000, renewal: "2027-08-11", window: "6–12 mo", health: "good", csat: 4.5, reason: "—", owner: "S. Patel" }
+    ]
+  };
+
+  var cssVar = function (name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  };
+  var fmtMoney = function (n) {
+    var sign = n < 0 ? "-" : "";
+    var abs = Math.abs(n);
+    return sign + "$" + (abs >= 1000 ? (abs / 1000).toFixed(0) + "K" : abs.toFixed(0));
+  };
+  var fmtDate = function (iso) {
+    var d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+  var svgns = "http://www.w3.org/2000/svg";
+  var el = function (tag, attrs) {
+    var e = document.createElementNS(svgns, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  };
+
+  var tooltip = document.getElementById("tooltip");
+  var showTip = function (evt, html) {
+    tooltip.innerHTML = html;
+    tooltip.style.left = evt.clientX + "px";
+    tooltip.style.top = (evt.clientY - 10) + "px";
+    tooltip.style.opacity = "1";
+  };
+  var hideTip = function () { tooltip.style.opacity = "0"; };
+  var moveTip = function (evt) {
+    tooltip.style.left = evt.clientX + "px";
+    tooltip.style.top = (evt.clientY - 10) + "px";
+  };
+
+  // ---------- Waterfall ----------
+  function renderWaterfall() {
+    var svg = document.getElementById("waterfall");
+    svg.innerHTML = "";
+    var data = SAMPLE_DATA.waterfall;
+    var W = 560, H = 260, padL = 54, padR = 10, padT = 16, padB = 34;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var maxV = Math.max.apply(null, data.map(function (d) { return d.type === "total" ? d.value : 0; })) * 1.08;
+    var n = data.length, gap = 14;
+    var barW = (plotW - gap * (n - 1)) / n;
+    var y = function (v) { return padT + plotH - (v / maxV) * plotH; };
+
+    // gridlines
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (t) {
+      var yy = padT + plotH * (1 - t);
+      svg.appendChild(el("line", { x1: padL, x2: W - padR, y1: yy, y2: yy, class: "gridline" }));
+      var lbl = el("text", { x: padL - 8, y: yy + 3, "text-anchor": "end", class: "axis-label tabular" });
+      lbl.textContent = "$" + ((maxV * t) / 1e6).toFixed(1) + "M";
+      svg.appendChild(lbl);
+    });
+
+    var running = 0;
+    data.forEach(function (d, i) {
+      var x = padL + i * (barW + gap);
+      var top, bottom, fill;
+      if (d.type === "total") {
+        top = 0; bottom = d.value;
+        fill = cssVar("--accent");
+        running = d.value;
+      } else {
+        var start = running;
+        running += d.value;
+        top = Math.min(start, running);
+        bottom = Math.max(start, running);
+        fill = d.value >= 0 ? cssVar("--good") : cssVar("--critical");
+      }
+      var rectY = y(bottom), rectH = y(top) - y(bottom);
+      var rect = el("rect", {
+        x: x, y: rectY, width: barW, height: Math.max(rectH, 3),
+        rx: 4, ry: 4, fill: fill
+      });
+      rect.addEventListener("mousemove", function (evt) {
+        showTip(evt, "<b>" + d.label + "</b>" + (d.type === "total" ? fmtMoney(d.value) : (d.value >= 0 ? "+" : "") + fmtMoney(d.value)));
+      });
+      rect.addEventListener("mouseleave", hideTip);
+      svg.appendChild(rect);
+
+      var valLabel = el("text", { x: x + barW / 2, y: rectY - 8, "text-anchor": "middle", class: "value-label tabular" });
+      valLabel.textContent = (d.type !== "total" && d.value >= 0 ? "+" : "") + fmtMoney(d.value);
+      svg.appendChild(valLabel);
+
+      var catLabel = el("text", { x: x + barW / 2, y: H - padB + 18, "text-anchor": "middle", class: "axis-label" });
+      catLabel.textContent = d.label;
+      svg.appendChild(catLabel);
+    });
+
+    svg.appendChild(el("line", { x1: padL, x2: W - padR, y1: padT + plotH, y2: padT + plotH, class: "baseline" }));
+  }
+
+  // ---------- Churn reasons bar chart ----------
+  function renderChurnBars() {
+    var svg = document.getElementById("churnbars");
+    svg.innerHTML = "";
+    var data = SAMPLE_DATA.churnReasons.slice().sort(function (a, b) { return b.value - a.value; });
+    var W = 480, H = 260, padL = 150, padR = 50, padT = 10, padB = 10;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var maxV = Math.max.apply(null, data.map(function (d) { return d.value; })) * 1.1;
+    var rowH = plotH / data.length, barH = Math.min(22, rowH * 0.55);
+
+    data.forEach(function (d, i) {
+      var cy = padT + rowH * i + rowH / 2;
+      var w = (d.value / maxV) * plotW;
+      var rect = el("rect", { x: padL, y: cy - barH / 2, width: Math.max(w, 3), height: barH, rx: 4, ry: 4, fill: cssVar("--accent") });
+      rect.addEventListener("mousemove", function (evt) { showTip(evt, "<b>" + d.label + "</b>" + fmtMoney(d.value)); });
+      rect.addEventListener("mousemove", moveTip);
+      rect.addEventListener("mouseleave", hideTip);
+      svg.appendChild(rect);
+
+      var lbl = el("text", { x: padL - 10, y: cy + 4, "text-anchor": "end", class: "axis-label" });
+      lbl.textContent = d.label;
+      svg.appendChild(lbl);
+
+      var val = el("text", { x: padL + w + 8, y: cy + 4, class: "value-label tabular" });
+      val.textContent = fmtMoney(d.value);
+      svg.appendChild(val);
+    });
+  }
+
+  // ---------- Cohort heatmap ----------
+  var cohortMetric = "revenue";
+  function heatColor(v) {
+    var steps = [
+      [85, cssVar("--seq-100")], [88, cssVar("--seq-200")], [91, cssVar("--seq-300")],
+      [94, cssVar("--seq-400")], [96, cssVar("--seq-500")], [98, cssVar("--seq-600")], [101, cssVar("--seq-700")]
+    ];
+    for (var i = 0; i < steps.length; i++) if (v < steps[i][0]) return steps[i][1];
+    return steps[steps.length - 1][1];
+  }
+  function renderHeatmap() {
+    var svg = document.getElementById("heatmap");
+    svg.innerHTML = "";
+    var cohorts = SAMPLE_DATA.cohorts[cohortMetric];
+    var maxMonths = Math.max.apply(null, cohorts.map(function (c) { return c.values.length; }));
+    var W = 720, H = 220, padL = 90, padT = 30, padR = 10, padB = 10;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var cellW = plotW / maxMonths, cellH = plotH / cohorts.length, gap = 2;
+
+    for (var m = 0; m < maxMonths; m++) {
+      var t = el("text", { x: padL + m * cellW + cellW / 2, y: padT - 10, "text-anchor": "middle", class: "axis-label" });
+      t.textContent = "M" + m;
+      svg.appendChild(t);
+    }
+
+    cohorts.forEach(function (c, r) {
+      var lbl = el("text", { x: padL - 10, y: padT + r * cellH + cellH / 2 + 4, "text-anchor": "end", class: "axis-label" });
+      lbl.textContent = c.label;
+      svg.appendChild(lbl);
+
+      c.values.forEach(function (v, m) {
+        var x = padL + m * cellW + gap / 2, y = padT + r * cellH + gap / 2;
+        var rect = el("rect", { x: x, y: y, width: cellW - gap, height: cellH - gap, rx: 3, ry: 3, fill: heatColor(v) });
+        rect.addEventListener("mousemove", function (evt) {
+          showTip(evt, "<b>" + c.label + " · Month " + m + "</b>" + v.toFixed(0) + "% " + cohortMetric + " retained");
+        });
+        rect.addEventListener("mouseleave", hideTip);
+        svg.appendChild(rect);
+      });
+    });
+  }
+
+  document.getElementById("btn-revenue").addEventListener("click", function () { setCohortMetric("revenue"); });
+  document.getElementById("btn-logos").addEventListener("click", function () { setCohortMetric("logos"); });
+  function setCohortMetric(metric) {
+    cohortMetric = metric;
+    document.getElementById("btn-revenue").setAttribute("aria-pressed", String(metric === "revenue"));
+    document.getElementById("btn-logos").setAttribute("aria-pressed", String(metric === "logos"));
+    renderHeatmap();
+  }
+
+  // ---------- Account table ----------
+  var activeWindow = "all";
+  var searchTerm = "";
+  function renderTable() {
+    var tbody = document.getElementById("acct-tbody");
+    tbody.innerHTML = "";
+    var rows = SAMPLE_DATA.accounts.filter(function (a) {
+      var matchesWindow = activeWindow === "all" || a.window === activeWindow;
+      var q = searchTerm.trim().toLowerCase();
+      var matchesSearch = !q || a.name.toLowerCase().indexOf(q) !== -1 || a.segment.toLowerCase().indexOf(q) !== -1;
+      return matchesWindow && matchesSearch;
+    });
+    rows.sort(function (a, b) { return new Date(a.renewal) - new Date(b.renewal); });
+
+    rows.forEach(function (a) {
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td><div class="acct-name">' + a.name + '</div><div class="acct-seg">' + a.segment + '</div></td>' +
+        '<td class="tabular">' + fmtMoney(a.arr) + '</td>' +
+        '<td class="tabular">' + fmtDate(a.renewal) + '</td>' +
+        '<td><span class="win-pill">' + a.window + '</span></td>' +
+        '<td><span class="pill pill-' + a.health + '">' + a.health.charAt(0).toUpperCase() + a.health.slice(1) + '</span></td>' +
+        '<td class="tabular">' + a.csat.toFixed(1) + '</td>' +
+        '<td>' + a.reason + '</td>' +
+        '<td>' + a.owner + '</td>';
+      tbody.appendChild(tr);
+    });
+
+    var hint = document.getElementById("table-count-hint");
+    hint.textContent = rows.length + " of " + SAMPLE_DATA.accounts.length + " accounts";
+  }
+
+  document.getElementById("acct-search").addEventListener("input", function (e) {
+    searchTerm = e.target.value;
+    renderTable();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".win-filter button"), function (btn) {
+    btn.addEventListener("click", function () {
+      activeWindow = btn.getAttribute("data-win");
+      Array.prototype.forEach.call(document.querySelectorAll(".win-filter button"), function (b) {
+        b.setAttribute("aria-pressed", String(b === btn));
+      });
+      renderTable();
+    });
+  });
+
+  function renderAll() {
+    renderWaterfall();
+    renderChurnBars();
+    renderHeatmap();
+    renderTable();
+  }
+  renderAll();
+  window.addEventListener("resize", renderAll);
+  if (window.matchMedia) {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
+  }
+})();
+</script>
