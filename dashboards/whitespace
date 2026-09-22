@@ -1,0 +1,755 @@
+<title>Whitespace Navigator</title>
+<!--
+  Whitespace Navigator — post-sales common kit
+  ------------------------------------------------------------
+  Single-file dashboard for account managers: where to upsell / cross-sell,
+  by product line, with available ARR sized per product from a driver
+  (seats, events, sites, listings, headcount, legacy ARR, ...).
+
+  Sizing:   Potential ARR  = driver quantity × unit price
+            Whitespace ARR = max(0, Potential − current ARR on that product)
+            Priority       = Whitespace × health × engagement × renewal-window weights
+
+  Edit defaults in DEFAULT_CONFIG below, or live in the "Sizing model" tab
+  (then "Copy config JSON" and paste it back here to make it the default).
+  Load real data in the "Data" tab from a CRM export CSV (column spec shown there).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --surface-2:#f7f8fa; --ink:#10151c; --ink-2:#48515e; --ink-3:#7a8392;
+  --line:#e0e4e9; --line-2:#eceff2; --accent:#2a78d6; --accent-ink:#1c5cab; --accent-soft:#e6f0fc;
+  --s-uncov:#2a78d6; --s-cov:#eb6834; --opp:#eb6834;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  --owned:#e8ebef; --owned-ink:#5b6472;
+  --q1:#cde2fb; --q2:#9ec5f4; --q3:#6da7ec; --q4:#256abf; --q5:#104281;
+  --qi1:#0d366b; --qi2:#0d366b; --qi3:#0d366b; --qi4:#ffffff; --qi5:#ffffff;
+  --shadow:0 1px 2px rgba(16,21,28,.05),0 4px 16px rgba(16,21,28,.04);
+  --sans:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0e1013; --surface:#16191d; --surface-2:#1c2024; --ink:#f1f3f6; --ink-2:#b4bbc6; --ink-3:#7f8894;
+    --line:#2a2f35; --line-2:#22262b; --accent:#3987e5; --accent-ink:#86b6ef; --accent-soft:#18283d;
+    --s-uncov:#3987e5; --s-cov:#d95926; --opp:#e0703f;
+    --owned:#252a30; --owned-ink:#9aa3af;
+    --q1:#1a2f4a; --q2:#184f95; --q3:#256abf; --q4:#5598e7; --q5:#9ec5f4;
+    --qi1:#cde2fb; --qi2:#ffffff; --qi3:#ffffff; --qi4:#0b1320; --qi5:#0b1320;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0e1013; --surface:#16191d; --surface-2:#1c2024; --ink:#f1f3f6; --ink-2:#b4bbc6; --ink-3:#7f8894;
+  --line:#2a2f35; --line-2:#22262b; --accent:#3987e5; --accent-ink:#86b6ef; --accent-soft:#18283d;
+  --s-uncov:#3987e5; --s-cov:#d95926; --opp:#e0703f;
+  --owned:#252a30; --owned-ink:#9aa3af;
+  --q1:#1a2f4a; --q2:#184f95; --q3:#256abf; --q4:#5598e7; --q5:#9ec5f4;
+  --qi1:#cde2fb; --qi2:#ffffff; --qi3:#ffffff; --qi4:#0b1320; --qi5:#0b1320;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45;}
+.app{max-width:1440px;margin:0 auto;padding-inline:20px;padding-block:20px 48px;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{margin:0;text-wrap:balance}
+h1{font-size:24px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:15px;font-weight:600}
+p{margin:0}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600}
+.muted{color:var(--ink-3)} .ink2{color:var(--ink-2)}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px}
+.brand{display:flex;flex-direction:column;gap:4px}
+.brand .sub{color:var(--ink-2);font-size:13px}
+.tabs{display:flex;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;flex-wrap:wrap}
+.tabs button{border:0;background:transparent;padding:7px 14px;border-radius:7px;font-weight:500;color:var(--ink-2)}
+.tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+.tabs button:hover{color:var(--ink)}
+
+/* filters */
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.field label{font-size:11px;color:var(--ink-3);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.field select,.field input{height:34px;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:0 10px;min-width:130px;max-width:100%}
+.field input[type=search]{min-width:200px}
+.btn{height:34px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:0 12px;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.sm{height:28px;padding:0 10px;font-size:13px}
+.spacer{flex:1}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ph p{color:var(--ink-3);font-size:12.5px;margin-top:2px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:960px){.grid2{grid-template-columns:1fr}}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.kpi .v{font-family:var(--mono);font-size:26px;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:12px;font-weight:600;color:var(--ink-2)}
+.kpi .s{font-size:12px;color:var(--ink-3)}
+.kpi.lead{background:var(--accent-soft);border-color:transparent}
+.kpi.lead .v{color:var(--accent-ink)}
+
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--ink-2);align-items:center}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+/* product bars */
+.bars{display:flex;flex-direction:column;gap:4px}
+.brow{display:grid;grid-template-columns:minmax(120px,190px) minmax(0,1fr) 84px;gap:12px;align-items:center;padding:6px 8px;border-radius:8px;border:0;background:transparent;text-align:left;width:100%}
+.brow:hover{background:var(--surface-2)}
+.brow.sel{background:var(--accent-soft)}
+.brow .nm{font-weight:600;font-size:13px;line-height:1.2}
+.brow .dr{font-size:11.5px;color:var(--ink-3);display:block;font-weight:400;margin-top:1px}
+.track{display:flex;gap:2px;height:14px;align-items:stretch}
+.seg{height:100%;border-radius:4px;min-width:0}
+.brow .val{text-align:right;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+.brow .val small{display:block;color:var(--ink-3);font-size:11px;font-family:var(--sans)}
+@media (max-width:560px){.brow{grid-template-columns:1fr 90px}.brow .track{grid-column:1/-1;grid-row:2}}
+
+/* health */
+.hrow{display:grid;grid-template-columns:96px minmax(0,1fr) 120px;gap:12px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap;color:var(--ink)}
+.pill .ic{font-size:10px}
+.pill.Green{background:color-mix(in srgb,var(--good) 16%,transparent)} .pill.Green .ic{color:var(--good)}
+.pill.Yellow{background:color-mix(in srgb,var(--warn) 22%,transparent)} .pill.Yellow .ic{color:#c98500}
+.pill.Red{background:color-mix(in srgb,var(--crit) 15%,transparent)} .pill.Red .ic{color:var(--crit)}
+.note{font-size:12.5px;color:var(--ink-2);background:var(--surface-2);border-radius:8px;padding:8px 10px}
+
+/* tables */
+.tablewrap{overflow-x:auto;min-width:0;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface)}
+td{padding:8px 10px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+td.r,th.r{text-align:right}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
+.linkish{border:0;background:none;padding:0;color:var(--ink);font-weight:600;text-align:left;cursor:pointer}
+.linkish:hover{color:var(--accent-ink);text-decoration:underline}
+.minibar{height:6px;border-radius:3px;background:var(--line-2);overflow:hidden;min-width:60px}
+.minibar i{display:block;height:100%;background:var(--s-cov);border-radius:3px}
+.play{font-size:12.5px;color:var(--ink-2)}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:5px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2);white-space:nowrap}
+.tag.opp{border-color:var(--opp);color:var(--ink)}
+
+/* matrix */
+.matrix{border-collapse:separate;border-spacing:0;min-width:980px}
+.matrix th{vertical-align:bottom;white-space:normal;line-height:1.2;position:sticky;top:0;z-index:2}
+.matrix th.pc{width:92px;min-width:92px;text-align:center}
+.matrix td{padding:3px;border-bottom:1px solid var(--line-2)}
+.matrix td.acct,.matrix th.acct{position:sticky;left:0;z-index:1;background:var(--surface);min-width:200px;padding:6px 10px}
+.matrix th.acct{z-index:3}
+.matrix td.meta{padding:6px 8px;white-space:nowrap;font-size:12.5px}
+.cell{height:34px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;position:relative;cursor:pointer}
+.cell.na{color:var(--ink-3)}
+.cell.own{background:var(--owned);color:var(--owned-ink);font-family:var(--sans);font-size:12px}
+.cell.opp{box-shadow:inset 0 0 0 2px var(--opp)}
+.cell.opp::after{content:"";position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--opp)}
+.q1{background:var(--q1);color:var(--qi1)} .q2{background:var(--q2);color:var(--qi2)} .q3{background:var(--q3);color:var(--qi3)} .q4{background:var(--q4);color:var(--qi4)} .q5{background:var(--q5);color:var(--qi5)}
+.lgcell{display:inline-flex;width:34px;height:18px;border-radius:4px;vertical-align:middle;margin-right:6px;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono)}
+.ramp{display:inline-flex;gap:2px;vertical-align:middle;margin-right:6px}
+.ramp i{width:14px;height:14px;border-radius:3px;display:block}
+
+/* model */
+.model td input,.model td select{height:30px;border:1px solid var(--line);background:var(--surface-2);border-radius:6px;padding:0 8px;width:100%;min-width:0}
+.model td input[type=checkbox]{width:16px;height:16px}
+.model td{padding:6px 8px}
+.wgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.wgrid .field input{min-width:0;width:100%}
+.formula{font-family:var(--mono);font-size:12.5px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;color:var(--ink-2);line-height:1.7;overflow-x:auto}
+
+/* data */
+.drop{border:1.5px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--ink-2);display:flex;flex-direction:column;gap:10px;align-items:center}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+textarea{width:100%;min-height:140px;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:10px;font-family:var(--mono);font-size:12px}
+.status{font-size:13px;padding:8px 10px;border-radius:8px;background:var(--surface-2)}
+.status.ok{background:color-mix(in srgb,var(--good) 12%,transparent)}
+.status.err{background:color-mix(in srgb,var(--crit) 12%,transparent)}
+code{font-family:var(--mono);font-size:12px;background:var(--surface-2);border:1px solid var(--line-2);padding:0 4px;border-radius:4px}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,14,20,.28);z-index:40}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(480px,100%);background:var(--surface);border-left:1px solid var(--line);z-index:41;overflow-y:auto;padding:20px;padding-top:calc(20px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:14px;box-shadow:-8px 0 30px rgba(0,0,0,.12)}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
+.dgrid div{display:flex;flex-direction:column;gap:2px}
+.dgrid .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);font-weight:600}
+.dgrid .v{font-weight:600}
+.playbox{border-radius:10px;padding:10px 12px;background:var(--accent-soft);color:var(--ink);font-size:13px}
+.playbox.Red{background:color-mix(in srgb,var(--crit) 12%,transparent)}
+.dtable td{padding:7px 6px;font-size:12.5px}
+.dtable .basis{color:var(--ink-3);font-size:11.5px;font-family:var(--mono)}
+
+/* tooltip & toast */
+.tip{position:fixed;z-index:60;pointer-events:none;background:var(--ink);color:var(--surface);border-radius:8px;padding:8px 10px;font-size:12px;max-width:280px;box-shadow:0 6px 20px rgba(0,0,0,.2);line-height:1.45}
+.tip b{display:block;font-weight:600;margin-bottom:2px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:9px 14px;border-radius:9px;font-size:13px;z-index:70}
+.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:80;background:rgba(10,14,20,.4);padding:16px}
+.modal .box{background:var(--surface);border-radius:12px;padding:16px;width:min(640px,100%);display:flex;flex-direction:column;gap:10px}
+@media (prefers-reduced-motion:no-preference){.brow,.tabs button{transition:background .15s}}
+@media (max-width:560px){.app{padding-inline:16px}.field select,.field input{min-width:0}.field{flex:1 1 140px}.field input[type=search]{min-width:0}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">Post-sales common kit · Account management</span>
+      <h1>Whitespace Navigator</h1>
+      <p class="sub" id="dataStamp"></p>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Views">
+      <button role="tab" data-tab="overview" id="tb-overview">Overview</button>
+      <button role="tab" data-tab="accounts" id="tb-accounts">Account map</button>
+      <button role="tab" data-tab="model" id="tb-model">Sizing model</button>
+      <button role="tab" data-tab="data" id="tb-data">Data</button>
+    </nav>
+  </header>
+
+  <section class="filters" aria-label="Filters">
+    <div class="field"><label for="fOwner">Account manager</label><select id="fOwner"></select></div>
+    <div class="field"><label for="fSegment">Segment</label><select id="fSegment"></select></div>
+    <div class="field"><label for="fHealth">Health</label><select id="fHealth"><option value="">All health</option><option>Green</option><option>Yellow</option><option>Red</option></select></div>
+    <div class="field"><label for="fProduct">Product line</label><select id="fProduct"></select></div>
+    <div class="field"><label for="fSearch">Account</label><input id="fSearch" type="search" placeholder="Search accounts"></div>
+    <div class="spacer"></div>
+    <button class="btn" id="fReset">Clear filters</button>
+  </section>
+
+  <main>
+    <!-- OVERVIEW -->
+    <section id="tab-overview" class="col">
+      <div class="kpis" id="kpis"></div>
+      <div class="grid2">
+        <div class="panel">
+          <div class="ph">
+            <div><h2>Available ARR by product line</h2><p>Driver × price − current ARR. Click a product to filter.</p></div>
+          </div>
+          <div class="legend"><span><i class="sw" style="background:var(--s-uncov)"></i>Uncovered whitespace</span><span><i class="sw" style="background:var(--s-cov)"></i>In an open opportunity</span></div>
+          <div class="bars" id="prodBars"></div>
+        </div>
+        <div class="col">
+          <div class="panel">
+            <div class="ph"><div><h2>Whitespace by account health</h2><p>Sell into Green, stabilize Red before pitching.</p></div></div>
+            <div class="bars" id="healthBars"></div>
+            <p class="note" id="healthNote"></p>
+          </div>
+          <div class="panel">
+            <div class="ph"><div><h2>Book of business by AM</h2><p>Click a row to focus on one book.</p></div></div>
+            <div class="tablewrap"><table id="amTable"></table></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph">
+          <div><h2>Next best plays</h2><p>Account × product pairs ranked by priority-weighted whitespace.</p></div>
+          <button class="btn sm" id="copyPlays">Copy as CSV</button>
+        </div>
+        <div class="tablewrap"><table id="playsTable"></table></div>
+      </div>
+    </section>
+
+    <!-- ACCOUNT MAP -->
+    <section id="tab-accounts" class="col" hidden>
+      <div class="panel">
+        <div class="ph">
+          <div><h2>Account × product whitespace map</h2><p id="mapSub">Darker = more available ARR. Click any row or cell for the sizing math.</p></div>
+          <div class="field"><label for="mSort">Sort by</label>
+            <select id="mSort">
+              <option value="wtd">Priority-weighted whitespace</option>
+              <option value="ws">Raw whitespace</option>
+              <option value="arr">Current ARR</option>
+              <option value="renew">Renewal (soonest)</option>
+              <option value="name">Account name</option>
+            </select></div>
+        </div>
+        <div class="legend">
+          <span><span class="ramp"><i class="q1"></i><i class="q2"></i><i class="q3"></i><i class="q4"></i><i class="q5"></i></span>Whitespace, low → high</span>
+          <span><span class="lgcell q3">+12k</span>Expansion on a product they own</span>
+          <span><span class="lgcell own">✓</span>Fully penetrated</span>
+          <span><span class="lgcell cell opp q2" style="height:18px"></span>Open opportunity</span>
+          <span><span class="lgcell" style="border:1px solid var(--line)">—</span>No driver / not applicable</span>
+        </div>
+        <div class="tablewrap" style="max-height:72vh;overflow:auto"><table class="matrix" id="matrix"></table></div>
+      </div>
+    </section>
+
+    <!-- MODEL -->
+    <section id="tab-model" class="col" hidden>
+      <div class="panel">
+        <div class="ph">
+          <div><h2>Product sizing</h2><p>Each product line is sized from its own driver. Edits recalculate everything live and are saved in this browser.</p></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn sm" id="addProd">Add product line</button>
+            <button class="btn sm" id="copyCfg">Copy config JSON</button>
+            <button class="btn sm" id="resetCfg">Reset to defaults</button>
+          </div>
+        </div>
+        <div class="formula">Potential ARR  = driver quantity × unit price &nbsp; (migrations: legacy ARR × uplift %)<br>Whitespace ARR = max(0, Potential − current ARR on that product)<br>Priority       = Whitespace × health weight × engagement weight × renewal-window boost</div>
+        <div class="tablewrap"><table class="model" id="modelTable"></table></div>
+        <p class="muted" style="font-size:12.5px">A new product line with id <code>xyz</code> reads current ARR from CSV column <code>cur_xyz</code> and open opps from <code>opp_xyz_stage</code> / <code>opp_xyz_amount</code>. Any other numeric CSV column (e.g. <code>locations</code>, <code>assets</code>, <code>headcount</code>) shows up as a selectable driver.</p>
+      </div>
+      <div class="panel">
+        <div class="ph"><div><h2>Priority weighting</h2><p>How much each factor discounts or boosts raw whitespace when ranking plays.</p></div></div>
+        <div class="wgrid" id="weights"></div>
+      </div>
+    </section>
+
+    <!-- DATA -->
+    <section id="tab-data" class="col" hidden>
+      <div class="panel">
+        <div class="ph"><div><h2>Load account data</h2><p>One row per account, exported from Salesforce (or any CRM). Data stays in this browser.</p></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" id="copyTpl">Copy CSV template</button><button class="btn sm" id="loadSample">Reset to sample data</button></div></div>
+        <div class="drop" id="drop">
+          <strong>Drop a CSV here</strong>
+          <span class="muted">or</span>
+          <label class="btn primary" for="csvFile" style="display:inline-flex;align-items:center">Choose file</label>
+          <input id="csvFile" type="file" accept=".csv,text/csv" hidden>
+        </div>
+        <div class="field"><label for="csvPaste">Or paste CSV</label><textarea id="csvPaste" placeholder="account_id,account_name,owner,segment,health,..."></textarea></div>
+        <div><button class="btn" id="loadPaste">Load pasted CSV</button></div>
+        <p class="status" id="dataStatus" hidden></p>
+      </div>
+      <div class="panel">
+        <div class="ph"><div><h2>Column reference</h2><p>Headers are case-insensitive. Only <code>account_name</code> is required.</p></div></div>
+        <div class="tablewrap"><table id="colRef"></table></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-label="Account detail"></aside>
+<div class="tip" id="tip" hidden></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ============================ CONFIG ============================ */
+const DEFAULT_CONFIG = {
+  products: [
+    { id:"platform",       name:"Platform",            category:"Upsell",    driver:"ir_users",           price:6500,  type:"unit", unit:"per IR seat",    on:true },
+    { id:"webcast",        name:"Webcast",             category:"Cross-sell",driver:"events",             price:3800,  type:"unit", unit:"per event",      on:true },
+    { id:"confcall",       name:"Conference Call",     category:"Cross-sell",driver:"events",             price:1900,  type:"unit", unit:"per event",      on:true },
+    { id:"investorday",    name:"Investor Day",        category:"Cross-sell",driver:"investor_days",      price:18000, type:"unit", unit:"per event",      on:true },
+    { id:"accessibility",  name:"Accessibility",       category:"Cross-sell",driver:"sites",              price:4500,  type:"unit", unit:"per web property",on:true },
+    { id:"surveillance",   name:"Surveillance",        category:"Cross-sell",driver:"listings",           price:18000, type:"unit", unit:"per listing",    on:true },
+    { id:"audioprerecord", name:"Audio Pre-Record",    category:"Cross-sell",driver:"events",             price:1100,  type:"unit", unit:"per event",      on:true },
+    { id:"corpstudio",     name:"Corporate Studio",    category:"Cross-sell",driver:"employees",          price:0.9,   type:"unit", unit:"per employee",   on:true },
+    { id:"mig_irstudio",   name:"IR Studio migration", category:"Migration", driver:"legacy_studio_arr",  price:0.35,  type:"pct",  unit:"uplift on legacy ARR", on:true },
+    { id:"mig_webcast",    name:"Webcast migration",   category:"Migration", driver:"legacy_webcast_arr", price:0.25,  type:"pct",  unit:"uplift on legacy ARR", on:true }
+  ],
+  driverLabels: {
+    ir_users:"IR seats", events:"Webcast & call events / yr", investor_days:"Investor days / yr",
+    sites:"Web properties", listings:"Listed securities", employees:"Employees",
+    legacy_studio_arr:"Legacy Investor Studio ARR", legacy_webcast_arr:"Legacy Webcast ARR"
+  },
+  weights: {
+    health:{ Green:1, Yellow:0.6, Red:0.25 },
+    contact:{ d30:1, d90:0.8, older:0.55 },
+    renewalWindow:120, renewalBoost:1.2
+  },
+  minWhitespace:1000   // gaps smaller than this are treated as fully penetrated
+
+};
+const STAGES = ["SQL","Discovery","Solutioning","Proposal","Verbal"];
+const RESERVED = ["account_id","account_name","owner","segment","health","health_prev","arr","renewal_date","last_strategic_contact_days"];
+
+/* ============================ UTIL ============================ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+function load(k){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; }catch(e){ return null; } }
+function save(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function drop(k){ try{ localStorage.removeItem(k); }catch(e){} }
+function money(v){ v = Math.round(v||0); const a = Math.abs(v);
+  if (a >= 1e6) return "$" + (v/1e6).toFixed(a >= 1e7 ? 0 : 1) + "M";
+  if (a >= 1e3) return "$" + Math.round(v/1e3) + "k";
+  return "$" + v; }
+const short = v => money(v).slice(1);
+const fmtN = v => (+v||0).toLocaleString("en-US", {maximumFractionDigits:2});
+const pct = v => isFinite(v) ? Math.round(v*100) + "%" : "–";
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function isoPlus(days){ const d = new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); }
+function daysUntil(iso){ if(!iso) return null; const d = new Date(iso+"T12:00:00"); if (isNaN(d)) return null; const n = new Date(); n.setHours(12,0,0,0); return Math.round((d-n)/864e5); }
+function fmtDate(iso){ const d = new Date(iso+"T12:00:00"); return isNaN(d) ? "–" : d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}); }
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true,2200); }
+function copyText(text, label){
+  const fallback = () => {
+    const m = document.createElement("div"); m.className="modal";
+    m.innerHTML = `<div class="box"><h2>Copy ${esc(label)}</h2><p class="muted">Clipboard access is blocked here — the text is selected, press Ctrl/Cmd+C.</p><textarea readonly>${esc(text)}</textarea><div><button class="btn">Close</button></div></div>`;
+    document.body.appendChild(m); const ta=m.querySelector("textarea"); ta.focus(); ta.select();
+    m.querySelector("button").onclick=()=>m.remove(); m.onclick=e=>{ if(e.target===m) m.remove(); };
+  };
+  try { navigator.clipboard.writeText(text).then(()=>toast(`Copied ${label}`), fallback); } catch(e){ fallback(); }
+}
+
+/* ============================ SAMPLE DATA ============================ */
+function makeSample(){
+  const r = mulberry32(20260922), ri=(a,b)=>Math.floor(a+r()*(b-a+1)), pick=a=>a[Math.floor(r()*a.length)];
+  const A=["Northwind","Bluestem","Harborline","Crestview","Ironbridge","Meridian","Solace","Pinecrest","Altamira","Kestrel","Redfern","Oakhaven","Tidewater","Summit Ridge","Lumen","Granite Peak","Halcyon","Brightwater","Copperleaf","Everline","Fairmont","Westgate","Silverline","Cascadia","Juniper","Ashford","Beacon Point","Stonegate","Clearwell","Verity","Hollis","Marlow"];
+  const B=["Holdings","Bancorp","Therapeutics","Energy","Industries","Financial","Pharma","Technologies","Realty Trust","Group","Minerals","Logistics","Brands","Semiconductor","Insurance","Utilities"];
+  const OWN=["Priya Anand","Marcus Oyelaran","Dana Whitfield","Tomás Ibarra","Hannah Kessler","Rohan Mehta","Claire Beaumont","Owen Castellano"];
+  const own={platform:.85,webcast:.6,confcall:.45,investorday:.25,accessibility:.2,surveillance:.15,audioprerecord:.2,corpstudio:.1};
+  const out=[];
+  for (let i=0;i<64;i++){
+    const x=r(), seg = x<.25?"Large Cap":x<.65?"Mid Cap":"Small Cap", L=seg==="Large Cap", M=seg==="Mid Cap";
+    const d={ ir_users:L?ri(6,14):M?ri(3,7):ri(1,3), events:L?ri(6,12):M?ri(4,8):ri(4,5),
+      investor_days:L?1:(M&&r()<.5?1:0), sites:L?ri(3,8):M?ri(2,4):ri(1,2), listings:L?ri(1,3):M?ri(1,2):1,
+      employees:L?ri(15,90)*1000:M?ri(3,20)*1000:ri(3,40)*100,
+      legacy_studio_arr:r()<.3?ri(8,40)*1000:0, legacy_webcast_arr:r()<.35?ri(6,30)*1000:0 };
+    const cur={};
+    for (const p of DEFAULT_CONFIG.products){ if(!(p.id in own)) continue;
+      if (r()<own[p.id] || (p.id==="platform" && !Object.keys(cur).length)){ const pot=(d[p.driver]||0)*p.price; const pen=r()<.55?1:.35+r()*.5; const v=Math.round(pot*pen/500)*500; if(v>0) cur[p.id]=v; } }
+    const hx=r(), health=hx<.44?"Green":hx<.62?"Yellow":"Red";
+    const healthPrev = r()<.75 ? health : pick(["Green","Yellow","Red"]);
+    const opps={};
+    for (const p of DEFAULT_CONFIG.products){ const pot=(d[p.driver]||0)*p.price, ws=pot-(cur[p.id]||0);
+      if (ws>2000 && r()<.16) opps[p.id]={stage:pick(STAGES), amount:Math.round(ws*(.5+r()*.5)/500)*500}; }
+    const arr=Object.values(cur).reduce((s,v)=>s+v,0)+d.legacy_studio_arr+d.legacy_webcast_arr;
+    out.push({ id:"ACC-"+String(1001+i), name:A[i%32]+" "+B[(i*7+(i>>5))%16], owner:pick(OWN), segment:seg,
+      health, healthPrev, arr, renewal:isoPlus(ri(5,365)), contact:health==="Red"?ri(20,240):ri(3,150), drivers:d, cur, opps });
+  }
+  return out;
+}
+
+/* ============================ STATE ============================ */
+let cfg = load("wsn.config") || clone(DEFAULT_CONFIG);
+let stored = load("wsn.data");
+let data = stored && stored.accounts ? stored : { source:"sample", label:"Sample data", accounts:makeSample() };
+const ui = Object.assign({ tab:"overview", owner:"", segment:"", health:"", product:"", q:"", sort:"wtd" }, load("wsn.ui")||{});
+if (location.hash && ["overview","accounts","model","data"].includes(location.hash.slice(1))) ui.tab = location.hash.slice(1);
+const saveUI = () => save("wsn.ui", {tab:ui.tab, sort:ui.sort});
+
+const prodById = id => cfg.products.find(p=>p.id===id);
+const activeProducts = () => cfg.products.filter(p=>p.on && (!ui.product || p.id===ui.product));
+const driverLabel = k => cfg.driverLabels[k] || k.replace(/_/g," ");
+function allDrivers(){ const s=new Set(Object.keys(cfg.driverLabels)); data.accounts.forEach(a=>Object.keys(a.drivers).forEach(k=>s.add(k))); return [...s]; }
+function priceText(p){ return p.type==="pct" ? Math.round(p.price*100)+"%" : "$"+fmtN(p.price); }
+
+function weightOf(a){
+  const w=cfg.weights; let m = w.health[a.health] ?? 0.5;
+  const c=a.contact; m *= (c==null) ? w.contact.older : c<=30 ? w.contact.d30 : c<=90 ? w.contact.d90 : w.contact.older;
+  const rd=daysUntil(a.renewal); if (rd!=null && rd>=0 && rd<=w.renewalWindow) m *= w.renewalBoost;
+  return m;
+}
+function gap(pot,cur){ const w=Math.max(0,pot-cur); return w<(cfg.minWhitespace??1000)?0:w; }
+function filteredAccounts(){
+  const q=ui.q.trim().toLowerCase();
+  return data.accounts.filter(a => (!ui.owner||a.owner===ui.owner) && (!ui.segment||a.segment===ui.segment) && (!ui.health||a.health===ui.health) && (!q||a.name.toLowerCase().includes(q)||String(a.id).toLowerCase().includes(q)));
+}
+function calc(){
+  const prods=activeProducts();
+  return filteredAccounts().map(a=>{
+    const cells={}; let ws=0, pot=0, cov=0;
+    for (const p of prods){
+      const qty=+a.drivers[p.driver]||0, potential=qty*p.price, cur=+a.cur[p.id]||0, w=gap(potential,cur), o=a.opps[p.id]||null;
+      const c = o && w>0 ? Math.min(+o.amount||w, w) : 0;
+      cells[p.id]={qty,potential,cur,ws:w,opp:o,cov:c}; ws+=w; pot+=potential; cov+=c;
+    }
+    const weight=weightOf(a);
+    return { a, cells, ws, pot, cov, weight, wtd:ws*weight, renewDays:daysUntil(a.renewal) };
+  });
+}
+function playFor(row, p){
+  const a=row.a, c=row.cells[p.id], rd=row.renewDays;
+  if (a.health==="Red") return "Stabilize first — run the save play before pitching";
+  if (c.opp) return `Advance the ${c.opp.stage} opportunity`;
+  if (rd!=null && rd>=0 && rd<=cfg.weights.renewalWindow) return `Bundle into renewal (in ${rd} days)`;
+  if ((a.contact??999) > 90) return `Re-engage — no strategic contact in ${a.contact} days`;
+  if (p.category==="Migration") return "Position the migration and its uplift";
+  if (c.cur>0) return "Expand coverage — sized above current footprint";
+  return "Open a discovery conversation";
+}
+function healthPill(h){ const ic={Green:"●",Yellow:"▲",Red:"◆"}[h]||"○"; return `<span class="pill ${esc(h)}"><span class="ic" aria-hidden="true">${ic}</span>${esc(h||"Unknown")}</span>`; }
+
+/* ============================ RENDER ============================ */
+function renderFilters(){
+  const owners=[...new Set(data.accounts.map(a=>a.owner).filter(Boolean))].sort();
+  const segs=[...new Set(data.accounts.map(a=>a.segment).filter(Boolean))].sort();
+  $("#fOwner").innerHTML = `<option value="">All AMs</option>`+owners.map(o=>`<option ${o===ui.owner?"selected":""}>${esc(o)}</option>`).join("");
+  $("#fSegment").innerHTML = `<option value="">All segments</option>`+segs.map(o=>`<option ${o===ui.segment?"selected":""}>${esc(o)}</option>`).join("");
+  $("#fProduct").innerHTML = `<option value="">All product lines</option>`+cfg.products.filter(p=>p.on).map(p=>`<option value="${esc(p.id)}" ${p.id===ui.product?"selected":""}>${esc(p.name)}</option>`).join("");
+  $("#fHealth").value=ui.health; $("#fSearch").value=ui.q;
+  if (ui.owner && !owners.includes(ui.owner)) ui.owner="";
+}
+function renderStamp(){
+  $("#dataStamp").textContent = `${data.label||"Sample data"} · ${data.accounts.length} accounts · ${cfg.products.filter(p=>p.on).length} product lines`;
+}
+
+function renderOverview(rows){
+  const prods=activeProducts();
+  const tot=rows.reduce((s,r)=>({ws:s.ws+r.ws,pot:s.pot+r.pot,cov:s.cov+r.cov,wtd:s.wtd+r.wtd}),{ws:0,pot:0,cov:0,wtd:0});
+  const withWs=rows.filter(r=>r.ws>0).length;
+  let uncoveredPairs=0; rows.forEach(r=>prods.forEach(p=>{ const c=r.cells[p.id]; if(c.ws>0&&!c.opp) uncoveredPairs++; }));
+  const redWs=rows.filter(r=>r.a.health==="Red").reduce((s,r)=>s+r.ws,0);
+  $("#kpis").innerHTML = [
+    ["lead","Available whitespace ARR",money(tot.ws),`${withWs} of ${rows.length} accounts · ${pct(tot.pot?tot.ws/tot.pot:0)} of sized potential`],
+    ["","Priority-weighted",money(tot.wtd),"After health, engagement & renewal weighting"],
+    ["","In open opportunities",money(tot.cov),`${pct(tot.ws?tot.cov/tot.ws:0)} pipeline coverage of whitespace`],
+    ["","Uncovered whitespace",money(tot.ws-tot.cov),`${uncoveredPairs} account-product plays with no open opp`],
+    ["","Sitting in Red accounts",money(redWs),`${pct(tot.ws?redWs/tot.ws:0)} of whitespace — save before sell`]
+  ].map(([c,l,v,s])=>`<div class="kpi ${c}"><span class="l">${l}</span><span class="v">${v}</span><span class="s">${s}</span></div>`).join("");
+
+  // product bars (always all enabled products, highlight filter)
+  const all = cfg.products.filter(p=>p.on);
+  const pr = all.map(p=>{ let ws=0,cov=0,n=0,own=0; rows.forEach(r=>{ const qty=+r.a.drivers[p.driver]||0, cur=+r.a.cur[p.id]||0, w=gap(qty*p.price,cur); const o=r.a.opps[p.id]; const c=o&&w>0?Math.min(+o.amount||w,w):0; ws+=w; cov+=c; if(w>0)n++; if(cur>0)own++; }); return {p,ws,cov,n,own}; }).sort((a,b)=>b.ws-a.ws);
+  const max=Math.max(1,...pr.map(x=>x.ws));
+  $("#prodBars").innerHTML = pr.map(x=>{
+    const u=x.ws-x.cov, wu=u/max*100, wc=x.cov/max*100;
+    const tip=`${x.p.name}|Whitespace ${money(x.ws)} across ${x.n} accounts|In open opps ${money(x.cov)} · uncovered ${money(u)}|Sized on ${driverLabel(x.p.driver)} × ${priceText(x.p)} ${x.p.unit}|${x.own} accounts already own it`;
+    return `<button class="brow ${ui.product===x.p.id?"sel":""}" data-prod="${esc(x.p.id)}" data-tip="${esc(tip)}">
+      <span class="nm">${esc(x.p.name)}<span class="dr">${esc(driverLabel(x.p.driver))} · ${esc(x.p.category)}</span></span>
+      <span class="track">${u>0?`<span class="seg" style="width:${wu}%;background:var(--s-uncov)"></span>`:""}${x.cov>0?`<span class="seg" style="width:${wc}%;background:var(--s-cov)"></span>`:""}</span>
+      <span class="val">${money(x.ws)}<small>${x.n} accts</small></span></button>`;
+  }).join("");
+
+  // health
+  const H=["Green","Yellow","Red"].map(h=>{ const rs=rows.filter(r=>r.a.health===h); return {h, ws:rs.reduce((s,r)=>s+r.ws,0), n:rs.length}; });
+  const hmax=Math.max(1,...H.map(x=>x.ws)), htot=H.reduce((s,x)=>s+x.ws,0)||1;
+  const col={Green:"var(--good)",Yellow:"var(--warn)",Red:"var(--crit)"};
+  $("#healthBars").innerHTML = H.map(x=>`<div class="hrow" data-tip="${esc(`${x.h} accounts|${x.n} accounts · ${money(x.ws)} whitespace (${pct(x.ws/htot)})`)}">${healthPill(x.h)}<span class="track"><span class="seg" style="width:${x.ws/hmax*100}%;background:${col[x.h]}"></span></span><span class="val num" style="text-align:right">${money(x.ws)} <span class="muted">${pct(x.ws/htot)}</span></span></div>`).join("");
+  const flips = rows.filter(r=>r.a.healthPrev && r.a.healthPrev!==r.a.health && r.a.health==="Red");
+  $("#healthNote").innerHTML = flips.length ? `<strong>${flips.length} accounts turned Red recently</strong>, carrying ${money(flips.reduce((s,r)=>s+r.ws,0))} of whitespace — route these to the save playbook before any expansion motion.` : `No accounts have moved into Red since the last health snapshot.`;
+
+  // AM table
+  const am={}; rows.forEach(r=>{ const k=r.a.owner||"Unassigned"; const o=am[k]||(am[k]={n:0,ws:0,wtd:0,cov:0,red:0,prod:{}}); o.n++; o.ws+=r.ws; o.wtd+=r.wtd; o.cov+=r.cov; if(r.a.health==="Red") o.red++; prods.forEach(p=>o.prod[p.id]=(o.prod[p.id]||0)+r.cells[p.id].ws); });
+  const amRows=Object.entries(am).sort((a,b)=>b[1].wtd-a[1].wtd);
+  $("#amTable").innerHTML = `<thead><tr><th>AM</th><th class="r">Accts</th><th class="r">Whitespace</th><th class="r">Weighted</th><th>Opp coverage</th><th>Biggest gap</th></tr></thead><tbody>`+
+    amRows.map(([k,o])=>{ const top=Object.entries(o.prod).sort((a,b)=>b[1]-a[1])[0]; const cv=o.ws?o.cov/o.ws:0;
+      return `<tr class="click" data-owner="${esc(k)}"><td style="white-space:nowrap"><strong>${esc(k)}</strong><div class="muted" style="font-size:11.5px">${o.red?o.red+" Red account"+(o.red>1?"s":""):"No Red accounts"}</div></td><td class="r num">${o.n}</td><td class="r num">${money(o.ws)}</td><td class="r num">${money(o.wtd)}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="minibar" style="flex:1"><i style="width:${Math.min(100,cv*100)}%"></i></div><span class="num">${pct(cv)}</span></div></td><td class="ink2">${top&&top[1]>0?esc(prodById(top[0]).name):"–"}</td></tr>`; }).join("")+`</tbody>`;
+
+  // plays
+  const plays=[]; rows.forEach(r=>prods.forEach(p=>{ const c=r.cells[p.id]; if(c.ws>0) plays.push({r,p,c,score:c.ws*r.weight}); }));
+  plays.sort((a,b)=>b.score-a.score); renderOverview.plays=plays;
+  const top=plays.slice(0,15);
+  $("#playsTable").innerHTML = `<thead><tr><th>Account</th><th>Product line</th><th class="r">Whitespace</th><th>Sized on</th><th>Health</th><th>Renewal</th><th>Open opp</th><th>Suggested play</th></tr></thead><tbody>`+
+    (top.length? top.map(x=>{ const rd=x.r.renewDays;
+      return `<tr class="click" data-acct="${esc(x.r.a.id)}"><td><button class="linkish" data-acct="${esc(x.r.a.id)}">${esc(x.r.a.name)}</button><div class="muted" style="font-size:12px">${esc(x.r.a.owner)}</div></td><td>${esc(x.p.name)}</td><td class="r num"><strong>${money(x.c.ws)}</strong></td><td class="muted num" style="font-size:12px;white-space:nowrap">${x.p.type==="pct"?money(x.c.qty):fmtN(x.c.qty)} × ${priceText(x.p)}${x.c.cur?` − ${money(x.c.cur)}`:""}</td><td>${healthPill(x.r.a.health)}</td><td class="num" style="white-space:nowrap">${rd==null?"–":rd<0?"Lapsed":rd+"d"}</td><td>${x.c.opp?`<span class="tag opp">${esc(x.c.opp.stage)}</span>`:`<span class="muted">None</span>`}</td><td class="play">${esc(playFor(x.r,x.p))}</td></tr>`; }).join("")
+    : `<tr><td colspan="8" class="muted">No whitespace in the current filter.</td></tr>`)+`</tbody>`;
+}
+
+function renderMatrix(rows){
+  const prods=activeProducts();
+  const s=ui.sort;
+  rows=[...rows].sort((a,b)=> s==="ws"?b.ws-a.ws : s==="arr"?(b.a.arr||0)-(a.a.arr||0) : s==="renew"?((a.renewDays??1e9)-(b.renewDays??1e9)) : s==="name"?a.a.name.localeCompare(b.a.name) : b.wtd-a.wtd);
+  let cmax=1; rows.forEach(r=>prods.forEach(p=>cmax=Math.max(cmax,r.cells[p.id].ws)));
+  const bin=v=>{ const f=v/cmax; return f>.75?5:f>.5?4:f>.25?3:f>.1?2:1; };
+  $("#mapSub").textContent = `${rows.length} accounts × ${prods.length} product lines. Darker = more available ARR. Click a row or cell for the sizing math.`;
+  $("#matrix").innerHTML = `<thead><tr><th class="acct">Account</th><th>Health</th><th class="r">ARR</th><th>Renewal</th>${prods.map(p=>`<th class="pc">${esc(p.name)}</th>`).join("")}<th class="r">Whitespace</th></tr></thead><tbody>`+
+   rows.map(r=>{ const a=r.a, rd=r.renewDays;
+     return `<tr data-acct="${esc(a.id)}"><td class="acct"><button class="linkish" data-acct="${esc(a.id)}">${esc(a.name)}</button><div class="muted" style="font-size:11.5px">${esc(a.owner)} · ${esc(a.segment)}</div></td>
+      <td class="meta">${healthPill(a.health)}</td><td class="meta r num">${money(a.arr)}</td><td class="meta num">${rd==null?"–":rd<0?"Lapsed":rd+"d"}</td>`+
+      prods.map(p=>{ const c=r.cells[p.id]; let cls, txt;
+        if (c.ws>0){ cls="q"+bin(c.ws); txt=(c.cur>0?"+":"")+short(c.ws); }
+        else if (c.cur>0){ cls="own"; txt="✓"; }
+        else { cls="na"; txt="—"; }
+        if (c.opp) cls+=" opp";
+        const tip=`${a.name} · ${p.name}|${p.type==="pct"?money(c.qty):fmtN(c.qty)} ${driverLabel(p.driver)} × ${priceText(p)} = ${money(c.potential)} potential|Current ${money(c.cur)} → whitespace ${money(c.ws)}${c.opp?`|Open opp: ${c.opp.stage} · ${money(c.opp.amount)}`:""}`;
+        return `<td><div class="cell ${cls}" data-acct="${esc(a.id)}" data-tip="${esc(tip)}">${txt}</div></td>`; }).join("")+
+      `<td class="meta r num"><strong>${money(r.ws)}</strong></td></tr>`; }).join("")+`</tbody>`;
+}
+
+function renderModel(){
+  const drv=allDrivers(); const rows=calc(); // unfiltered-by-product totals
+  const totals={}; cfg.products.forEach(p=>{ let ws=0; filteredAccounts().forEach(a=>{ ws+=gap((+a.drivers[p.driver]||0)*p.price,+a.cur[p.id]||0); }); totals[p.id]=ws; });
+  $("#modelTable").innerHTML = `<thead><tr><th>On</th><th>Product line</th><th>Motion</th><th>Sizing driver</th><th class="r">Price</th><th>Unit</th><th class="r">Whitespace</th><th></th></tr></thead><tbody>`+
+   cfg.products.map((p,i)=>`<tr data-i="${i}">
+     <td><input type="checkbox" id="m-on-${i}" data-k="on" ${p.on?"checked":""} aria-label="Include ${esc(p.name)}"></td>
+     <td style="min-width:170px"><input id="m-name-${i}" data-k="name" value="${esc(p.name)}" aria-label="Name"><div class="muted" style="font-size:11px;margin-top:2px">id: <code>${esc(p.id)}</code></div></td>
+     <td style="min-width:120px"><select id="m-cat-${i}" data-k="category">${["Upsell","Cross-sell","Migration"].map(c=>`<option ${c===p.category?"selected":""}>${c}</option>`).join("")}</select></td>
+     <td style="min-width:200px"><select id="m-drv-${i}" data-k="driver">${drv.map(d=>`<option value="${esc(d)}" ${d===p.driver?"selected":""}>${esc(driverLabel(d))}</option>`).join("")}</select></td>
+     <td style="min-width:110px"><div style="display:flex;align-items:center;gap:4px"><span class="muted">${p.type==="pct"?"":"$"}</span><input id="m-price-${i}" data-k="price" type="number" min="0" step="any" value="${p.type==="pct"?+(p.price*100).toFixed(2):p.price}" style="text-align:right"><span class="muted">${p.type==="pct"?"%":""}</span></div></td>
+     <td style="min-width:150px"><select id="m-type-${i}" data-k="type"><option value="unit" ${p.type!=="pct"?"selected":""}>Per unit of driver</option><option value="pct" ${p.type==="pct"?"selected":""}>% uplift of driver $</option></select></td>
+     <td class="r num" id="m-tot-${i}">${money(totals[p.id])}</td>
+     <td><button class="btn sm" data-del="${i}" aria-label="Remove ${esc(p.name)}">Remove</button></td></tr>`).join("")+`</tbody>`;
+  const w=cfg.weights;
+  const W=[["Green health","health.Green",w.health.Green],["Yellow health","health.Yellow",w.health.Yellow],["Red health","health.Red",w.health.Red],
+    ["Contact ≤ 30 days","contact.d30",w.contact.d30],["Contact 31–90 days","contact.d90",w.contact.d90],["Contact > 90 days","contact.older",w.contact.older],
+    ["Renewal window (days)","renewalWindow",w.renewalWindow],["Renewal-window boost","renewalBoost",w.renewalBoost],["Ignore gaps below ($)","minWhitespace",cfg.minWhitespace??1000]];
+  $("#weights").innerHTML = W.map(([l,k,v],i)=>`<div class="field"><label for="w-${i}">${l}</label><input id="w-${i}" type="number" step="any" min="0" data-w="${k}" value="${v}"></div>`).join("");
+}
+
+function renderColRef(){
+  const R=[["account_id","Text","CRM account ID"],["account_name","Text","Required"],["owner","Text","Account manager"],["segment","Text","e.g. Large Cap / Mid Cap / Small Cap"],
+    ["health","Green / Yellow / Red","Current account health score"],["health_prev","Green / Yellow / Red","Prior snapshot (flags accounts that just turned Red)"],["arr","Number","Current total ARR"],
+    ["renewal_date","YYYY-MM-DD","Next renewal"],["last_strategic_contact_days","Number","Days since last strategic touch"],
+    ["<driver columns>","Number","Any other numeric column: "+allDrivers().map(d=>d).join(", ")],
+    ["cur_<product_id>","Number","Current ARR on that product, e.g. "+cfg.products.slice(0,2).map(p=>"cur_"+p.id).join(", ")],
+    ["opp_<product_id>_stage","Text","Open opp stage, e.g. opp_webcast_stage"],["opp_<product_id>_amount","Number","Open opp amount"]];
+  $("#colRef").innerHTML = `<thead><tr><th>Column</th><th>Format</th><th>Meaning</th></tr></thead><tbody>`+R.map(r=>`<tr><td><code>${esc(r[0])}</code></td><td class="ink2">${esc(r[1])}</td><td class="ink2">${esc(r[2])}</td></tr>`).join("")+`</tbody>`;
+}
+
+function renderTabs(){
+  ["overview","accounts","model","data"].forEach(t=>{ $("#tab-"+t).hidden = ui.tab!==t; $("#tb-"+t).setAttribute("aria-selected", ui.tab===t); });
+  $("#mSort").value=ui.sort;
+}
+function renderAll(opts={}){
+  renderStamp(); renderTabs();
+  const rows=calc();
+  if (ui.tab==="overview") renderOverview(rows);
+  if (ui.tab==="accounts") renderMatrix(rows);
+  if (ui.tab==="model" && !opts.keepModel) renderModel();
+  if (ui.tab==="model" && opts.keepModel){ cfg.products.forEach((p,i)=>{ let ws=0; filteredAccounts().forEach(a=>ws+=gap((+a.drivers[p.driver]||0)*p.price,+a.cur[p.id]||0)); const el=$("#m-tot-"+i); if(el) el.textContent=money(ws); }); }
+  if (ui.tab==="data") renderColRef();
+}
+
+/* ============================ DRAWER ============================ */
+function openAccount(id){
+  const a=data.accounts.find(x=>String(x.id)===String(id)); if(!a) return;
+  const row={a,cells:{},renewDays:daysUntil(a.renewal),weight:weightOf(a)}; let ws=0,pot=0;
+  const prods=cfg.products.filter(p=>p.on);
+  prods.forEach(p=>{ const qty=+a.drivers[p.driver]||0, potential=qty*p.price, cur=+a.cur[p.id]||0, w=gap(potential,cur); row.cells[p.id]={qty,potential,cur,ws:w,opp:a.opps[p.id]||null}; ws+=w; pot+=potential; });
+  const best=prods.filter(p=>row.cells[p.id].ws>0).sort((x,y)=>row.cells[y.id].ws-row.cells[x.id].ws)[0];
+  const rd=row.renewDays;
+  const d=$("#drawer");
+  d.innerHTML = `<div class="ph"><div><span class="eyebrow">${esc(a.id)} · ${esc(a.segment)}</span><h2 style="font-size:19px;margin-top:2px">${esc(a.name)}</h2></div><button class="btn sm" id="dClose">Close</button></div>
+   <div class="dgrid">
+     <div><span class="k">Health</span><span>${healthPill(a.health)}${a.healthPrev&&a.healthPrev!==a.health?` <span class="muted" style="font-size:12px">was ${esc(a.healthPrev)}</span>`:""}</span></div>
+     <div><span class="k">Account manager</span><span class="v">${esc(a.owner||"–")}</span></div>
+     <div><span class="k">Current ARR</span><span class="v num">${money(a.arr)}</span></div>
+     <div><span class="k">Renewal</span><span class="v">${fmtDate(a.renewal)} <span class="muted num" style="font-weight:400">${rd==null?"":rd<0?"(lapsed)":`(${rd}d)`}</span></span></div>
+     <div><span class="k">Last strategic contact</span><span class="v num">${a.contact==null?"–":a.contact+" days ago"}</span></div>
+     <div><span class="k">Priority weight</span><span class="v num">×${row.weight.toFixed(2)}</span></div>
+     <div><span class="k">Whitespace ARR</span><span class="v num" style="color:var(--accent-ink);font-size:18px">${money(ws)}</span></div>
+     <div><span class="k">Penetration</span><span class="v num">${pct(pot?1-ws/pot:0)} of sized potential</span></div>
+   </div>
+   <div class="playbox ${esc(a.health)}"><strong>Suggested play:</strong> ${best?esc(playFor(row,best))+(a.health!=="Red"?` — lead with <strong>${esc(best.name)}</strong> (${money(row.cells[best.id].ws)}).`:"."):"Fully penetrated on every sized product line — focus on retention and advocacy."}</div>
+   <div><h3 style="font-size:13px;margin-bottom:6px">Sizing by product line</h3>
+   <table class="dtable"><thead><tr><th>Product</th><th class="r">Potential</th><th class="r">Current</th><th class="r">Whitespace</th></tr></thead><tbody>`+
+   prods.filter(p=>row.cells[p.id].potential>0||row.cells[p.id].cur>0).map(p=>{ const c=row.cells[p.id];
+     return `<tr><td><strong style="font-size:12.5px">${esc(p.name)}</strong>${c.opp?` <span class="tag opp">${esc(c.opp.stage)} · ${money(c.opp.amount)}</span>`:""}<div class="basis">${p.type==="pct"?money(c.qty):fmtN(c.qty)} ${esc(driverLabel(p.driver))} × ${priceText(p)}</div></td><td class="r num">${money(c.potential)}</td><td class="r num ink2">${c.cur?money(c.cur):"–"}</td><td class="r num"><strong>${c.ws?money(c.ws):c.cur?"✓":"–"}</strong></td></tr>`; }).join("")+
+   `</tbody></table>${(()=>{ const na=prods.filter(p=>!(row.cells[p.id].potential>0||row.cells[p.id].cur>0)); return na.length?`<p class="muted" style="font-size:12px;margin-top:6px">Not applicable (driver is 0): ${na.map(p=>esc(p.name)).join(", ")}</p>`:""; })()}</div>
+   <div><h3 style="font-size:13px;margin-bottom:6px">Sizing drivers on file</h3><div class="dgrid">${Object.entries(a.drivers).map(([k,v])=>`<div><span class="k">${esc(driverLabel(k))}</span><span class="v num">${/arr/i.test(k)?money(v):fmtN(v)}</span></div>`).join("")}</div></div>`;
+  d.hidden=false; $("#scrim").hidden=false; $("#dClose").onclick=closeDrawer; $("#dClose").focus();
+}
+function closeDrawer(){ $("#drawer").hidden=true; $("#scrim").hidden=true; }
+
+/* ============================ CSV ============================ */
+function parseCSV(text){
+  const rows=[]; let row=[], f="", q=false;
+  for (let i=0;i<text.length;i++){ const ch=text[i];
+    if (q){ if(ch==='"'){ if(text[i+1]==='"'){ f+='"'; i++; } else q=false; } else f+=ch; }
+    else if (ch==='"') q=true; else if (ch===','){ row.push(f); f=""; }
+    else if (ch==='\n'||ch==='\r'){ if(ch==='\r'&&text[i+1]==='\n') i++; row.push(f); rows.push(row); row=[]; f=""; }
+    else f+=ch; }
+  if (f!==""||row.length){ row.push(f); rows.push(row); }
+  return rows.filter(r=>r.some(c=>c.trim()!==""));
+}
+const numv = v => { const n=parseFloat(String(v).replace(/[$,\s]/g,"")); return isNaN(n)?null:n; };
+function normHealth(v){ const s=String(v||"").trim().toLowerCase(); return s.startsWith("g")?"Green":s.startsWith("y")||s.startsWith("a")?"Yellow":s.startsWith("r")?"Red":""; }
+function importCSV(text, label){
+  const st=$("#dataStatus"); st.hidden=false;
+  try{
+    const rows=parseCSV(text); if(rows.length<2) throw new Error("The file needs a header row and at least one account row.");
+    const hdr=rows[0].map(h=>h.trim().toLowerCase().replace(/\s+/g,"_"));
+    if(!hdr.includes("account_name")) throw new Error("Missing the required account_name column. Copy the template to see the expected headers.");
+    const pids=new Set(cfg.products.map(p=>p.id));
+    const accounts=rows.slice(1).map((r,ix)=>{ const o={}; hdr.forEach((h,i)=>o[h]=(r[i]??"").trim());
+      const a={ id:o.account_id||("ROW-"+(ix+1)), name:o.account_name||("Account "+(ix+1)), owner:o.owner||"Unassigned", segment:o.segment||"Unsegmented",
+        health:normHealth(o.health), healthPrev:normHealth(o.health_prev), arr:numv(o.arr)||0, renewal:o.renewal_date||"", contact:numv(o.last_strategic_contact_days), drivers:{}, cur:{}, opps:{} };
+      hdr.forEach(h=>{ const v=o[h]; if(RESERVED.includes(h)) return;
+        let m;
+        if ((m=h.match(/^cur_(.+)$/))) { const n=numv(v); if(n) a.cur[m[1]]=n; }
+        else if ((m=h.match(/^opp_(.+)_stage$/))) { if(v){ a.opps[m[1]]=a.opps[m[1]]||{}; a.opps[m[1]].stage=v; } }
+        else if ((m=h.match(/^opp_(.+)_amount$/))) { const n=numv(v); if(n!=null){ a.opps[m[1]]=a.opps[m[1]]||{}; a.opps[m[1]].amount=n; } }
+        else { const n=numv(v); if(n!=null||v==="") a.drivers[h]=n||0; } });
+      Object.keys(a.opps).forEach(k=>{ if(!a.opps[k].stage) delete a.opps[k]; });
+      if(!a.arr) a.arr=Object.values(a.cur).reduce((s,v)=>s+v,0);
+      return a; });
+    const unknownCur=[...new Set(accounts.flatMap(a=>Object.keys(a.cur)))].filter(k=>!pids.has(k));
+    data={source:"import", label:label||"Imported data", accounts};
+    save("wsn.data", data);
+    ui.owner=""; ui.segment=""; ui.product="";
+    st.className="status ok"; st.textContent=`Loaded ${accounts.length} accounts.`+(unknownCur.length?` Note: current-ARR columns for ${unknownCur.map(k=>"cur_"+k).join(", ")} don't match a product line — add them in Sizing model with that id.`:"");
+    renderFilters(); renderAll();
+  }catch(e){ st.className="status err"; st.textContent=e.message; }
+}
+function toCSV(accounts){
+  const drv=allDrivers(), pids=cfg.products.map(p=>p.id);
+  const hdr=[...RESERVED,...drv,...pids.map(p=>"cur_"+p),...pids.flatMap(p=>["opp_"+p+"_stage","opp_"+p+"_amount"])];
+  const q=v=>{ const s=String(v??""); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  const lines=accounts.map(a=>[a.id,a.name,a.owner,a.segment,a.health,a.healthPrev,a.arr,a.renewal,a.contact,...drv.map(d=>a.drivers[d]??""),...pids.map(p=>a.cur[p]??""),...pids.flatMap(p=>[a.opps[p]?.stage??"",a.opps[p]?.amount??""])].map(q).join(","));
+  return [hdr.join(","),...lines].join("\n");
+}
+
+/* ============================ EVENTS ============================ */
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ ui.tab=b.dataset.tab; saveUI(); try{ history.replaceState(null,"","#"+ui.tab); }catch(e){} renderAll(); });
+$("#fOwner").onchange=e=>{ ui.owner=e.target.value; renderAll(); };
+$("#fSegment").onchange=e=>{ ui.segment=e.target.value; renderAll(); };
+$("#fHealth").onchange=e=>{ ui.health=e.target.value; renderAll(); };
+$("#fProduct").onchange=e=>{ ui.product=e.target.value; renderAll(); };
+$("#fSearch").oninput=e=>{ ui.q=e.target.value; clearTimeout(renderAll._t); renderAll._t=setTimeout(renderAll,120); };
+$("#fReset").onclick=()=>{ Object.assign(ui,{owner:"",segment:"",health:"",product:"",q:""}); renderFilters(); renderAll(); };
+$("#mSort").onchange=e=>{ ui.sort=e.target.value; saveUI(); renderAll(); };
+
+document.addEventListener("click",e=>{
+  const pb=e.target.closest("[data-prod]"); if(pb){ ui.product = ui.product===pb.dataset.prod ? "" : pb.dataset.prod; renderFilters(); renderAll(); return; }
+  const ow=e.target.closest("tr[data-owner]"); if(ow){ ui.owner = ui.owner===ow.dataset.owner ? "" : ow.dataset.owner; renderFilters(); renderAll(); return; }
+  const ac=e.target.closest("[data-acct]"); if(ac && !e.target.closest("#drawer")){ openAccount(ac.dataset.acct); return; }
+});
+$("#scrim").onclick=closeDrawer;
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDrawer(); });
+
+// tooltip
+const tip=$("#tip");
+document.addEventListener("mousemove",e=>{
+  const t=e.target.closest("[data-tip]");
+  if(!t){ tip.hidden=true; return; }
+  const parts=t.dataset.tip.split("|");
+  tip.innerHTML=`<b>${esc(parts[0])}</b>`+parts.slice(1).map(p=>`<div>${esc(p)}</div>`).join("");
+  tip.hidden=false;
+  const w=tip.offsetWidth, h=tip.offsetHeight; let x=e.clientX+14, y=e.clientY+14;
+  if(x+w>innerWidth-8) x=e.clientX-w-14; if(y+h>innerHeight-8) y=e.clientY-h-14;
+  tip.style.left=Math.max(8,x)+"px"; tip.style.top=Math.max(8,y)+"px";
+});
+document.addEventListener("scroll",()=>tip.hidden=true,true);
+
+// model edits
+$("#modelTable").addEventListener("input",e=>{
+  const el=e.target, tr=el.closest("tr[data-i]"); if(!tr||!el.dataset.k) return;
+  const p=cfg.products[+tr.dataset.i], k=el.dataset.k;
+  if(k==="on") p.on=el.checked;
+  else if(k==="price"){ const n=parseFloat(el.value)||0; p.price = p.type==="pct" ? n/100 : n; }
+  else if(k==="type"){ const was=p.type; p.type=el.value; if(was!==p.type){ p.price = p.type==="pct" ? Math.min(p.price,1) : p.price; p.unit = p.type==="pct"?"uplift on driver $":"per unit"; } save("wsn.config",cfg); renderModel(); renderFilters(); return; }
+  else p[k]=el.value;
+  save("wsn.config",cfg);
+  if(k==="on"||k==="name") renderFilters();
+  renderAll({keepModel:true});
+});
+$("#modelTable").addEventListener("change",e=>{ if(e.target.dataset.k==="driver"||e.target.dataset.k==="category"){ const p=cfg.products[+e.target.closest("tr").dataset.i]; p[e.target.dataset.k]=e.target.value; save("wsn.config",cfg); renderAll({keepModel:true}); } });
+$("#modelTable").addEventListener("click",e=>{ const b=e.target.closest("[data-del]"); if(!b) return; const i=+b.dataset.del; if(b.dataset.confirm!=="1"){ b.dataset.confirm="1"; b.textContent="Confirm"; setTimeout(()=>{ if(b.isConnected){ b.dataset.confirm=""; b.textContent="Remove"; } },2500); return; }
+  const [rm]=cfg.products.splice(i,1); if(ui.product===rm.id) ui.product=""; save("wsn.config",cfg); renderFilters(); renderModel(); toast(`Removed ${rm.name}`); });
+$("#weights").addEventListener("input",e=>{ const k=e.target.dataset.w; if(!k) return; const n=parseFloat(e.target.value); if(isNaN(n)) return; const path=k.split("."); if(k==="minWhitespace") cfg.minWhitespace=n; else if(path.length===2) cfg.weights[path[0]][path[1]]=n; else cfg.weights[k]=n; save("wsn.config",cfg); });
+$("#addProd").onclick=()=>{ let n=1; while(prodById("custom_"+n)) n++; cfg.products.push({id:"custom_"+n,name:"New product line",category:"Cross-sell",driver:allDrivers()[0],price:1000,type:"unit",unit:"per unit",on:true}); save("wsn.config",cfg); renderFilters(); renderModel(); toast(`Added product line custom_${n}`); };
+$("#copyCfg").onclick=()=>copyText(JSON.stringify(cfg,null,2),"config JSON");
+$("#resetCfg").onclick=e=>{ const b=e.currentTarget; if(b.dataset.confirm!=="1"){ b.dataset.confirm="1"; b.textContent="Click again to reset"; setTimeout(()=>{ b.dataset.confirm=""; b.textContent="Reset to defaults"; },2500); return; }
+  cfg=clone(DEFAULT_CONFIG); drop("wsn.config"); b.dataset.confirm=""; b.textContent="Reset to defaults"; ui.product=""; renderFilters(); renderModel(); toast("Sizing model reset"); };
+
+// data
+$("#copyTpl").onclick=()=>copyText(toCSV(data.accounts.slice(0,3)),"CSV template");
+$("#copyPlays").onclick=()=>{ const P=renderOverview.plays||[]; const q=v=>{ const s=String(v??""); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  copyText(["account_id,account_name,owner,product_line,whitespace_arr,weighted,health,renewal_date,open_opp_stage,suggested_play",...P.map(x=>[x.r.a.id,x.r.a.name,x.r.a.owner,x.p.name,Math.round(x.c.ws),Math.round(x.score),x.r.a.health,x.r.a.renewal,x.c.opp?.stage||"",playFor(x.r,x.p)].map(q).join(","))].join("\n"),`${P.length} plays`); };
+$("#loadSample").onclick=()=>{ data={source:"sample",label:"Sample data",accounts:makeSample()}; drop("wsn.data"); ui.owner="";ui.segment=""; renderFilters(); renderAll(); const st=$("#dataStatus"); st.hidden=false; st.className="status ok"; st.textContent="Sample data restored."; };
+$("#loadPaste").onclick=()=>{ const t=$("#csvPaste").value; if(!t.trim()){ const st=$("#dataStatus"); st.hidden=false; st.className="status err"; st.textContent="Paste CSV text into the box first."; return; } importCSV(t,"Pasted data"); };
+$("#csvFile").onchange=e=>{ const f=e.target.files[0]; if(f) readFile(f); e.target.value=""; };
+function readFile(f){ const r=new FileReader(); r.onload=()=>importCSV(String(r.result), f.name); r.readAsText(f); }
+const dz=$("#drop");
+["dragenter","dragover"].forEach(ev=>dz.addEventListener(ev,e=>{ e.preventDefault(); dz.classList.add("over"); }));
+["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{ e.preventDefault(); dz.classList.remove("over"); }));
+dz.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) readFile(f); });
+
+/* ============================ BOOT ============================ */
+renderFilters(); renderAll();
+</script>
