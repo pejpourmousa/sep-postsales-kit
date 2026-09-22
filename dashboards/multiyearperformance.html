@@ -1,0 +1,1050 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-Year Renewals Dashboard</title>
+<meta name="description" content="Multi-year contract, term-mix and protected ARR dashboard with product line and rep filters. Loads a CRM opportunity CSV export.">
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --surface-2: #f3f2ee;
+  --ink: #0b0b0b; --ink-2: #52514e; --muted: #7a7873;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+  --accent: #2a78d6; --series-1: #2a78d6; --series-2: #eb6834;
+  --t1: #86b6ef; --t2: #5598e7; --t3: #2a78d6; --t4: #1c5cab; --t5: #0d366b;
+  --good: #006300; --bad: #b42828; --warn-bg: #fff4d6;
+  --hover: rgba(11,11,11,0.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --surface-2: #222220;
+    --ink: #ffffff; --ink-2: #c3c2b7; --muted: #9a988f;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --accent: #3987e5; --series-1: #3987e5; --series-2: #d95926;
+    --t1: #184f95; --t2: #256abf; --t3: #3987e5; --t4: #6da7ec; --t5: #b7d3f6;
+    --good: #0ca30c; --bad: #e66767; --warn-bg: #3a3017;
+    --hover: rgba(255,255,255,0.06);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --surface-2: #222220;
+  --ink: #ffffff; --ink-2: #c3c2b7; --muted: #9a988f;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+  --accent: #3987e5; --series-1: #3987e5; --series-2: #d95926;
+  --t1: #184f95; --t2: #256abf; --t3: #3987e5; --t4: #6da7ec; --t5: #b7d3f6;
+  --good: #0ca30c; --bad: #e66767; --warn-bg: #3a3017;
+  --hover: rgba(255,255,255,0.06);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--page); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.wrap { max-width: 1440px; margin: 0 auto; padding: 20px 24px 64px; }
+@media (max-width: 640px) { .wrap { padding: 14px 16px 48px; } }
+header.top { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: flex-end; justify-content: space-between; margin-bottom: 14px; }
+h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+.subtitle { color: var(--ink-2); margin: 2px 0 0; font-size: 13px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button, .btn, select, input { font: inherit; color: var(--ink); }
+.btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+.btn:hover { background: var(--hover); }
+.btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
+.badge { font-size: 12px; padding: 3px 8px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--border); }
+.filters { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; position: sticky; top: 0; z-index: 5; }
+.filters label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+.filters select, .filters input { font-size: 13px; text-transform: none; letter-spacing: 0; font-weight: 400; background: var(--page); border: 1px solid var(--border); border-radius: 7px; padding: 5px 8px; min-width: 120px; }
+.filters input[type=number] { min-width: 0; width: 76px; }
+.filters input[type=date] { min-width: 0; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+.seg button { border: 0; background: var(--page); padding: 5px 10px; font-size: 13px; cursor: pointer; color: var(--ink-2); text-transform: none; letter-spacing: 0; font-weight: 400; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.filters .spacer { flex: 1; }
+.chip-reset { font-size: 12px; color: var(--accent); background: none; border: 0; cursor: pointer; padding: 6px 0; }
+h2 { font-size: 15px; margin: 26px 0 4px; }
+.section-note { color: var(--ink-2); font-size: 13px; margin: 0 0 12px; max-width: 900px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.kpi .k-label { font-size: 12px; color: var(--ink-2); font-weight: 600; }
+.kpi .k-sub { font-size: 11px; color: var(--muted); }
+.kpi .k-val { font-size: 32px; font-weight: 650; letter-spacing: -0.02em; margin: 6px 0 2px; }
+.kpi .k-foot { font-size: 12px; color: var(--ink-2); }
+.up { color: var(--good); } .down { color: var(--bad); }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .grid.three { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 860px) { .grid, .grid.three { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px 12px; min-width: 0; }
+.card.wide { grid-column: 1 / -1; }
+.card-h { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; }
+.card h3 { font-size: 14px; margin: 0; }
+.card .sub { font-size: 12px; color: var(--ink-2); margin: 2px 0 8px; }
+.tbl-toggle { font-size: 12px; background: none; border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; cursor: pointer; color: var(--ink-2); white-space: nowrap; }
+.tbl-toggle:hover { background: var(--hover); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); margin: 2px 0 6px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.legend i.line { height: 2px; width: 14px; border-radius: 1px; }
+.legend i.dash { height: 0; width: 14px; border-top: 2px dashed var(--ink-2); background: none !important; }
+.legend i.tick { width: 2px; height: 12px; background: var(--ink) !important; border-radius: 0; }
+.chart { width: 100%; position: relative; }
+.chart svg { display: block; overflow: visible; }
+.chart text { fill: var(--muted); font-size: 11px; font-family: inherit; }
+.chart text.lbl { fill: var(--ink-2); font-size: 12px; }
+.chart text.val { fill: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
+.chart .gridl { stroke: var(--grid); stroke-width: 1; }
+.chart .base { stroke: var(--axis); stroke-width: 1; }
+.chart .hit { fill: transparent; cursor: default; }
+.chart .hit:hover, .chart .hit:focus { fill: var(--hover); outline: none; }
+.empty { color: var(--muted); font-size: 13px; padding: 30px 0; text-align: center; }
+.note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { color: var(--ink-2); font-weight: 600; font-size: 12px; position: sticky; top: 0; background: var(--surface); }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: var(--ink); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr:hover td { background: var(--hover); }
+.inbar { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; width: 100%; }
+.inbar b { display: inline-block; height: 8px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.inbar .tgt { position: relative; width: 70px; height: 8px; background: var(--surface-2); border-radius: 0 3px 3px 0; }
+.inbar .tgt b { position: absolute; left: 0; top: 0; }
+.inbar .tgt em { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--ink); }
+.pill { font-size: 11px; padding: 1px 6px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); }
+.pill.warn { background: var(--warn-bg); color: var(--ink); }
+.tbl-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.tbl-tools input { background: var(--page); border: 1px solid var(--border); border-radius: 7px; padding: 5px 8px; min-width: 220px; }
+.pager { display: flex; gap: 8px; align-items: center; justify-content: flex-end; font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+#tooltip { position: fixed; pointer-events: none; z-index: 50; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.14); min-width: 140px; max-width: 280px; display: none; }
+#tooltip .tt-h { font-weight: 600; margin-bottom: 4px; color: var(--ink-2); }
+#tooltip .tt-r { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+#tooltip .tt-r span { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); }
+#tooltip .tt-r i { width: 12px; height: 2px; display: inline-block; }
+#tooltip .tt-r strong { font-variant-numeric: tabular-nums; }
+.method { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; font-size: 13px; color: var(--ink-2); }
+.method h4 { color: var(--ink); margin: 12px 0 4px; font-size: 13px; }
+.method ul { margin: 4px 0; padding-left: 18px; }
+.method code { font-size: 12px; background: var(--surface-2); padding: 1px 4px; border-radius: 4px; }
+.method a { color: var(--accent); }
+.banner { display: none; background: var(--warn-bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; }
+@media (max-width: 640px) { .filters { position: static; } .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .kpi .k-val { font-size: 24px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Multi-Year Renewals &amp; Protected ARR</h1>
+      <p class="subtitle">Term mix, protected revenue and multi-year discipline &middot; <span id="asofLabel"></span> &middot; <span class="badge" id="srcBadge">Sample data</span></p>
+    </div>
+    <div class="actions">
+      <input type="file" id="csvInput" accept=".csv,text/csv" hidden>
+      <button class="btn primary" id="btnLoad">Load CSV</button>
+      <button class="btn" id="btnSample">Use sample data</button>
+      <button class="btn" id="btnDlSample">Download sample CSV</button>
+      <button class="btn" id="btnTheme" aria-label="Toggle theme">Theme</button>
+    </div>
+  </header>
+  <div class="banner" id="banner"></div>
+
+  <div class="filters" role="group" aria-label="Filters">
+    <label>Close period<select id="fPeriod"></select></label>
+    <label>Product line<select id="fProduct"></select></label>
+    <label>Rep<select id="fRep"></select></label>
+    <label>Segment<select id="fSegment"></select></label>
+    <label>Region<select id="fRegion"></select></label>
+    <label>Measure<span class="seg" id="fWeight"><button data-v="count" aria-pressed="true">Count</button><button data-v="arr" aria-pressed="false">ARR</button></span></label>
+    <label>MY target %<input type="number" id="fTarget" min="0" max="100" step="1" value="40"></label>
+    <label>As of<input type="date" id="fAsof"></label>
+    <span class="spacer"></span>
+    <button class="chip-reset" id="btnReset">Reset filters</button>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <h2>Renewal term mix</h2>
+  <p class="section-note">Open renewals being worked by start month and quoted term, and how closed renewals have split by term length. Shading steps from 1 Year (lightest contrast) to 5+ Years (strongest).</p>
+  <div class="grid">
+    <section class="card" id="c-open"></section>
+    <section class="card" id="c-renmix"></section>
+  </div>
+
+  <h2>Protected ARR &amp; new business terms</h2>
+  <p class="section-note">ARR is <em>protected</em> in a year when it was papered in an earlier year and its contract runs past that year-end, so no renewal event falls inside the year.</p>
+  <div class="grid">
+    <section class="card" id="c-protected"></section>
+    <section class="card" id="c-nbmix"></section>
+    <section class="card" id="c-trend"></section>
+    <section class="card" id="c-schedule"></section>
+  </div>
+
+  <h2>Deeper cuts</h2>
+  <p class="section-note">Where multi-year adoption is coming from, whether it's being bought with discount, and whether it's reducing churn.</p>
+  <div class="grid three">
+    <section class="card" id="c-product"></section>
+    <section class="card" id="c-conv"></section>
+    <section class="card" id="c-churn"></section>
+    <section class="card" id="c-disc"></section>
+    <section class="card" id="c-uplift"></section>
+    <section class="card" id="c-segment"></section>
+  </div>
+
+  <h2>Scorecard</h2>
+  <p class="section-note">Grouped performance for the selected period. Click a column to sort; the tick in the MY bar is the target.</p>
+  <section class="card wide" id="c-score"></section>
+
+  <h2>Deal detail</h2>
+  <section class="card wide" id="c-deals"></section>
+
+  <h2>Methodology &amp; benchmarks</h2>
+  <div class="method" id="method">
+    <h4>Definitions</h4>
+    <ul>
+      <li><b>Multi-year (MY)</b>: a closed-won contract with <code>term_months</code> &gt; 12. Term buckets: 1 Year (&le;12), 2 Years (13–24), 3 Years (25–36), 4 Years (37–48), 5+ Years (&gt;48).</li>
+      <li><b>MY renewal rate</b>: MY closed-won renewals &divide; all closed-won renewals in the close period (by count, or by ARR when Measure = ARR).</li>
+      <li><b>Protected in year Y</b>: closed-won contracts with close date before Jan 1 of Y and contract end (<code>start_date + term_months</code>) on or after Jan 1 of Y+1. Accounts are counted distinctly; ARR is summed.</li>
+      <li><b>1Y → MY conversion</b>: share of closed-won renewals whose prior contract was 12 months that re-signed on a multi-year term.</li>
+      <li><b>Churn at renewal</b>: closed-lost renewals &divide; all closed renewals (won + lost), split by the prior contract's term.</li>
+      <li><b>Avg MY term</b>: mean <code>term_months</code> across closed-won MY deals (renewals and new business) in the period.</li>
+      <li><b>Discount breakeven</b>: the discount at which a 2- or 3-year deal yields the same expected revenue as annual renewals at typical churn — about 9% for 2 years and 13% for 3 years (The SaaS CFO). Deals above it are buying term with margin.</li>
+    </ul>
+    <h4>External benchmarks used</h4>
+    <ul>
+      <li>Multi-year share of SaaS contracts rose from ~25% (2022) to ~30% (2025) across 15,000+ contracts; buyers typically get only 2–3 pts more discount for multi-year (<a href="https://www.mostlymetrics.com/p/your-guide-to-negotiating-multi-year-deals" target="_blank" rel="noopener">Mostly Metrics / Tropic</a>).</li>
+      <li>Breakeven discounts of ~9% (2-yr) and ~13% (3-yr) vs annual, assuming equal renewal rates (<a href="https://www.thesaascfo.com/multi-year-saas-discounts/" target="_blank" rel="noopener">The SaaS CFO</a>).</li>
+      <li>Longer contracts defer churn more than they prevent it; median NRR ~102% and GRR ~91% across 1,500+ SaaS companies (<a href="https://www.saastr.com/saas-capital-yearly-contracts-dont-actually-increase-nrr" target="_blank" rel="noopener">SaaStr on SaaS Capital</a>). That's why this page tracks churn by prior term, not just MY rate.</li>
+      <li>Annual price escalators of 3–10% are common, with 5% often the standard and 3–5% where customers push back (<a href="https://blossomstreetventures.medium.com/price-escalators-in-saas-contracts-6555ea5abaac" target="_blank" rel="noopener">Blossom Street Ventures</a>).</li>
+    </ul>
+    <h4>Data</h4>
+    <p>Sample data is synthetic and generated in the browser. Load a CSV of opportunities (one row per renewal or new-business opportunity) to use your own book; columns are listed in the README. Everything runs locally in the browser — no data leaves the page.</p>
+  </div>
+</div>
+<div id="tooltip" role="status" aria-live="polite"></div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Sample data generator (deterministic). Produces a realistic opportunity-level
+// book: legacy contracts, new logos, closed renewals (won/lost) and open renewals.
+// Calibrated loosely to a ~$55-65M ARR B2B SaaS business where ~25-30% of
+// renewals close multi-year and new business skews multi-year.
+// Replace with your own CSV export via "Load CSV" — see README for schema.
+// ---------------------------------------------------------------------------
+function generateSampleData(ASOF) {
+  ASOF = ASOF || '2026-09-15';
+  let s = 20260915;
+  const rnd = () => { s |= 0; s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const normal = (m, sd) => m + sd * Math.sqrt(-2 * Math.log(rnd() || 1e-9)) * Math.cos(2 * Math.PI * rnd());
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const pickW = (items, wKey) => { const tot = items.reduce((a, i) => a + i[wKey], 0); let r = rnd() * tot; for (const i of items) { r -= i[wKey]; if (r <= 0) return i; } return items[items.length - 1]; };
+  const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
+  const iso = (d) => d.toISOString().slice(0, 10);
+  const D = (str) => new Date(str + 'T00:00:00Z');
+  const addDays = (str, n) => { const d = D(str); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
+  const addMonths = (str, n) => { const d = D(str); const day = d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + n); const dim = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate(); d.setUTCDate(Math.min(day, dim)); return iso(d); };
+  const randDate = (a, b) => { const x = D(a).getTime(), y = D(b).getTime(); return iso(new Date(x + rnd() * (y - x))); };
+  const monthsBetween = (a, b) => (D(b) - D(a)) / (1000 * 3600 * 24 * 30.44);
+
+  const PRODUCTS = [
+    { name: 'Web', w: .32, arr: 21000, my: 1.10 },
+    { name: 'Virtual Events', w: .26, arr: 29000, my: 0.90 },
+    { name: 'Platform', w: .15, arr: 17000, my: 0.80 },
+    { name: 'Advisory', w: .08, arr: 46000, my: 1.35 },
+    { name: 'CRM', w: .11, arr: 19000, my: 1.00 },
+    { name: 'Analytics', w: .08, arr: 14000, my: 0.70 },
+  ];
+  const AMS = [
+    { name: 'Avery Chen', region: 'North America', seg: 'Enterprise', my: 1.45, disc: 0.9 },
+    { name: 'Jordan Blake', region: 'North America', seg: 'Enterprise', my: 1.05, disc: 1.3 },
+    { name: 'Priya Nair', region: 'North America', seg: 'Mid-Market', my: 1.20, disc: 1.0 },
+    { name: 'Marcus Webb', region: 'North America', seg: 'Mid-Market', my: 0.70, disc: 1.1 },
+    { name: 'Sofia Alvarez', region: 'North America', seg: 'Mid-Market', my: 0.95, disc: 0.8 },
+    { name: "Liam O'Connor", region: 'EMEA', seg: 'Any', my: 0.85, disc: 1.4 },
+    { name: 'Hannah Kim', region: 'EMEA', seg: 'Any', my: 1.10, disc: 1.0 },
+    { name: 'Diego Ramos', region: 'APAC', seg: 'Any', my: 0.60, disc: 1.2 },
+  ];
+  const AES = [
+    { name: 'Ethan Brooks', region: 'North America', my: 1.2, disc: 1.0 },
+    { name: 'Maya Patel', region: 'North America', my: 1.0, disc: 0.9 },
+    { name: 'Noah Fischer', region: 'North America', my: 0.8, disc: 1.3 },
+    { name: 'Chloe Martin', region: 'EMEA', my: 0.9, disc: 1.1 },
+    { name: 'Omar Haddad', region: 'APAC', my: 0.8, disc: 1.0 },
+  ];
+  const REGIONS = [{ name: 'North America', w: .70 }, { name: 'EMEA', w: .22 }, { name: 'APAC', w: .08 }];
+  const PRE = ['North', 'Blue', 'Iron', 'Silver', 'Harbor', 'Summit', 'Cedar', 'Granite', 'Pioneer', 'Atlas', 'Beacon', 'Crest', 'Delta', 'Evergreen', 'Falcon', 'Frontier', 'Golden', 'Highland', 'Keystone', 'Lakeside', 'Liberty', 'Meridian', 'Oak', 'Pacific', 'Pinnacle', 'Quantum', 'Redwood', 'Ridge', 'Sterling', 'Sun', 'Titan', 'Vista', 'West', 'Willow', 'Zenith', 'Coastal', 'Prairie', 'Aurora', 'Orion', 'Nova'];
+  const MID = ['', 'field', 'point', 'stone', 'gate', 'bridge', 'view', 'wood', 'rock', 'star', 'line', 'haven'];
+  const SUF = ['Holdings', 'Bancorp', 'Therapeutics', 'Energy', 'Industries', 'Capital', 'REIT', 'Technologies', 'Financial', 'Resources', 'Pharma', 'Minerals', 'Group', 'Systems', 'Brands', 'Logistics'];
+  const usedNames = new Set();
+  const acctName = () => { for (let k = 0; k < 20; k++) { const n = pick(PRE) + pick(MID) + ' ' + pick(SUF); if (!usedNames.has(n)) { usedNames.add(n); return n; } } const n = pick(PRE) + ' ' + pick(SUF) + ' ' + usedNames.size; usedNames.add(n); return n; };
+
+  const rows = [];
+  let oppN = 0, acctN = 0;
+  const oppId = () => 'OPP-' + String(++oppN).padStart(6, '0');
+  const HORIZON = addDays(ASOF, 150);
+  // Multi-year propensity rises over time (the initiative is working)
+  const baseMY = (dateStr) => clamp(0.14 + 0.16 * monthsBetween('2024-01-01', dateStr) / 32, 0.10, 0.36);
+  const pickMYTerm = (nb) => nb ? pickW([{ t: 24, w: .35 }, { t: 36, w: .45 }, { t: 48, w: .12 }, { t: 60, w: .08 }], 'w').t
+                                : pickW([{ t: 24, w: .52 }, { t: 36, w: .40 }, { t: 48, w: .05 }, { t: 60, w: .03 }], 'w').t;
+  const discFor = (term, mult) => { const m = { 12: [1.5, 1.5], 24: [6.5, 3], 36: [10, 4], 48: [12.5, 4], 60: [14, 4] }[term] || [2, 2]; return Math.round(clamp(normal(m[0] * mult, m[1]), 0, 25) * 10) / 10; };
+
+  function amFor(region, seg) {
+    const pool = AMS.filter(a => a.region === region && (a.seg === 'Any' || a.seg === seg));
+    return pool.length ? pick(pool) : pick(AMS);
+  }
+
+  function simulate(acct, start, term, arr, firstRow) {
+    rows.push(firstRow);
+    let priorTerm = term;
+    for (let guard = 0; guard < 12; guard++) {
+      const end = addMonths(start, term);
+      if (end > HORIZON) break;
+      const am = acct.am;
+      let close = addDays(end, -Math.floor(rnd() * 45));
+      const base = { account_id: acct.id, account_name: acct.name, deal_type: 'Renewal', product_line: acct.product.name, rep: am.name, segment: acct.seg, region: acct.region, prior_term_months: priorTerm };
+      if (close > ASOF) {
+        // open renewal: quoted term
+        const p = clamp(baseMY(ASOF) * 1.05 * acct.product.my * am.my * (priorTerm > 12 ? 1.5 : 1), 0, .9);
+        const qTerm = rnd() < p ? pickMYTerm(false) : 12;
+        rows.push({ opportunity_id: oppId(), ...base, stage: 'Open', close_date: close, start_date: end, term_months: qTerm, arr: Math.round(arr * (1 + normal(3.5, 1.5) / 100)), discount_pct: discFor(qTerm, am.disc), uplift_pct: '' });
+        break;
+      }
+      const churnP = (priorTerm > 12 ? 0.095 : 0.13) * (acct.seg === 'Enterprise' ? 0.8 : 1.1) * (close >= '2026-01-01' ? 0.9 : 1);
+      if (rnd() < churnP) {
+        rows.push({ opportunity_id: oppId(), ...base, stage: 'Closed Lost', close_date: close, start_date: end, term_months: 12, arr: Math.round(arr), discount_pct: '', uplift_pct: '' });
+        return;
+      }
+      const p = clamp(baseMY(close) * acct.product.my * am.my * (priorTerm > 12 ? 1.5 : 1), 0, .9);
+      const nt = rnd() < p ? pickMYTerm(false) : 12;
+      const disc = discFor(nt, am.disc);
+      const upl = Math.round(clamp(nt > 12 ? normal(4, 1.5) : normal(4.8, 1.8), 0, 10) * 10) / 10;
+      arr = arr * (1 + upl / 100) * (1 - (nt > 12 ? disc / 100 * 0.6 : disc / 100 * 0.3));
+      if (rnd() < 0.04) acct.product = PRODUCTS[2]; // occasional migration to Platform
+      rows.push({ opportunity_id: oppId(), ...base, product_line: acct.product.name, stage: 'Closed Won', close_date: close, start_date: end, term_months: nt, arr: Math.round(arr), discount_pct: disc, uplift_pct: upl });
+      start = end; term = nt; priorTerm = nt;
+    }
+  }
+
+  // 1) Legacy book: contracts in force at 2024-01-01
+  for (let i = 0; i < 1650; i++) {
+    const region = pickW(REGIONS, 'w').name;
+    const seg = rnd() < 0.35 ? 'Enterprise' : 'Mid-Market';
+    const product = pickW(PRODUCTS, 'w');
+    const acct = { id: 'ACC-' + String(++acctN).padStart(5, '0'), name: acctName(), region, seg, product, am: amFor(region, seg) };
+    const r = rnd();
+    const term = r < 0.80 ? 12 : r < 0.92 ? 24 : 36;
+    const start = term === 12 ? randDate('2023-01-02', '2023-12-31') : term === 24 ? randDate('2022-01-02', '2023-12-31') : randDate('2021-01-02', '2023-12-31');
+    const arr = Math.max(4000, normal(product.arr, product.arr * 0.45)) * (seg === 'Enterprise' ? 1.6 : 1);
+    simulate(acct, start, term, arr, {
+      opportunity_id: oppId(), account_id: acct.id, account_name: acct.name, deal_type: 'Renewal', stage: 'Closed Won',
+      close_date: addDays(start, -Math.floor(rnd() * 30)), start_date: start, term_months: term, arr: Math.round(arr),
+      product_line: product.name, rep: acct.am.name, segment: seg, region, discount_pct: discFor(term, 1), uplift_pct: '', prior_term_months: ''
+    });
+  }
+  // 2) New logos from Jan 2024 to as-of
+  for (let m = '2024-01-01'; m <= ASOF; m = addMonths(m, 1)) {
+    const n = 16 + Math.floor(rnd() * 10);
+    for (let k = 0; k < n; k++) {
+      const close = randDate(m, addDays(addMonths(m, 1), -1));
+      if (close > ASOF) continue;
+      const region = pickW(REGIONS, 'w').name;
+      const seg = rnd() < 0.3 ? 'Enterprise' : 'Mid-Market';
+      const product = pickW(PRODUCTS, 'w');
+      const aePool = AES.filter(a => a.region === region); const ae = aePool.length ? pick(aePool) : pick(AES);
+      const acct = { id: 'ACC-' + String(++acctN).padStart(5, '0'), name: acctName(), region, seg, product, am: amFor(region, seg) };
+      const pMY = clamp((0.36 + 0.14 * monthsBetween('2024-01-01', close) / 32) * ae.my * product.my, 0.05, 0.85);
+      const term = rnd() < pMY ? pickMYTerm(true) : 12;
+      const start = addDays(close, Math.floor(rnd() * 20));
+      const arr = Math.max(4000, normal(product.arr, product.arr * 0.45)) * (seg === 'Enterprise' ? 1.5 : 1);
+      simulate(acct, start, term, arr, {
+        opportunity_id: oppId(), account_id: acct.id, account_name: acct.name, deal_type: 'New Business', stage: 'Closed Won',
+        close_date: close, start_date: start, term_months: term, arr: Math.round(arr), product_line: product.name, rep: ae.name,
+        segment: seg, region, discount_pct: discFor(term, ae.disc), uplift_pct: term > 12 ? Math.round(clamp(normal(4, 1.5), 0, 10) * 10) / 10 : '', prior_term_months: ''
+      });
+    }
+  }
+  rows.sort((a, b) => a.close_date < b.close_date ? -1 : a.close_date > b.close_date ? 1 : 0);
+  return rows;
+}
+
+</script>
+<script>
+(() => {
+'use strict';
+// ============================================================ utilities
+const $ = (s, r = document) => r.querySelector(s);
+const SVGNS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs = {}, parent) => { const n = document.createElementNS(SVGNS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; };
+const h = (tag, attrs = {}, text) => { const n = document.createElement(tag); for (const k in attrs) { if (k === 'class') n.className = attrs[k]; else n.setAttribute(k, attrs[k]); } if (text != null) n.textContent = text; return n; };
+const store = { get(k, d) { try { const v = localStorage.getItem('mydash:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('mydash:' + k, JSON.stringify(v)); } catch (e) {} } };
+const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const D = (s) => new Date(s + 'T00:00:00Z');
+const iso = (d) => d.toISOString().slice(0, 10);
+const addDays = (s, n) => { const d = D(s); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
+const addMonths = (s, n) => { const d = D(s); const day = d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + n); const dim = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate(); d.setUTCDate(Math.min(day, dim)); return iso(d); };
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const ymLabel = (ym) => MONTHS[+ym.slice(5, 7) - 1] + ' ' + ym.slice(2, 4);
+const ymList = (a, b) => { const out = []; let c = a + '-01'; while (c.slice(0, 7) <= b) { out.push(c.slice(0, 7)); c = addMonths(c, 1); } return out; };
+const fmtInt = (v) => Math.round(v).toLocaleString('en-US');
+const fmtMoney = (v) => { const a = Math.abs(v); if (a >= 1e6) return '$' + (v / 1e6).toFixed(a >= 1e7 ? 1 : 2) + 'M'; if (a >= 1e3) return '$' + Math.round(v / 1e3) + 'K'; return '$' + Math.round(v); };
+const fmtMoneyAxis = (v) => { const a = Math.abs(v); if (a >= 1e6) return '$' + +(v / 1e6).toFixed(1) + 'M'; if (a >= 1e3) return '$' + Math.round(v / 1e3) + 'K'; return '$' + Math.round(v); };
+const fmtPct = (v, d = 0) => (v == null || isNaN(v)) ? '–' : (v * 100).toFixed(d) + '%';
+const fmtPts = (v) => (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1) + ' pts';
+const sum = (arr, f) => arr.reduce((a, x) => a + f(x), 0);
+const mean = (arr, f) => arr.length ? sum(arr, f) / arr.length : NaN;
+const uniq = (arr) => [...new Set(arr)];
+const niceStep = (range, n) => { const raw = range / n; const p = Math.pow(10, Math.floor(Math.log10(raw || 1))); const m = raw / p; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p; };
+const niceTicks = (max, n = 4) => { if (!(max > 0)) return [0, 1]; const st = niceStep(max, n); const top = Math.ceil(max / st) * st; const t = []; for (let v = 0; v <= top + 1e-9; v += st) t.push(+v.toFixed(10)); return t; };
+
+const TERMS = ['1 Year', '2 Years', '3 Years', '4 Years', '5+ Years'];
+const termBucket = (m) => m <= 12 ? 0 : m <= 24 ? 1 : m <= 36 ? 2 : m <= 48 ? 3 : 4;
+const termColors = () => ['--t1', '--t2', '--t3', '--t4', '--t5'].map(cssVar);
+const BREAKEVEN = [null, 9, 13, null, null]; // % discount; The SaaS CFO (2-yr, 3-yr)
+
+// ============================================================ tooltip
+const tip = $('#tooltip');
+function showTip(evt, title, rows) {
+  tip.textContent = '';
+  tip.appendChild(h('div', { class: 'tt-h' }, title));
+  for (const r of rows) {
+    const row = h('div', { class: 'tt-r' });
+    const lab = h('span');
+    if (r.color) { const i = h('i'); i.style.background = r.color; lab.appendChild(i); }
+    lab.appendChild(document.createTextNode(r.label));
+    row.appendChild(lab); row.appendChild(h('strong', {}, r.value));
+    tip.appendChild(row);
+  }
+  tip.style.display = 'block';
+  let x, y;
+  if (evt.clientX != null && evt.type !== 'focus') { x = evt.clientX; y = evt.clientY; }
+  else { const b = evt.target.getBoundingClientRect(); x = b.left + b.width / 2; y = b.top; }
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  let left = x + 14, top = y + 14;
+  if (left + tw > innerWidth - 8) left = x - tw - 14;
+  if (top + th > innerHeight - 8) top = y - th - 14;
+  tip.style.left = Math.max(8, left) + 'px'; tip.style.top = Math.max(8, top) + 'px';
+}
+const hideTip = () => { tip.style.display = 'none'; };
+function bindTip(node, fn) {
+  node.setAttribute('tabindex', '0');
+  node.addEventListener('pointermove', (e) => { const t = fn(e); if (t) showTip(e, t.title, t.rows); });
+  node.addEventListener('focus', (e) => { const t = fn(e); if (t) showTip(e, t.title, t.rows); });
+  node.addEventListener('pointerleave', hideTip); node.addEventListener('blur', hideTip);
+}
+
+// ============================================================ card shell
+const cardState = {};
+function card(id, title, sub) {
+  const c = $('#' + id); c.textContent = '';
+  const head = h('div', { class: 'card-h' });
+  const t = h('div'); t.appendChild(h('h3', {}, title)); if (sub) t.appendChild(h('p', { class: 'sub' }, sub));
+  head.appendChild(t);
+  const btn = h('button', { class: 'tbl-toggle', type: 'button' }, cardState[id] === 'table' ? 'Chart' : 'Table');
+  head.appendChild(btn); c.appendChild(head);
+  const legend = h('div', { class: 'legend' }); c.appendChild(legend);
+  const chart = h('div', { class: 'chart' }); c.appendChild(chart);
+  const tw = h('div', { class: 'tablewrap' }); c.appendChild(tw);
+  const note = h('div', { class: 'note' }); c.appendChild(note);
+  const apply = () => { const tbl = cardState[id] === 'table'; chart.hidden = tbl; legend.hidden = tbl; tw.hidden = !tbl; btn.textContent = tbl ? 'Chart' : 'Table'; };
+  btn.onclick = () => { cardState[id] = cardState[id] === 'table' ? 'chart' : 'table'; apply(); };
+  apply();
+  return {
+    legend, chart, note,
+    table(headers, rows) { tw.textContent = ''; tw.appendChild(simpleTable(headers, rows)); },
+    empty(msg) { chart.textContent = ''; chart.appendChild(h('div', { class: 'empty' }, msg || 'No data for the current filters.')); },
+  };
+}
+function simpleTable(headers, rows) {
+  const t = h('table'); const tr = h('tr');
+  headers.forEach((x, i) => tr.appendChild(h('th', { class: i ? 'num' : '' }, x)));
+  const th = h('thead'); th.appendChild(tr); t.appendChild(th);
+  const tb = h('tbody');
+  for (const r of rows) { const row = h('tr'); r.forEach((x, i) => row.appendChild(h('td', { class: i ? 'num' : '' }, x))); tb.appendChild(row); }
+  t.appendChild(tb); return t;
+}
+function legendItems(container, items) {
+  container.textContent = '';
+  for (const it of items) {
+    const s = h('span'); const i = h('i', { class: it.kind || '' });
+    if (it.color) i.style.background = it.color;
+    s.appendChild(i); s.appendChild(document.createTextNode(it.label)); container.appendChild(s);
+  }
+}
+const roundRight = (x, y, w, hgt, r) => { r = Math.min(r, w / 2, hgt / 2); if (w <= 0) return ''; return `M${x},${y}h${w - r}a${r},${r} 0 0 1 ${r},${r}v${hgt - 2 * r}a${r},${r} 0 0 1 -${r},${r}h-${w - r}z`; };
+const roundTop = (x, y, w, hgt, r) => { r = Math.min(r, w / 2, hgt / 2); if (hgt <= 0) return ''; return `M${x},${y + hgt}v-${hgt - r}a${r},${r} 0 0 1 ${r},-${r}h${w - 2 * r}a${r},${r} 0 0 1 ${r},${r}v${hgt - r}z`; };
+
+// ============================================================ charts
+// Horizontal bars. rows: [{label, vals:[..], marker?, valueText?, tipRows?}]
+function hbar(container, o) {
+  container.textContent = '';
+  const W = Math.max(280, container.clientWidth);
+  const lw = o.labelW || 84, rw = o.rightW == null ? 58 : o.rightW;
+  const rowH = o.rowH || 22, barH = o.barH || 14, top = 20;
+  const pw = W - lw - rw;
+  const totals = o.rows.map(r => sum(r.vals, v => v || 0));
+  const max = o.pct ? 1 : Math.max(o.max || 0, ...totals, ...o.rows.map(r => r.marker || 0));
+  const ticks = o.pct ? [0, .25, .5, .75, 1] : niceTicks(max, 4);
+  const tmax = ticks[ticks.length - 1] || 1;
+  const x = (v) => lw + (v / tmax) * pw;
+  const H = top + o.rows.length * rowH + 4;
+  const svg = el('svg', { width: W, height: H, role: 'img', 'aria-label': o.aria || 'bar chart' }, container);
+  for (const t of ticks) {
+    el('line', { x1: x(t), x2: x(t), y1: top - 4, y2: H - 2, class: t === 0 ? 'base' : 'gridl' }, svg);
+    const tx = el('text', { x: x(t), y: 10, 'text-anchor': 'middle' }, svg); tx.textContent = o.fmtAxis ? o.fmtAxis(t) : (o.pct ? fmtPct(t) : fmtInt(t));
+  }
+  o.rows.forEach((r, i) => {
+    const y = top + i * rowH + (rowH - barH) / 2;
+    const lab = el('text', { x: lw - 8, y: y + barH / 2 + 4, 'text-anchor': 'end', class: 'lbl' }, svg); lab.textContent = r.label;
+    const tot = totals[i]; let cx = 0;
+    const vals = o.pct ? r.vals.map(v => tot ? (v || 0) / tot : 0) : r.vals.map(v => v || 0);
+    const lastIdx = vals.reduce((a, v, j) => v > 0 ? j : a, -1);
+    vals.forEach((v, j) => {
+      if (!(v > 0)) return;
+      const x0 = x(cx), x1 = x(cx + v); cx += v;
+      const w = Math.max(0, x1 - x0 - (j < lastIdx ? 2 : 0));
+      const col = (r.colors && r.colors[j]) || (o.colors && o.colors[j]) || cssVar('--series-1');
+      if (j === lastIdx) el('path', { d: roundRight(x0, y, w, barH, 4), fill: col }, svg);
+      else el('rect', { x: x0, y, width: w, height: barH, fill: col }, svg);
+    });
+    if (r.marker != null) el('line', { x1: x(r.marker), x2: x(r.marker), y1: y - 3, y2: y + barH + 3, stroke: cssVar('--ink'), 'stroke-width': 2 }, svg);
+    if (rw > 0) { const vt = el('text', { x: (o.pct ? x(1) : x(tot)) + 6, y: y + barH / 2 + 4, class: 'val' }, svg); vt.textContent = r.valueText != null ? r.valueText : (o.fmtVal ? o.fmtVal(tot) : fmtInt(tot)); }
+    const hit = el('rect', { x: 0, y: top + i * rowH, width: W, height: rowH, class: 'hit' }, svg);
+    hit.setAttribute('aria-label', r.label);
+    bindTip(hit, () => ({ title: r.label, rows: r.tipRows || (o.keys || ['Value']).map((k, j) => ({ label: k, color: o.colors && o.colors[j], value: (o.fmtVal ? o.fmtVal(r.vals[j] || 0) : fmtInt(r.vals[j] || 0)) + (o.pct && tot ? ' · ' + fmtPct((r.vals[j] || 0) / tot) : '') })) }));
+  });
+}
+// Vertical (stacked) bars. cols: [{label, vals:[..], valueText?, tipRows?}]
+function vbar(container, o) {
+  container.textContent = '';
+  const W = Math.max(280, container.clientWidth), H = o.height || 220;
+  const left = 50, right = 8, top = 18, bottom = 24;
+  const pw = W - left - right, ph = H - top - bottom;
+  const totals = o.cols.map(c => sum(c.vals, v => v || 0));
+  const ticks = niceTicks(Math.max(...totals, 1), 4); const tmax = ticks[ticks.length - 1];
+  const y = (v) => top + ph - (v / tmax) * ph;
+  const svg = el('svg', { width: W, height: H, role: 'img', 'aria-label': o.aria || 'column chart' }, container);
+  for (const t of ticks) { el('line', { x1: left, x2: W - right, y1: y(t), y2: y(t), class: t === 0 ? 'base' : 'gridl' }, svg); const tx = el('text', { x: left - 6, y: y(t) + 4, 'text-anchor': 'end' }, svg); tx.textContent = o.fmtAxis ? o.fmtAxis(t) : fmtInt(t); }
+  const bw = Math.min(64, (pw / o.cols.length) * 0.6), step = pw / o.cols.length;
+  o.cols.forEach((c, i) => {
+    const cx = left + step * i + step / 2, x0 = cx - bw / 2;
+    let acc = 0; const lastIdx = c.vals.reduce((a, v, j) => v > 0 ? j : a, -1);
+    c.vals.forEach((v, j) => {
+      if (!(v > 0)) return;
+      const y1 = y(acc), y2 = y(acc + v); acc += v;
+      const hh = Math.max(0, y1 - y2 - (j < lastIdx ? 2 : 0));
+      const col = (o.colors && o.colors[j]) || cssVar('--series-1');
+      if (j === lastIdx) el('path', { d: roundTop(x0, y2, bw, hh, 4), fill: col }, svg);
+      else el('rect', { x: x0, y: y1 - hh, width: bw, height: hh, fill: col }, svg);
+    });
+    const lt = el('text', { x: cx, y: H - 6, 'text-anchor': 'middle', class: 'lbl' }, svg); lt.textContent = c.label;
+    const vt = el('text', { x: cx, y: y(totals[i]) - 5, 'text-anchor': 'middle', class: 'val' }, svg); vt.textContent = c.valueText != null ? c.valueText : (o.fmtVal ? o.fmtVal(totals[i]) : fmtInt(totals[i]));
+    const hit = el('rect', { x: left + step * i, y: top, width: step, height: ph, class: 'hit' }, svg);
+    bindTip(hit, () => ({ title: c.label, rows: c.tipRows || (o.keys || ['Value']).map((k, j) => ({ label: k, color: o.colors && o.colors[j], value: o.fmtVal ? o.fmtVal(c.vals[j] || 0) : fmtInt(c.vals[j] || 0) })).concat(o.keys && o.keys.length > 1 ? [{ label: 'Total', value: o.fmtVal ? o.fmtVal(totals[i]) : fmtInt(totals[i]) }] : []) }));
+  });
+}
+// Line chart over categorical months, % axis. series: [{name, color, vals:[v|null]}], target
+function line(container, o) {
+  container.textContent = '';
+  const W = Math.max(280, container.clientWidth), H = o.height || 220;
+  const left = 40, right = 92, top = 12, bottom = 24;
+  const pw = W - left - right, ph = H - top - bottom, n = o.labels.length;
+  const allV = o.series.flatMap(s => s.vals).filter(v => v != null);
+  const ticks = niceTicks(Math.max(o.target || 0, ...allV, 0.1), 4); const tmax = ticks[ticks.length - 1];
+  const x = (i) => left + (n <= 1 ? pw / 2 : (i / (n - 1)) * pw);
+  const y = (v) => top + ph - (v / tmax) * ph;
+  const svg = el('svg', { width: W, height: H, role: 'img', 'aria-label': o.aria || 'line chart' }, container);
+  for (const t of ticks) { el('line', { x1: left, x2: left + pw, y1: y(t), y2: y(t), class: t === 0 ? 'base' : 'gridl' }, svg); const tx = el('text', { x: left - 6, y: y(t) + 4, 'text-anchor': 'end' }, svg); tx.textContent = fmtPct(t); }
+  const every = Math.ceil(n / Math.max(2, Math.floor(pw / 56)));
+  o.labels.forEach((l, i) => { if (i % every && i !== n - 1) return; const tx = el('text', { x: x(i), y: H - 6, 'text-anchor': 'middle' }, svg); tx.textContent = o.fmtLabel ? o.fmtLabel(l) : l; });
+  if (o.target != null) {
+    el('line', { x1: left, x2: left + pw, y1: y(o.target), y2: y(o.target), stroke: cssVar('--ink-2'), 'stroke-width': 1.5, 'stroke-dasharray': '5 4' }, svg);
+    const tt = el('text', { x: left + pw + 6, y: y(o.target) + 4 }, svg); tt.textContent = 'Target ' + fmtPct(o.target);
+  }
+  const ends = [];
+  for (const s of o.series) {
+    let d = ''; let pen = false;
+    s.vals.forEach((v, i) => { if (v == null) { pen = false; return; } d += (pen ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(v).toFixed(1); pen = true; });
+    el('path', { d, fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+    const li = s.vals.reduce((a, v, i) => v != null ? i : a, -1);
+    if (li >= 0) { el('circle', { cx: x(li), cy: y(s.vals[li]), r: 4, fill: s.color, stroke: cssVar('--surface'), 'stroke-width': 2 }, svg); ends.push({ y: y(s.vals[li]), x: x(li), text: s.name + ' ' + fmtPct(s.vals[li]) }); }
+  }
+  ends.sort((a, b) => a.y - b.y); for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
+  for (const e of ends) { const t = el('text', { x: e.x + 8, y: e.y + 4, class: 'lbl' }, svg); t.textContent = e.text; }
+  const cross = el('line', { y1: top, y2: top + ph, stroke: cssVar('--axis'), 'stroke-width': 1, visibility: 'hidden' }, svg);
+  const hit = el('rect', { x: left, y: top, width: pw, height: ph, fill: 'transparent' }, svg);
+  const idxAt = (e) => { const b = svg.getBoundingClientRect(); const px = (e.clientX != null ? e.clientX - b.left : x(n - 1)); return Math.max(0, Math.min(n - 1, Math.round(((px - left) / pw) * (n - 1)))); };
+  bindTip(hit, (e) => { const i = idxAt(e); cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('visibility', 'visible');
+    return { title: o.fmtLabel ? o.fmtLabel(o.labels[i]) : o.labels[i], rows: o.series.map(s => ({ label: s.name, color: s.color, value: fmtPct(s.vals[i]) + (s.n ? ' (n=' + fmtInt(s.n[i] || 0) + ')' : '') })) }; });
+  hit.addEventListener('pointerleave', () => cross.setAttribute('visibility', 'hidden'));
+}
+
+// ============================================================ data
+const REQUIRED = ['opportunity_id', 'account_id', 'deal_type', 'stage', 'close_date', 'start_date', 'term_months', 'arr', 'product_line', 'rep'];
+const ALIASES = {
+  opportunity_id: ['opportunity_id', 'opp_id', 'opportunity_id_18', 'id', 'opportunity'],
+  account_id: ['account_id', 'acct_id', 'account_id_18'],
+  account_name: ['account_name', 'account'],
+  deal_type: ['deal_type', 'type', 'opportunity_type', 'opp_type', 'record_type'],
+  stage: ['stage', 'stage_name', 'status'],
+  close_date: ['close_date', 'closed_date', 'closedate'],
+  start_date: ['start_date', 'contract_start_date', 'primary_quote_start_date', 'quote_start_date', 'service_start_date'],
+  term_months: ['term_months', 'term', 'renewal_term', 'contract_term', 'subscription_term', 'term_length'],
+  arr: ['arr', 'amount', 'arr_amount', 'annual_value', 'acv'],
+  product_line: ['product_line', 'product', 'primary_product', 'product_family'],
+  rep: ['rep', 'owner', 'opportunity_owner', 'account_manager', 'am', 'owner_name'],
+  segment: ['segment', 'market_segment', 'customer_segment'],
+  region: ['region', 'geo', 'territory'],
+  discount_pct: ['discount_pct', 'discount', 'discount_percent'],
+  uplift_pct: ['uplift_pct', 'uplift', 'price_uplift', 'escalator', 'escalator_pct'],
+  prior_term_months: ['prior_term_months', 'prior_term', 'previous_term'],
+};
+function parseCSV(text) {
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(f); f = ''; if (row.length > 1 || row[0] !== '') rows.push(row); row = []; }
+    else f += c;
+  }
+  if (f !== '' || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+const normKey = (k) => k.replace(/^﻿/, '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+function parseDate(v) {
+  if (!v) return null; v = String(v).trim();
+  let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+  m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/); if (m) { const y = m[3].length === 2 ? '20' + m[3] : m[3]; return `${y}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`; }
+  const d = new Date(v); return isNaN(d) ? null : iso(new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())));
+}
+const num = (v) => { if (v == null || v === '') return null; const n = parseFloat(String(v).replace(/[$,%\s]/g, '')); return isNaN(n) ? null : n; };
+function parseTerm(v) {
+  if (v == null || v === '') return null; const s = String(v).toLowerCase(); const n = num(s.replace(/[a-z]/g, ''));
+  if (n == null) return null; if (/year|yr/.test(s)) return n * 12; if (/month|mo/.test(s)) return n; return n <= 10 ? n * 12 : n;
+}
+const normType = (v) => { const s = String(v || '').toLowerCase(); if (s.includes('renew')) return 'Renewal'; if (s.includes('new')) return 'New Business'; return String(v || 'Other'); };
+const normStage = (v) => { const s = String(v || '').toLowerCase(); if (s.includes('won')) return 'Closed Won'; if (s.includes('lost') || s.includes('churn')) return 'Closed Lost'; return 'Open'; };
+function normalize(records) {
+  const out = [];
+  for (const r of records) {
+    const term = parseTerm(r.term_months), start = parseDate(r.start_date), close = parseDate(r.close_date), arr = num(r.arr);
+    if (!term || !start || !close || arr == null) continue;
+    const d = {
+      id: String(r.opportunity_id || ''), account: String(r.account_id || ''), accountName: String(r.account_name || r.account_id || ''),
+      type: normType(r.deal_type), stage: normStage(r.stage), close, start, termM: term, arr,
+      product: String(r.product_line || 'Unassigned'), rep: String(r.rep || 'Unassigned'), segment: String(r.segment || 'Unassigned'), region: String(r.region || 'Unassigned'),
+      disc: num(r.discount_pct), uplift: num(r.uplift_pct), priorTerm: parseTerm(r.prior_term_months),
+    };
+    d.end = addMonths(start, term); d.tb = termBucket(term); d.isMY = term > 12; d.won = d.stage === 'Closed Won'; d.lost = d.stage === 'Closed Lost'; d.open = d.stage === 'Open';
+    out.push(d);
+  }
+  return out;
+}
+function mapColumns(rows2d) {
+  const header = rows2d[0].map(normKey); const idx = {};
+  for (const k in ALIASES) { const j = header.findIndex(hd => ALIASES[k].includes(hd)); if (j >= 0) idx[k] = j; }
+  const missing = REQUIRED.filter(k => idx[k] == null);
+  const recs = rows2d.slice(1).map(r => { const o = {}; for (const k in idx) o[k] = r[idx[k]]; return o; });
+  return { recs, missing, header };
+}
+
+// ============================================================ state
+const SAMPLE_ASOF = '2026-09-15';
+const S = {
+  deals: [], source: 'sample', asof: SAMPLE_ASOF,
+  f: { period: 'ytd', product: 'All', rep: 'All', segment: 'All', region: 'All', weight: 'count', target: store.get('target', 40) },
+};
+let sampleCache = null;
+const sampleRows = () => sampleCache || (sampleCache = generateSampleData(SAMPLE_ASOF));
+
+function loadRecords(recs, source, asof) {
+  S.deals = normalize(recs); S.source = source; S.asof = asof;
+  $('#srcBadge').textContent = source === 'sample' ? 'Sample data' : source;
+  $('#fAsof').value = S.asof;
+  buildFilterOptions(); render();
+}
+function useSample() { hideBanner(); loadRecords(sampleRows(), 'sample', SAMPLE_ASOF); }
+function banner(msg) { const b = $('#banner'); b.textContent = msg; b.style.display = 'block'; }
+function hideBanner() { $('#banner').style.display = 'none'; }
+
+function buildFilterOptions() {
+  const fill = (sel, vals, cur) => { sel.textContent = ''; sel.appendChild(h('option', { value: 'All' }, 'All')); for (const v of vals) sel.appendChild(h('option', { value: v }, v)); sel.value = vals.includes(cur) ? cur : 'All'; };
+  fill($('#fProduct'), uniq(S.deals.map(d => d.product)).sort(), S.f.product);
+  fill($('#fRep'), uniq(S.deals.map(d => d.rep)).sort(), S.f.rep);
+  fill($('#fSegment'), uniq(S.deals.map(d => d.segment)).sort(), S.f.segment);
+  fill($('#fRegion'), uniq(S.deals.map(d => d.region)).sort(), S.f.region);
+  for (const k of ['product', 'rep', 'segment', 'region']) S.f[k] = $('#f' + k[0].toUpperCase() + k.slice(1)).value;
+  const ay = +S.asof.slice(0, 4);
+  const years = uniq(S.deals.filter(d => !d.open).map(d => +d.close.slice(0, 4))).filter(y => y <= ay).sort((a, b) => b - a);
+  const ps = $('#fPeriod'); ps.textContent = '';
+  const opts = [['ytd', 'YTD ' + ay], ['l12', 'Last 12 months'], ['l24', 'Last 24 months']].concat(years.filter(y => y < ay).map(y => ['fy' + y, 'FY ' + y])).concat([['all', 'All time']]);
+  for (const [v, l] of opts) ps.appendChild(h('option', { value: v }, l));
+  ps.value = opts.some(o => o[0] === S.f.period) ? S.f.period : 'ytd'; S.f.period = ps.value;
+}
+function periodRange(p, asof) {
+  const ay = asof.slice(0, 4);
+  if (p === 'ytd') return [ay + '-01-01', asof];
+  if (p === 'l12') return [addDays(addMonths(asof, -12), 1), asof];
+  if (p === 'l24') return [addDays(addMonths(asof, -24), 1), asof];
+  if (p.startsWith('fy')) { const y = p.slice(2); return [y + '-01-01', y + '-12-31' < asof ? y + '-12-31' : asof]; }
+  return ['0000-01-01', asof];
+}
+const shiftRange = (r, m) => [r[0] === '0000-01-01' ? r[0] : addMonths(r[0], m), addMonths(r[1], m)];
+
+// ============================================================ metrics
+const W = (d) => S.f.weight === 'arr' ? d.arr : 1;
+const fmtW = (v) => S.f.weight === 'arr' ? fmtMoney(v) : fmtInt(v);
+const unitW = () => S.f.weight === 'arr' ? 'ARR' : 'deals';
+const myRate = (arr) => { const t = sum(arr, W); return t ? sum(arr.filter(d => d.isMY), W) / t : NaN; };
+function baseDeals() {
+  const f = S.f;
+  return S.deals.filter(d => (f.product === 'All' || d.product === f.product) && (f.rep === 'All' || d.rep === f.rep) && (f.segment === 'All' || d.segment === f.segment) && (f.region === 'All' || d.region === f.region));
+}
+function protectedIn(base, Y) {
+  const ds = base.filter(d => d.won && +d.close.slice(0, 4) < Y && d.end >= `${Y + 1}-01-01`);
+  return { accounts: new Set(ds.map(d => d.account)).size, arr: sum(ds, d => d.arr), deals: ds };
+}
+const activeBook = (base, at) => base.filter(d => d.won && d.start <= at && d.end > at);
+
+// ============================================================ render
+function render() {
+  hideTip();
+  const base = baseDeals();
+  const range = periodRange(S.f.period, S.asof);
+  const inR = (d, r) => d.close >= r[0] && d.close <= r[1];
+  const closed = base.filter(d => !d.open && inR(d, range));
+  const wonRen = closed.filter(d => d.won && d.type === 'Renewal');
+  const wonNB = closed.filter(d => d.won && d.type === 'New Business');
+  const prevRange = shiftRange(range, -12);
+  const prevWonRen = base.filter(d => d.won && d.type === 'Renewal' && inR(d, prevRange));
+  const target = S.f.target / 100;
+  const Y = +S.asof.slice(0, 4);
+  const active = activeBook(base, S.asof); const activeARR = sum(active, d => d.arr);
+  const colors = termColors();
+  $('#asofLabel').textContent = 'As of ' + new Date(S.asof + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  // ---------- KPIs
+  const p0 = protectedIn(base, Y), p1 = protectedIn(base, Y + 1);
+  const mr = myRate(wonRen), mrPrev = myRate(prevWonRen);
+  const myWon = closed.filter(d => d.won && d.isMY);
+  const avgTerm = mean(myWon, d => d.termM);
+  const kp = $('#kpis'); kp.textContent = '';
+  const kpi = (label, sub, val, foot, cls) => { const k = h('div', { class: 'kpi' }); k.appendChild(h('div', { class: 'k-label' }, label)); k.appendChild(h('div', { class: 'k-sub' }, sub)); k.appendChild(h('div', { class: 'k-val' }, val)); const f = h('div', { class: 'k-foot' }); if (cls) f.classList.add(cls); f.textContent = foot; k.appendChild(f); kp.appendChild(k); };
+  kpi('# Accounts protected in ' + Y, 'Papered before ' + Y, fmtInt(p0.accounts), fmtInt(p0.deals.length) + ' contracts');
+  kpi('# Accounts protected in ' + (Y + 1), 'Papered before ' + (Y + 1), fmtInt(p1.accounts), (p1.accounts - p0.accounts >= 0 ? '+' : '−') + fmtInt(Math.abs(p1.accounts - p0.accounts)) + ' vs ' + Y);
+  kpi('ARR protected in ' + Y, 'Papered before ' + Y, fmtMoney(p0.arr), activeARR ? fmtPct(p0.arr / activeARR, 0) + ' of active ARR (' + fmtMoney(activeARR) + ')' : '');
+  kpi('ARR protected in ' + (Y + 1), 'Papered before ' + (Y + 1) + ' (so far)', fmtMoney(p1.arr), activeARR ? fmtPct(p1.arr / activeARR, 0) + ' of active ARR' : '');
+  const dT = mr - target;
+  kpi('MY renewal rate', $('#fPeriod').selectedOptions[0].textContent + ' · by ' + (S.f.weight === 'arr' ? 'ARR' : 'count'), fmtPct(mr, 0),
+    isNaN(mr) ? 'No closed renewals' : fmtPts(dT) + ' vs ' + fmtPct(target) + ' target' + (isNaN(mrPrev) ? '' : ' · ' + fmtPts(mr - mrPrev) + ' YoY'), isNaN(mr) ? '' : dT >= 0 ? 'up' : 'down');
+  kpi('Avg multi-year term', 'Closed-won MY deals in period', isNaN(avgTerm) ? '–' : Math.round(avgTerm) + ' mo', fmtInt(myWon.length) + ' MY deals · ' + fmtMoney(sum(myWon, d => d.arr)) + ' ARR');
+
+  const termLegend = (c) => legendItems(c.legend, TERMS.map((t, i) => ({ label: t, color: colors[i] })));
+
+  // ---------- Open renewals by start month
+  {
+    const c = card('c-open', 'Open renewals by start month & quoted term', 'Renewals being worked, by contract start month (' + unitW() + ')');
+    const open = base.filter(d => d.open && d.type === 'Renewal');
+    const months = uniq(open.map(d => d.start.slice(0, 7))).sort();
+    if (!open.length) c.empty('No open renewals for the current filters.');
+    else {
+      termLegend(c);
+      const rows = months.map(m => { const ds = open.filter(d => d.start.slice(0, 7) === m); const vals = TERMS.map((_, i) => sum(ds.filter(d => d.tb === i), W)); return { label: ymLabel(m), vals, valueText: fmtW(sum(vals, v => v)) + ' · ' + fmtPct(myRate(ds)) + ' MY' }; });
+      hbar(c.chart, { rows, keys: TERMS, colors, fmtVal: fmtW, rightW: 110, fmtAxis: S.f.weight === 'arr' ? fmtMoneyAxis : fmtInt });
+      c.table(['Start month'].concat(TERMS, ['Total', 'MY %']), rows.map(r => [r.label].concat(r.vals.map(fmtW), [fmtW(sum(r.vals, v => v)), fmtPct(1 - r.vals[0] / (sum(r.vals, v => v) || 1))])));
+      c.note.textContent = fmtInt(open.length) + ' open renewals · ' + fmtMoney(sum(open, d => d.arr)) + ' ARR · ' + fmtPct(myRate(open)) + ' quoted multi-year';
+    }
+  }
+  // ---------- Closed renewal term mix by month
+  const monthsFor = (ds, cap) => { if (!ds.length) return []; const lo = ds.reduce((a, d) => d.close < a ? d.close : a, '9999'); const ms = ymList(lo.slice(0, 7), range[1].slice(0, 7)); return ms.slice(-cap); };
+  const mixCard = (id, title, ds, label) => {
+    const c = card(id, title, '% of closed-won ' + label + ' by term length, by close month (' + unitW() + ')');
+    const months = monthsFor(ds, 18);
+    if (!months.length) { c.empty(); return; }
+    termLegend(c);
+    const rows = months.map(m => { const x = ds.filter(d => d.close.slice(0, 7) === m); return { label: ymLabel(m), vals: TERMS.map((_, i) => sum(x.filter(d => d.tb === i), W)), valueText: fmtPct(myRate(x)) + ' MY' }; });
+    hbar(c.chart, { rows, keys: TERMS, colors, pct: true, fmtVal: fmtW, rightW: 64 });
+    c.table(['Close month'].concat(TERMS, ['MY %']), rows.map(r => { const t = sum(r.vals, v => v) || 1; return [r.label].concat(r.vals.map(v => fmtPct(v / t)), [r.valueText.replace(' MY', '')]); }));
+    c.note.textContent = 'Period average: ' + fmtPct(myRate(ds), 1) + ' multi-year across ' + fmtInt(ds.length) + ' ' + label + (months.length === 18 ? ' · showing last 18 months' : '');
+  };
+  mixCard('c-renmix', 'Closed-won renewals by term length', wonRen, 'renewals');
+  mixCard('c-nbmix', 'Closed-won new business by term length', wonNB, 'new business deals');
+
+  // ---------- Protected ARR forward curve
+  {
+    const c = card('c-protected', 'Protected ARR by year', 'ARR already contracted through each year-end, from deals papered before that year');
+    const yrs = [Y - 1, Y, Y + 1, Y + 2, Y + 3];
+    const cols = yrs.map(y => { const p = protectedIn(base, y); return { label: String(y), vals: [p.arr], p, valueText: fmtMoney(p.arr), tipRows: [{ label: 'Protected ARR', color: cssVar('--series-1'), value: fmtMoney(p.arr) }, { label: 'Accounts', value: fmtInt(p.accounts) }, { label: 'Contracts', value: fmtInt(p.deals.length) }] }; });
+    vbar(c.chart, { cols, fmtVal: fmtMoney, fmtAxis: fmtMoneyAxis, keys: ['Protected ARR'] });
+    c.table(['Year', 'Protected ARR', 'Accounts', 'Contracts'], cols.map(x => [x.label, fmtMoney(x.p.arr), fmtInt(x.p.accounts), fmtInt(x.p.deals.length)]));
+    c.note.textContent = 'Future years only include contracts signed so far — they grow as new multi-year deals close.';
+  }
+  // ---------- MY trend
+  {
+    const c = card('c-trend', 'Multi-year rate trend vs target', 'Monthly share of closed-won deals signed multi-year (' + unitW() + ')');
+    const allWon = closed.filter(d => d.won);
+    const months = monthsFor(allWon, 24);
+    if (!months.length) c.empty();
+    else {
+      const ser = (ds) => months.map(m => { const x = ds.filter(d => d.close.slice(0, 7) === m); return x.length ? myRate(x) : null; });
+      const cnt = (ds) => months.map(m => ds.filter(d => d.close.slice(0, 7) === m).length);
+      const series = [{ name: 'Renewals', color: cssVar('--series-1'), vals: ser(wonRen), n: cnt(wonRen) }, { name: 'New biz', color: cssVar('--series-2'), vals: ser(wonNB), n: cnt(wonNB) }];
+      legendItems(c.legend, [{ label: 'Renewals', color: series[0].color, kind: 'line' }, { label: 'New business', color: series[1].color, kind: 'line' }, { label: 'Target (renewals)', kind: 'dash' }]);
+      line(c.chart, { labels: months, fmtLabel: ymLabel, series, target });
+      c.table(['Month', 'Renewals MY %', 'Renewals n', 'New biz MY %', 'New biz n'], months.map((m, i) => [ymLabel(m), fmtPct(series[0].vals[i]), fmtInt(series[0].n[i]), fmtPct(series[1].vals[i]), fmtInt(series[1].n[i])]));
+    }
+  }
+  // ---------- Renewal schedule of active book
+  {
+    const c = card('c-schedule', 'When the active book comes up for renewal', 'Active contracts (' + fmtMoney(activeARR) + ' ARR) by renewal year and current term');
+    if (!active.length) c.empty();
+    else {
+      termLegend(c);
+      const buckets = [Y, Y + 1, Y + 2, Y + 3, Y + 4];
+      const cols = buckets.map((y, bi) => { const ds = active.filter(d => { const ey = +d.end.slice(0, 4); return bi === buckets.length - 1 ? ey >= y : ey === y; }); return { label: bi === 0 ? 'Rest of ' + y : bi === buckets.length - 1 ? y + '+' : String(y), vals: TERMS.map((_, i) => sum(ds.filter(d => d.tb === i), d => d.arr)) }; });
+      vbar(c.chart, { cols, keys: TERMS, colors, fmtVal: fmtMoney, fmtAxis: fmtMoneyAxis });
+      c.table(['Renewal year'].concat(TERMS, ['Total']), cols.map(x => [x.label].concat(x.vals.map(fmtMoney), [fmtMoney(sum(x.vals, v => v))])));
+      const nextShare = sum(cols[0].vals, v => v) + sum(cols[1].vals, v => v);
+      c.note.textContent = fmtPct(nextShare / activeARR) + ' of active ARR renews before the end of ' + (Y + 1) + '. Shown in ARR regardless of the Measure toggle.';
+    }
+  }
+  // ---------- by product line
+  const groupRate = (id, title, sub, key, labelW) => {
+    const c = card(id, title, sub);
+    const groups = uniq(wonRen.map(d => d[key])).sort();
+    if (!groups.length) { c.empty(); return; }
+    const rows = groups.map(g => { const ds = wonRen.filter(d => d[key] === g); const r = myRate(ds); return { label: g, vals: [r], marker: target, r, n: ds.length, valueText: fmtPct(r), tipRows: [{ label: 'MY rate', color: cssVar('--series-1'), value: fmtPct(r, 1) }, { label: 'vs target', value: fmtPts(r - target) }, { label: 'Renewals won', value: fmtInt(ds.length) }, { label: 'MY ARR', value: fmtMoney(sum(ds.filter(d => d.isMY), d => d.arr)) }] }; }).sort((a, b) => b.r - a.r);
+    legendItems(c.legend, [{ label: 'MY renewal rate', color: cssVar('--series-1') }, { label: 'Target ' + fmtPct(target), kind: 'tick' }]);
+    hbar(c.chart, { rows, max: Math.max(target, ...rows.map(r => r.r)), fmtAxis: (v) => fmtPct(v), labelW: labelW || 104, rightW: 44 });
+    c.table([title.split(' by ')[1] || 'Group', 'MY rate', 'vs target', 'Renewals won'], rows.map(r => [r.label, fmtPct(r.r, 1), fmtPts(r.r - target), fmtInt(r.n)]));
+    return c;
+  };
+  groupRate('c-product', 'MY renewal rate by product line', 'Closed-won renewals in period (' + unitW() + ')', 'product');
+  {
+    const c = groupRate('c-segment', 'MY renewal rate by segment & region', 'Closed-won renewals in period (' + unitW() + ')', 'segment');
+    if (c) { // append region rows
+      const regions = uniq(wonRen.map(d => d.region)).sort();
+      const segs = uniq(wonRen.map(d => d.segment)).sort();
+      const rows = segs.map(g => ({ g, ds: wonRen.filter(d => d.segment === g) })).concat(regions.map(g => ({ g, ds: wonRen.filter(d => d.region === g) })))
+        .map(({ g, ds }) => { const r = myRate(ds); return { label: g, vals: [r], marker: target, r, n: ds.length, valueText: fmtPct(r), tipRows: [{ label: 'MY rate', color: cssVar('--series-1'), value: fmtPct(r, 1) }, { label: 'vs target', value: fmtPts(r - target) }, { label: 'Renewals won', value: fmtInt(ds.length) }] }; });
+      hbar(c.chart, { rows, max: Math.max(target, ...rows.map(r => r.r)), fmtAxis: (v) => fmtPct(v), labelW: 104, rightW: 44 });
+      c.table(['Segment / region', 'MY rate', 'vs target', 'Renewals won'], rows.map(r => [r.label, fmtPct(r.r, 1), fmtPts(r.r - target), fmtInt(r.n)]));
+      c.note.textContent = 'First ' + segs.length + ' rows are segments, then regions.';
+    }
+  }
+  // ---------- term flow (conversion)
+  {
+    const c = card('c-conv', 'Renewal term flow', 'Prior term → new term for closed-won renewals (' + unitW() + ')');
+    const ds = wonRen.filter(d => d.priorTerm);
+    if (!ds.length) c.empty('Needs prior_term_months to show term flow.');
+    else {
+      const cats = [['1Y → MY (converted)', d => d.priorTerm <= 12 && d.isMY], ['MY → MY (re-upped)', d => d.priorTerm > 12 && d.isMY], ['MY → 1Y (reverted)', d => d.priorTerm > 12 && !d.isMY], ['1Y → 1Y', d => d.priorTerm <= 12 && !d.isMY]];
+      const tot = sum(ds, W);
+      const rows = cats.map(([l, f]) => { const v = sum(ds.filter(f), W); return { label: l, vals: [v], valueText: fmtPct(v / tot) }; });
+      hbar(c.chart, { rows, fmtVal: fmtW, labelW: 136, rightW: 44, fmtAxis: S.f.weight === 'arr' ? fmtMoneyAxis : fmtInt, keys: [unitW()] });
+      const oneY = ds.filter(d => d.priorTerm <= 12), myP = ds.filter(d => d.priorTerm > 12);
+      const conv = myRate(oneY), keep = myRate(myP);
+      c.note.textContent = '1Y→MY conversion ' + fmtPct(conv, 1) + ' · MY retention on term ' + fmtPct(keep, 1) + '.';
+      c.table(['Flow', unitW(), 'Share'], rows.map(r => [r.label, fmtW(r.vals[0]), r.valueText]));
+    }
+  }
+  // ---------- churn by prior term
+  {
+    const c = card('c-churn', 'Churn at renewal by prior term', 'Lost ÷ (won + lost) renewals closed in period (' + unitW() + ')');
+    const ren = closed.filter(d => d.type === 'Renewal' && d.priorTerm);
+    if (!ren.length) c.empty('Needs prior_term_months to split churn by prior term.');
+    else {
+      const rows = TERMS.map((t, i) => { const ds = ren.filter(d => termBucket(d.priorTerm) === i); const tw = sum(ds, W), lw = sum(ds.filter(d => d.lost), W); return { label: 'Prior ' + t, vals: [tw ? lw / tw : 0], n: ds.length, lost: ds.filter(d => d.lost).length, valueText: tw ? fmtPct(lw / tw, 1) : '–', color: colors[i], colors: [colors[i]] }; }).filter(r => r.n > 0);
+      c.chart.textContent = '';
+      hbar(c.chart, { rows: rows.map(r => ({ ...r, tipRows: [{ label: 'Churn rate', color: r.color, value: r.valueText }, { label: 'Lost', value: fmtInt(r.lost) }, { label: 'Closed renewals', value: fmtInt(r.n) }] })), fmtAxis: (v) => fmtPct(v), labelW: 104, rightW: 48, max: Math.max(...rows.map(r => r.vals[0]), 0.05) });
+      const r1 = ren.filter(d => d.priorTerm <= 12), rM = ren.filter(d => d.priorTerm > 12);
+      const cr = (ds) => { const t = sum(ds, W); return t ? sum(ds.filter(d => d.lost), W) / t : NaN; };
+      c.note.textContent = 'Coming off 1-year: ' + fmtPct(cr(r1), 1) + ' churn · coming off multi-year: ' + fmtPct(cr(rM), 1) + '. Benchmarks say MY mostly defers churn, so watch this gap.';
+      c.table(['Prior term', 'Churn rate', 'Lost', 'Closed renewals'], rows.map(r => [r.label, r.valueText, fmtInt(r.lost), fmtInt(r.n)]));
+    }
+  }
+  // ---------- discount discipline
+  {
+    const c = card('c-disc', 'Average discount by term vs breakeven', 'Closed-won deals in period with a discount recorded');
+    const ds = closed.filter(d => d.won && d.disc != null);
+    if (!ds.length) c.empty('Needs discount_pct to show discount discipline.');
+    else {
+      const rows = TERMS.map((t, i) => { const x = ds.filter(d => d.tb === i); const be = BREAKEVEN[i]; const over = be != null ? x.filter(d => d.disc > be).length : null; const avg = mean(x, d => d.disc) / 100; return { label: t, vals: [avg], marker: be != null ? be / 100 : null, n: x.length, over, color: colors[i], colors: [colors[i]], valueText: x.length ? (avg * 100).toFixed(1) + '%' : '–', tipRows: [{ label: 'Avg discount', color: colors[i], value: x.length ? (avg * 100).toFixed(1) + '%' : '–' }].concat(be != null ? [{ label: 'Breakeven', value: be + '%' }, { label: 'Deals above breakeven', value: fmtInt(over) + ' of ' + fmtInt(x.length) }] : [{ label: 'Deals', value: fmtInt(x.length) }]) }; }).filter(r => r.n > 0);
+      legendItems(c.legend, [{ label: 'Breakeven discount (The SaaS CFO)', kind: 'tick' }]);
+      hbar(c.chart, { rows, fmtAxis: (v) => (v * 100).toFixed(0) + '%', labelW: 70, rightW: 48, max: Math.max(0.14, ...rows.map(r => r.vals[0])) });
+      const overTot = sum(rows.filter(r => r.over != null), r => r.over), elig = sum(rows.filter(r => r.over != null), r => r.n);
+      c.note.textContent = elig ? fmtInt(overTot) + ' of ' + fmtInt(elig) + ' 2–3 year deals (' + fmtPct(overTot / elig) + ') were discounted past breakeven.' : '';
+      c.table(['Term', 'Avg discount', 'Breakeven', 'Deals > breakeven', 'Deals'], rows.map(r => [r.label, r.valueText, r.marker != null ? (r.marker * 100) + '%' : '–', r.over != null ? fmtInt(r.over) : '–', fmtInt(r.n)]));
+    }
+  }
+  // ---------- uplift
+  {
+    const c = card('c-uplift', 'Average price uplift by term', 'Closed-won renewals with an uplift / escalator recorded');
+    const ds = wonRen.filter(d => d.uplift != null);
+    if (!ds.length) c.empty('Needs uplift_pct to show price uplift.');
+    else {
+      const rows = TERMS.map((t, i) => { const x = ds.filter(d => d.tb === i); const a = mean(x, d => d.uplift) / 100; return { label: t, vals: [a], n: x.length, color: colors[i], colors: [colors[i]], valueText: x.length ? (a * 100).toFixed(1) + '%' : '–', tipRows: [{ label: 'Avg uplift', color: colors[i], value: (a * 100).toFixed(1) + '%' }, { label: 'Deals', value: fmtInt(x.length) }] }; }).filter(r => r.n > 0);
+      hbar(c.chart, { rows, fmtAxis: (v) => (v * 100).toFixed(0) + '%', labelW: 70, rightW: 48 });
+      c.note.textContent = 'Benchmark: 3–10% annual escalators are common; 5% is a typical standard (Blossom Street Ventures).';
+      c.table(['Term', 'Avg uplift', 'Deals'], rows.map(r => [r.label, r.valueText, fmtInt(r.n)]));
+    }
+  }
+  renderScorecard(base, closed, target, Y);
+  renderDeals(base, range);
+}
+
+// ============================================================ scorecard
+let scoreGroup = store.get('scoreGroup', 'rep'), scoreSort = { k: 'renMY', dir: -1 };
+function renderScorecard(base, closed, target, Y) {
+  const c = $('#c-score'); c.textContent = '';
+  const head = h('div', { class: 'card-h' }); const t = h('div'); t.appendChild(h('h3', {}, 'Multi-year scorecard'));
+  t.appendChild(h('p', { class: 'sub' }, 'Renewals & new business closed in period, open renewals as of today, protected ARR for ' + (Y + 1)));
+  head.appendChild(t);
+  const seg = h('span', { class: 'seg' });
+  for (const [v, l] of [['rep', 'Rep'], ['product', 'Product line'], ['segment', 'Segment'], ['region', 'Region']]) { const b = h('button', { type: 'button', 'aria-pressed': String(scoreGroup === v) }, l); b.onclick = () => { scoreGroup = v; store.set('scoreGroup', v); render(); }; seg.appendChild(b); }
+  head.appendChild(seg); c.appendChild(head);
+  const key = scoreGroup;
+  const groups = uniq(base.map(d => d[key])).sort();
+  const rows = groups.map(g => {
+    const cl = closed.filter(d => d[key] === g); const ren = cl.filter(d => d.won && d.type === 'Renewal'); const nb = cl.filter(d => d.won && d.type === 'New Business');
+    const lost = cl.filter(d => d.lost && d.type === 'Renewal');
+    const my = cl.filter(d => d.won && d.isMY);
+    const discD = cl.filter(d => d.won && d.disc != null && BREAKEVEN[d.tb] != null);
+    const open = base.filter(d => d[key] === g && d.open && d.type === 'Renewal');
+    const prot = protectedIn(base.filter(d => d[key] === g), Y + 1);
+    return { g, ren: ren.length, renMY: myRate(ren), nb: nb.length, nbMY: myRate(nb), churn: (ren.length + lost.length) ? sum(lost, W) / (sum(ren, W) + sum(lost, W)) : NaN,
+      avgTerm: mean(my, d => d.termM), avgDisc: mean(my.filter(d => d.disc != null), d => d.disc), overBE: discD.filter(d => d.disc > BREAKEVEN[d.tb]).length, beN: discD.length,
+      prot: prot.arr, open: open.length, openMY: myRate(open) };
+  }).filter(r => r.ren + r.nb + r.open > 0);
+  const cols = [
+    ['g', key === 'rep' ? 'Rep' : key === 'product' ? 'Product line' : key[0].toUpperCase() + key.slice(1), r => r.g],
+    ['ren', 'Renewals won', r => fmtInt(r.ren)],
+    ['renMY', 'Renewal MY %', null],
+    ['nb', 'New biz won', r => fmtInt(r.nb)],
+    ['nbMY', 'New biz MY %', r => r.nb ? fmtPct(r.nbMY) : '–'],
+    ['churn', 'Renewal churn', r => fmtPct(r.churn, 1)],
+    ['avgTerm', 'Avg MY term', r => isNaN(r.avgTerm) ? '–' : Math.round(r.avgTerm) + ' mo'],
+    ['avgDisc', 'Avg MY discount', r => isNaN(r.avgDisc) ? '–' : r.avgDisc.toFixed(1) + '%'],
+    ['overBE', '> Breakeven', null],
+    ['prot', 'Protected ' + (Y + 1), r => fmtMoney(r.prot)],
+    ['open', 'Open renewals', r => fmtInt(r.open)],
+    ['openMY', 'Open quoted MY %', r => r.open ? fmtPct(r.openMY) : '–'],
+  ];
+  const sk = scoreSort.k; rows.sort((a, b) => { const x = a[sk], y = b[sk]; if (typeof x === 'string') return x.localeCompare(y) * scoreSort.dir; return ((isNaN(x) ? -1e18 : x) - (isNaN(y) ? -1e18 : y)) * scoreSort.dir; });
+  const wrap = h('div', { class: 'tablewrap' }); const tbl = h('table'); const thead = h('thead'); const tr = h('tr');
+  cols.forEach(([k, l], i) => { const th = h('th', { class: 'sortable' + (i ? ' num' : ''), scope: 'col' }, l + (scoreSort.k === k ? (scoreSort.dir > 0 ? ' ▲' : ' ▼') : '')); th.onclick = () => { scoreSort = { k, dir: scoreSort.k === k ? -scoreSort.dir : (k === 'g' ? 1 : -1) }; render(); }; tr.appendChild(th); });
+  thead.appendChild(tr); tbl.appendChild(thead);
+  const tb = h('tbody'); const maxR = Math.max(target, ...rows.map(r => isNaN(r.renMY) ? 0 : r.renMY), 0.01);
+  for (const r of rows) {
+    const row = h('tr');
+    cols.forEach(([k, , f], i) => {
+      const td = h('td', { class: i ? 'num' : '' });
+      if (k === 'renMY') {
+        const ib = h('span', { class: 'inbar' }); const tg = h('span', { class: 'tgt' }); const b = h('b'); b.style.width = (isNaN(r.renMY) ? 0 : r.renMY / maxR * 70) + 'px'; const em = h('em'); em.style.left = (target / maxR * 70 - 1) + 'px';
+        tg.appendChild(b); tg.appendChild(em); ib.appendChild(h('span', {}, r.ren ? fmtPct(r.renMY) : '–')); ib.appendChild(tg); td.appendChild(ib);
+        if (r.ren) td.title = fmtPts(r.renMY - target) + ' vs target';
+      } else if (k === 'overBE') {
+        const share = r.beN ? r.overBE / r.beN : 0; const p = h('span', { class: 'pill' + (share > 0.25 ? ' warn' : '') }, r.beN ? fmtInt(r.overBE) + ' / ' + fmtInt(r.beN) : '–'); td.appendChild(p);
+      } else td.textContent = f(r);
+      row.appendChild(td);
+    });
+    tb.appendChild(row);
+  }
+  tbl.appendChild(tb); wrap.appendChild(tbl); c.appendChild(wrap);
+  c.appendChild(h('div', { class: 'note' }, '> Breakeven = 2–3 year deals discounted past 9% / 13% (highlighted when over 25% of them). Churn and MY % follow the Measure toggle.'));
+}
+
+// ============================================================ deal table
+let dealQ = '', dealPage = 0, dealSort = { k: 'close', dir: -1 }, dealScope = 'period';
+function renderDeals(base, range) {
+  const c = $('#c-deals'); const prevFocus = document.activeElement && document.activeElement.id === 'dealSearch';
+  c.textContent = '';
+  const head = h('div', { class: 'card-h' }); const t = h('div'); t.appendChild(h('h3', {}, 'Opportunities')); t.appendChild(h('p', { class: 'sub' }, 'Filtered deals — search, sort, export')); head.appendChild(t); c.appendChild(head);
+  const tools = h('div', { class: 'tbl-tools' });
+  const q = h('input', { type: 'search', id: 'dealSearch', placeholder: 'Search account, rep, product, ID…', 'aria-label': 'Search deals' }); q.value = dealQ;
+  q.oninput = () => { dealQ = q.value; dealPage = 0; renderDeals(baseDeals(), periodRange(S.f.period, S.asof)); };
+  const scope = h('select', { 'aria-label': 'Deal scope' });
+  for (const [v, l] of [['period', 'Closed in period'], ['open', 'Open renewals'], ['my', 'Multi-year won in period'], ['over', 'Over breakeven'], ['lost', 'Lost renewals in period']]) scope.appendChild(h('option', { value: v }, l));
+  scope.value = dealScope; scope.onchange = () => { dealScope = scope.value; dealPage = 0; renderDeals(baseDeals(), periodRange(S.f.period, S.asof)); };
+  const exp = h('button', { class: 'btn', type: 'button' }, 'Export CSV');
+  tools.appendChild(q); tools.appendChild(scope); tools.appendChild(exp); c.appendChild(tools);
+  const inR = (d) => d.close >= range[0] && d.close <= range[1];
+  let ds = dealScope === 'open' ? base.filter(d => d.open) : dealScope === 'my' ? base.filter(d => !d.open && inR(d) && d.won && d.isMY)
+    : dealScope === 'over' ? base.filter(d => !d.open && inR(d) && d.won && d.disc != null && BREAKEVEN[d.tb] != null && d.disc > BREAKEVEN[d.tb])
+    : dealScope === 'lost' ? base.filter(d => inR(d) && d.lost && d.type === 'Renewal') : base.filter(d => !d.open && inR(d));
+  if (dealQ) { const s = dealQ.toLowerCase(); ds = ds.filter(d => (d.id + ' ' + d.accountName + ' ' + d.rep + ' ' + d.product + ' ' + d.account).toLowerCase().includes(s)); }
+  const cols = [['id', 'Opp ID'], ['accountName', 'Account'], ['type', 'Type'], ['stage', 'Stage'], ['close', 'Close'], ['start', 'Start'], ['end', 'End'], ['termM', 'Term (mo)'], ['arr', 'ARR'], ['product', 'Product line'], ['rep', 'Rep'], ['disc', 'Discount'], ['uplift', 'Uplift']];
+  const numK = new Set(['termM', 'arr', 'disc', 'uplift']);
+  ds.sort((a, b) => { const x = a[dealSort.k], y = b[dealSort.k]; if (numK.has(dealSort.k)) return ((x == null ? -1e18 : x) - (y == null ? -1e18 : y)) * dealSort.dir; return String(x).localeCompare(String(y)) * dealSort.dir; });
+  exp.onclick = () => {
+    const hdr = ['opportunity_id', 'account_id', 'account_name', 'deal_type', 'stage', 'close_date', 'start_date', 'end_date', 'term_months', 'arr', 'product_line', 'rep', 'segment', 'region', 'discount_pct', 'uplift_pct', 'prior_term_months'];
+    const lines = [hdr.join(',')].concat(ds.map(d => [d.id, d.account, d.accountName, d.type, d.stage, d.close, d.start, d.end, d.termM, d.arr, d.product, d.rep, d.segment, d.region, d.disc ?? '', d.uplift ?? '', d.priorTerm ?? ''].map(csvCell).join(',')));
+    download('deals_' + dealScope + '.csv', lines.join('\n'));
+  };
+  const PAGE = 25, pages = Math.max(1, Math.ceil(ds.length / PAGE)); dealPage = Math.min(dealPage, pages - 1);
+  const wrap = h('div', { class: 'tablewrap' }); const tbl = h('table'); const tr = h('tr');
+  cols.forEach(([k, l]) => { const th = h('th', { class: 'sortable' + (numK.has(k) ? ' num' : ''), scope: 'col' }, l + (dealSort.k === k ? (dealSort.dir > 0 ? ' ▲' : ' ▼') : '')); th.onclick = () => { dealSort = { k, dir: dealSort.k === k ? -dealSort.dir : -1 }; renderDeals(baseDeals(), periodRange(S.f.period, S.asof)); }; tr.appendChild(th); });
+  const thead = h('thead'); thead.appendChild(tr); tbl.appendChild(thead);
+  const tb = h('tbody');
+  for (const d of ds.slice(dealPage * PAGE, dealPage * PAGE + PAGE)) {
+    const row = h('tr');
+    const vals = [d.id, d.accountName, d.type, d.stage, d.close, d.start, d.end, String(d.termM), fmtMoney(d.arr), d.product, d.rep, d.disc == null ? '' : d.disc.toFixed(1) + '%', d.uplift == null ? '' : d.uplift.toFixed(1) + '%'];
+    cols.forEach(([k], i) => row.appendChild(h('td', { class: numK.has(k) ? 'num' : '' }, vals[i])));
+    tb.appendChild(row);
+  }
+  tbl.appendChild(tb); wrap.appendChild(tbl); c.appendChild(wrap);
+  const pg = h('div', { class: 'pager' });
+  pg.appendChild(h('span', {}, fmtInt(ds.length) + ' deals · ' + fmtMoney(sum(ds, d => d.arr)) + ' ARR · page ' + (dealPage + 1) + ' of ' + pages));
+  const prev = h('button', { class: 'btn', type: 'button' }, 'Prev'); prev.disabled = dealPage === 0; prev.onclick = () => { dealPage--; renderDeals(baseDeals(), periodRange(S.f.period, S.asof)); };
+  const next = h('button', { class: 'btn', type: 'button' }, 'Next'); next.disabled = dealPage >= pages - 1; next.onclick = () => { dealPage++; renderDeals(baseDeals(), periodRange(S.f.period, S.asof)); };
+  pg.appendChild(prev); pg.appendChild(next); c.appendChild(pg);
+  if (prevFocus) { const n = $('#dealSearch'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }
+}
+const csvCell = (v) => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+function download(name, text) { const b = new Blob([text], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+
+// ============================================================ wiring
+function bind() {
+  const onSel = (id, k) => $(id).addEventListener('change', (e) => { S.f[k] = e.target.value; render(); });
+  onSel('#fPeriod', 'period'); onSel('#fProduct', 'product'); onSel('#fRep', 'rep'); onSel('#fSegment', 'segment'); onSel('#fRegion', 'region');
+  $('#fWeight').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.f.weight = b.dataset.v; for (const x of $('#fWeight').children) x.setAttribute('aria-pressed', String(x === b)); render(); });
+  $('#fTarget').value = S.f.target;
+  $('#fTarget').addEventListener('change', (e) => { const v = Math.max(0, Math.min(100, +e.target.value || 0)); S.f.target = v; e.target.value = v; store.set('target', v); render(); });
+  $('#fAsof').addEventListener('change', (e) => { if (e.target.value) { S.asof = e.target.value; buildFilterOptions(); render(); } });
+  $('#btnReset').onclick = () => { Object.assign(S.f, { period: 'ytd', product: 'All', rep: 'All', segment: 'All', region: 'All' }); buildFilterOptions(); render(); };
+  $('#btnLoad').onclick = () => $('#csvInput').click();
+  $('#csvInput').addEventListener('change', (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      try {
+        const rows2d = parseCSV(String(rd.result)); if (rows2d.length < 2) throw new Error('The file has no data rows.');
+        const { recs, missing } = mapColumns(rows2d);
+        if (missing.length) throw new Error('Missing required column(s): ' + missing.join(', ') + '. See the README for the expected schema and accepted aliases.');
+        const today = iso(new Date());
+        const norm = normalize(recs); if (!norm.length) throw new Error('No rows had a valid close_date, start_date, term_months and arr.');
+        const maxClosed = norm.filter(d => !d.open).reduce((a, d) => d.close > a ? d.close : a, '0000');
+        hideBanner();
+        loadRecords(recs, file.name, maxClosed > today ? maxClosed : today);
+        const dropped = recs.length - S.deals.length; if (dropped > 0) banner('Loaded ' + fmtInt(S.deals.length) + ' rows from ' + file.name + '. Skipped ' + fmtInt(dropped) + ' rows missing a valid date, term or ARR.');
+      } catch (err) { banner('Could not load CSV: ' + err.message); }
+      e.target.value = '';
+    };
+    rd.readAsText(file);
+  });
+  $('#btnSample').onclick = useSample;
+  $('#btnDlSample').onclick = () => { const rows = sampleRows(); const hdr = Object.keys(rows[0]); download('sample_opportunities.csv', [hdr.join(',')].concat(rows.map(r => hdr.map(k => csvCell(r[k])).join(','))).join('\n')); };
+  const applyTheme = (t) => { if (t) document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme'); };
+  applyTheme(store.get('theme', null));
+  $('#btnTheme').onclick = () => { const cur = document.documentElement.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); const nt = cur === 'dark' ? 'light' : 'dark'; applyTheme(nt); store.set('theme', nt); render(); };
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 150); });
+}
+bind();
+useSample();
+})();
+
+</script>
+</body>
+</html>
