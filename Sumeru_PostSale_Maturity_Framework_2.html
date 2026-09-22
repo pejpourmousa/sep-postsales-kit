@@ -407,10 +407,10 @@ footer.page-foot{
 
 <div class="wrap">
   <section class="intro">
-    <p class="lede">One consistent maturity framework applied across all five post-sale teams — Customer Success, Account Management, Professional Services, Tech Support, and Customer Marketing — so leadership can compare maturity, track progress year over year (2024-2028), and target investment where it moves retention and expansion the most.</p>
+    <p class="lede">One consistent maturity framework applied across all five post-sale teams — Customer Success, Account Management, Professional Services, Tech Support, and Customer Marketing — so leadership can compare maturity, track progress year over year, and target investment where it moves retention and expansion the most.</p>
 
     <div class="legend-grid">
-      
+
         <div class="legend-card" style="--cat-dark:#1F4E79;--cat-light:#DCE6F1">
           <span class="legend-swatch" aria-hidden="true"></span>
           <div class="legend-copy">
@@ -451,10 +451,10 @@ footer.page-foot{
     <details class="howto">
       <summary>How to read this framework</summary>
       <dl class="instr">
-        
+
         <div class="instr-row">
           <dt>Purpose</dt>
-          <dd><p>One consistent maturity framework applied across all five post-sale teams — Customer Success, Account Management, Professional Services, Tech Support, and Customer Marketing — so leadership can compare maturity, track progress year over year (2024-2028), and target investment where it moves retention and expansion the most.</p></dd>
+          <dd><p>One consistent maturity framework applied across all five post-sale teams — Customer Success, Account Management, Professional Services, Tech Support, and Customer Marketing — so leadership can compare maturity, track progress year over year, and target investment where it moves retention and expansion the most.</p></dd>
         </div>
         <div class="instr-row">
           <dt>The 5 Categories</dt>
@@ -496,7 +496,7 @@ footer.page-foot{
     </details>
   </section>
 
-  
+
       <section class="team-panel" id="overview" role="tabpanel" aria-labelledby="tab-overview">
         <div class="team-intro">
           <div class="team-intro-top">
@@ -524,6 +524,7 @@ footer.page-foot{
         </div>
         <p class="overview-note">Scores live only in this browser tab unless you save a scorecard file. A saved file can be reloaded here later, or shared with a colleague to load on their own copy of this page.</p>
       </section>
+
 
   
       <section class="team-panel hidden" id="team-0" role="tabpanel" aria-labelledby="tab-team-0">
@@ -5864,15 +5865,13 @@ footer.page-foot{
     var payload = {
       tool: 'Sumeru Post-Sale Maturity Framework scorecard',
       version: 1,
-      savedAt: new Date().toISOString(),
       entries: collectEntries()
     };
     var blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
-    var stamp = payload.savedAt.slice(0,10);
     a.href = url;
-    a.download = 'sumeru-postsale-scorecard-' + stamp + '.json';
+    a.download = 'sumeru-postsale-scorecard.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
