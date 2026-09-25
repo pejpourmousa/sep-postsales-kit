@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meeting Follow Up — GTM AI Agent</title>
+<meta name="description" content="Turns your latest Gong call into a ready-to-send follow-up in your brand’s tone of voice — with the right asset attached — and only sends once you approve.">
+<style>
+:root{
+  --blue:#1e3a8a; --blue-2:#2563eb; --pink:#0d9488; --purple:#4f46e5;
+  --ink:#141828; --ink-2:#3d4358; --muted:#6b7187; --line:#e3e6ef; --soft:#f4f6fb;
+  --bg:#eef1f8; --card:#ffffff; --paper:#ffffff; --paper-ink:#1b1f2e;
+  --high:#138a4b; --med:#b7791f; --low:#c53030;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#eef0f7; --ink-2:#c3c8d8; --muted:#9097ad; --line:#2b3145; --soft:#1a1f30;
+    --bg:#0f1320; --card:#161b2b;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#eef0f7; --ink-2:#c3c8d8; --muted:#9097ad; --line:#2b3145; --soft:#1a1f30;
+  --bg:#0f1320; --card:#161b2b;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif}
+a{color:var(--blue-2)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+
+/* top nav */
+.topbar{background:#0a0f24;color:#fff}
+.topbar .wrap{display:flex;align-items:center;gap:18px;min-height:52px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+.brand{font-weight:800;letter-spacing:.14em;font-size:12px;text-transform:uppercase;white-space:nowrap}
+.brand span{color:var(--pink)}
+.nav{display:flex;gap:4px;flex-wrap:wrap}
+.nav a{color:#c9cfe6;text-decoration:none;font-size:13px;padding:6px 10px;border-radius:8px}
+.nav a:hover{background:#1c2340;color:#fff}
+.nav a.on{background:#fff;color:#0a0f24;font-weight:600}
+
+/* hero */
+.hero{background:linear-gradient(120deg,var(--blue) 0%,var(--purple) 55%,var(--pink) 100%);color:#fff;padding:44px 0 36px}
+.eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;opacity:.85}
+.hero h1{font-size:clamp(28px,5vw,44px);line-height:1.1;margin:10px 0 12px;letter-spacing:-.01em}
+.pill{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  padding:4px 10px;border-radius:999px;vertical-align:middle;margin-left:10px;position:relative;top:-4px}
+.pill.beta{background:#ffd166;color:#4a3400}
+.pill.ga{background:#6ee7a8;color:#053a1f}
+.hero .lede{font-size:clamp(16px,2.2vw,19px);max-width:760px;opacity:.96;margin:0}
+
+/* about grid */
+.about{margin-top:-18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 18px 16px;
+  box-shadow:0 6px 20px rgba(10,15,40,.06)}
+.card h3{margin:0 0 8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.card ul{margin:0;padding-left:18px;color:var(--ink-2)}
+.card li{margin:3px 0}
+.card p{margin:0;color:var(--ink-2)}
+
+.flow{margin-top:14px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;counter-reset:s;margin-top:4px}
+.step{background:var(--soft);border-radius:10px;padding:12px 12px 12px 44px;position:relative;color:var(--ink-2);font-size:14px}
+.step:before{counter-increment:s;content:counter(s);position:absolute;left:12px;top:11px;width:22px;height:22px;border-radius:50%;
+  background:var(--blue);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+.step b{display:block;color:var(--ink);font-size:14px}
+.step.gate:before{background:var(--pink)}
+
+/* sample divider */
+.sample-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:40px 0 12px}
+.sample-head h2{margin:0;font-size:22px}
+.sample-head .meta{color:var(--muted);font-size:13px}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--pink);margin-bottom:4px}
+
+/* paper = the rendered agent output */
+.paper{background:var(--paper);color:var(--paper-ink);border-radius:var(--radius);border:1px solid var(--line);
+  box-shadow:0 14px 40px rgba(10,15,40,.10);overflow:hidden}
+.paper .inner{padding:28px clamp(16px,4vw,40px) 32px}
+.paper h2.sec{color:var(--blue);font-size:19px;margin:30px 0 4px}
+.paper h2.sec:first-child{margin-top:0}
+.paper p{margin:8px 0}
+.paper .conf{font-size:12.5px;color:#6b7187;margin-bottom:10px}
+.c-high{color:var(--high);font-weight:700}.c-med{color:var(--med);font-weight:700}.c-low{color:var(--low);font-weight:700}
+.src{font-size:12.5px;color:#6b7187;font-style:italic;margin-top:6px}
+.src a{color:var(--blue-2)}
+.note{background:#fff7e6;border-left:3px solid #f0b429;padding:10px 12px;border-radius:6px;font-size:13.5px;color:#5c4400;margin:10px 0}
+.note.gap{background:#fdecef;border-color:var(--pink);color:#6d1233}
+
+.tbl{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px 0}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th,td{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid #e7e9f0}
+th{background:#f3f5fa;font-weight:700;color:#1b1f2e;border-bottom:2px solid var(--blue)}
+table.blue th{background:var(--blue);color:#fff;border-bottom:0}
+table.kv td:first-child{font-weight:700;width:26%}
+td.na,span.na{color:#8a90a3;font-style:italic}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.footer{color:var(--muted);font-size:12.5px;text-align:center;padding:36px 0 48px}
+@media print{.topbar,.about,.sample-head .meta{display:none}.hero{padding:20px 0}}
+
+.mail{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:0}
+@media (max-width:820px){.mail{grid-template-columns:1fr}}
+.mail-main{border-right:1px solid #e7e9f0}
+@media (max-width:820px){.mail-main{border-right:0;border-bottom:1px solid #e7e9f0}}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#f3f5fa;border-bottom:1px solid #e7e9f0;padding:10px 16px}
+.dots{display:flex;gap:6px}.dots i{width:11px;height:11px;border-radius:50%;background:#d6d9e3;display:block}
+.state{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:#fff4dc;color:#7a5200}
+.state.ok{background:#e3f6ec;color:#0d6b3a}
+.fields{padding:6px 20px;border-bottom:1px solid #e7e9f0;font-size:14px}
+.fields div{padding:7px 0;border-bottom:1px solid #f0f2f7;color:#6b7187}
+.fields div:last-child{border-bottom:0}
+.fields b{color:#1b1f2e;font-weight:600}
+.body{padding:20px 22px 26px;font-size:15px;line-height:1.6}
+.body ul,.body ol{padding-left:22px}.body li{margin:5px 0}
+.hl{background:linear-gradient(transparent 60%,#ccfbf1 60%)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;padding:14px 20px;border-top:1px solid #e7e9f0;background:#fafbfd}
+.btn{font:inherit;font-size:14px;font-weight:700;border-radius:9px;padding:9px 16px;cursor:pointer;border:1px solid #cfd4e2;background:#fff;color:#1b1f2e}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn:disabled{opacity:.55;cursor:default}
+.side{padding:18px 18px 22px;background:#fbfbfe}
+.side h4{margin:0 0 8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#6b7187}
+.side section{margin-bottom:20px}
+.chip{display:inline-block;font-size:12px;background:#e0e7ff;color:#1e3a8a;border-radius:999px;padding:3px 9px;margin:0 4px 6px 0}
+.asset{border:1px solid #e3e6ef;border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff;font-size:13.5px}
+.asset a{font-weight:700;text-decoration:none}
+.asset small{display:block;color:#6b7187;margin-top:3px}
+.check{list-style:none;padding:0;margin:0;font-size:13.5px}
+.check li{padding:5px 0 5px 22px;position:relative;color:#3d4358}
+.check li:before{content:"";position:absolute;left:0;top:9px;width:12px;height:12px;border-radius:3px;border:2px solid #b8bfd3}
+.check li.done:before{background:var(--high);border-color:var(--high)}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="wrap">
+  <div class="brand">GTM <span>·</span> AI Agents</div>
+  <nav class="nav"><a href="external-customer-intelligence.html">External Customer Intelligence</a><a href="account-360.html">Account 360</a><a href="meeting-follow-up.html" class="on">Meeting Follow Up</a><a href="one-minute-company-brief.html">One Minute Company Brief</a></nav>
+</div></header>
+
+<section class="hero"><div class="wrap">
+  <div class="eyebrow">Agent overview</div>
+  <h1>Meeting Follow Up<span class="pill beta">Beta</span></h1>
+  <p class="lede">Turns your latest Gong call into a ready-to-send follow-up in your brand’s tone of voice — with the right asset attached — and only sends once you approve.</p>
+</div></section>
+
+<main class="wrap">
+  <section class="about"><div class="grid"><div class="card"><h3>What it does</h3><p>Pulls recent Gong transcripts and drafts a follow-up email in the company’s tone of voice. If the transcript identifies a relevant asset, it queries the website and Highspot to recommend one. The draft is pushed to email only after user approval.</p></div><div class="card"><h3>Data sources</h3><ul><li>Gong call transcripts (most recent meetings)</li><li>Company website content</li><li>Highspot asset library</li><li>Brand tone-of-voice guidance</li></ul></div><div class="card"><h3>Best used for</h3><ul><li>Same-day meeting follow-ups</li><li>Recapping agreed plans, owners &amp; open asks</li><li>Sharing the right collateral at the right moment</li><li>Keeping follow-ups consistent across the team</li></ul></div></div><div class="card flow"><h3>How it works</h3><div class="steps"><div class="step"><b>Select the meeting</b>Agent pulls the latest Gong transcript for the account.</div><div class="step"><b>Extract the substance</b>Decisions, owners, open asks and topics raised on the call.</div><div class="step"><b>Match assets</b>If a relevant asset came up, it searches the website and Highspot.</div><div class="step"><b>Draft in brand voice</b>Concise, warm, specific — ready for the rep to review.</div><div class="step gate"><b>Human approval</b>Nothing is sent. The draft is pushed to email only once the user approves.</div></div></div></section>
+
+  <div class="sample-head">
+    <div><div class="tag">Example output</div><h2>Northfield Consumer Brands — post-call follow-up draft</h2></div>
+    <div class="meta">Interactive demo: try “Edit draft” and “Approve”</div>
+  </div>
+  <article class="paper">
+<div class="mail">
+ <div class="mail-main">
+  <div class="bar"><div class="dots"><i></i><i></i><i></i></div><span class="state" id="st">Draft · awaiting approval</span></div>
+  <div class="fields">
+   <div>To: <b>Alex (Northfield Consumer Brands)</b></div>
+   <div>Context: <b>Follow-up to latest Gong call · training session on the 23rd</b></div>
+  </div>
+  <div class="body">
+<p>Hi Alex,</p>
+<p>Good to get the plan locked in for the 23rd — sounds like having the whole team together in the office this time will make a real difference.</p>
+<p>Here's where things landed:</p>
+<ul>
+ <li><b>The 23rd, 10 AM to noon:</b> you'll open with the why behind testing concepts before quant, then Sam will walk through platform navigation and the story behind the data. After that, small groups of three or four will write concepts and work through prompts with one of us sitting alongside them.</li>
+ <li><b>Platform access:</b> everyone's set up except Priya. Sam will grant her access as soon as she accepts her invite.</li>
+ <li><b>New agents:</b> they'll stay off during the session so nothing interferes with what the team already knows. If you've got time afterward, you, Jordan, Sam and I could take a look together and see where they might fit into the wider workflow.</li>
+</ul>
+<p>A couple of things before then:</p>
+<ol>
+ <li>You'll send slides over Friday afternoon so we're all aligned on the why.</li>
+ <li>We just need a name from Morgan for who'll manage training communications and keep the data accurate going forward.</li>
+ <li>Still good for the quick chat with Chris Friday morning on competitive intel access?</li>
+</ol>
+<p>Switching gears for a second: we looked at the creative feedback on the Wildroot streaming video ad. The creative's landing well; brand recall is the piece worth strengthening, so let's find time to dig into that whenever suits you.</p>
+<p>And since Creative Hub came up on the call: it brings your tested assets, TV, digital, storyboards, into one connected view, so you can see what's performing well or falling short at a glance. With PureHand heading into digital production, these might be worth a look:</p>
+<ul>
+ <li><span class="hl"><a href="#">The Creative AI and Creative Hub overview</a></span>, covering how the new workspace brings your tested creative together</li>
+ <li><span class="hl"><a href="#">The Concept Test overview</a></span>, a useful reference for the testing methodology you're building into the 23rd's session</li>
+</ul>
+<p>Looking forward to the session. See you then.</p>
+<p>Best,</p>
+  </div>
+  <div class="actions">
+   <button class="btn primary" id="approve">Approve &amp; push to email</button>
+   <button class="btn" id="edit">Edit draft</button>
+  </div>
+ </div>
+ <aside class="side">
+  <section><h4>Built from</h4>
+   <span class="chip">Gong · latest customer call</span><span class="chip">Tone of voice</span><span class="chip">Website</span><span class="chip">Highspot</span>
+  </section>
+  <section><h4>Recommended assets</h4>
+   <div class="asset"><a href="#">Creative AI &amp; Creative Hub overview</a><small>Triggered by: Creative Hub raised on the call; PureHand heading into digital production</small></div>
+   <div class="asset"><a href="#">Concept Test overview</a><small>Triggered by: concept-testing methodology planned for the 23rd session</small></div>
+  </section>
+  <section><h4>Open items captured</h4>
+   <ul class="check">
+    <li>Alex to send slides Friday afternoon</li>
+    <li>Morgan to name owner for training comms &amp; data accuracy</li>
+    <li>Confirm Friday AM chat with Chris on competitive intel access</li>
+    <li>Sam to grant Priya platform access once invite accepted</li>
+    <li>Find time to dig into Wildroot brand recall</li>
+   </ul>
+  </section>
+ </aside>
+</div>
+<script>
+(function(){
+  var a=document.getElementById('approve'), e=document.getElementById('edit'), st=document.getElementById('st'),
+      body=document.querySelector('.mail .body');
+  a.addEventListener('click',function(){
+    body.contentEditable=false; st.textContent='Approved · pushed to email drafts'; st.className='state ok';
+    a.disabled=true; e.disabled=true; a.textContent='Pushed to email';
+  });
+  e.addEventListener('click',function(){
+    var on=body.isContentEditable; body.contentEditable=!on; e.textContent=on?'Edit draft':'Done editing';
+    if(!on) body.focus();
+  });
+})();
+</script>
+</article>
+</main>
+
+<footer class="footer wrap">GTM AI Agent examples · September 2026 · Anonymized sample outputs — company, brand and people names are fictional.</footer>
+</body>
+</html>
