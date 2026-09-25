@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>One Minute Company Brief — GTM AI Agent</title>
+<meta name="description" content="Fast, structured one-minute business briefs for sales, marketing and strategy — company facts, buyers, competitors, trends, news, marketing, challenges and org charts, for a whole company or a single business unit.">
+<style>
+:root{
+  --blue:#1e3a8a; --blue-2:#2563eb; --pink:#0d9488; --purple:#4f46e5;
+  --ink:#141828; --ink-2:#3d4358; --muted:#6b7187; --line:#e3e6ef; --soft:#f4f6fb;
+  --bg:#eef1f8; --card:#ffffff; --paper:#ffffff; --paper-ink:#1b1f2e;
+  --high:#138a4b; --med:#b7791f; --low:#c53030;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#eef0f7; --ink-2:#c3c8d8; --muted:#9097ad; --line:#2b3145; --soft:#1a1f30;
+    --bg:#0f1320; --card:#161b2b;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#eef0f7; --ink-2:#c3c8d8; --muted:#9097ad; --line:#2b3145; --soft:#1a1f30;
+  --bg:#0f1320; --card:#161b2b;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif}
+a{color:var(--blue-2)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+
+/* top nav */
+.topbar{background:#0a0f24;color:#fff}
+.topbar .wrap{display:flex;align-items:center;gap:18px;min-height:52px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+.brand{font-weight:800;letter-spacing:.14em;font-size:12px;text-transform:uppercase;white-space:nowrap}
+.brand span{color:var(--pink)}
+.nav{display:flex;gap:4px;flex-wrap:wrap}
+.nav a{color:#c9cfe6;text-decoration:none;font-size:13px;padding:6px 10px;border-radius:8px}
+.nav a:hover{background:#1c2340;color:#fff}
+.nav a.on{background:#fff;color:#0a0f24;font-weight:600}
+
+/* hero */
+.hero{background:linear-gradient(120deg,var(--blue) 0%,var(--purple) 55%,var(--pink) 100%);color:#fff;padding:44px 0 36px}
+.eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;opacity:.85}
+.hero h1{font-size:clamp(28px,5vw,44px);line-height:1.1;margin:10px 0 12px;letter-spacing:-.01em}
+.pill{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  padding:4px 10px;border-radius:999px;vertical-align:middle;margin-left:10px;position:relative;top:-4px}
+.pill.beta{background:#ffd166;color:#4a3400}
+.pill.ga{background:#6ee7a8;color:#053a1f}
+.hero .lede{font-size:clamp(16px,2.2vw,19px);max-width:760px;opacity:.96;margin:0}
+
+/* about grid */
+.about{margin-top:-18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 18px 16px;
+  box-shadow:0 6px 20px rgba(10,15,40,.06)}
+.card h3{margin:0 0 8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.card ul{margin:0;padding-left:18px;color:var(--ink-2)}
+.card li{margin:3px 0}
+.card p{margin:0;color:var(--ink-2)}
+
+.flow{margin-top:14px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;counter-reset:s;margin-top:4px}
+.step{background:var(--soft);border-radius:10px;padding:12px 12px 12px 44px;position:relative;color:var(--ink-2);font-size:14px}
+.step:before{counter-increment:s;content:counter(s);position:absolute;left:12px;top:11px;width:22px;height:22px;border-radius:50%;
+  background:var(--blue);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+.step b{display:block;color:var(--ink);font-size:14px}
+.step.gate:before{background:var(--pink)}
+
+/* sample divider */
+.sample-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:40px 0 12px}
+.sample-head h2{margin:0;font-size:22px}
+.sample-head .meta{color:var(--muted);font-size:13px}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--pink);margin-bottom:4px}
+
+/* paper = the rendered agent output */
+.paper{background:var(--paper);color:var(--paper-ink);border-radius:var(--radius);border:1px solid var(--line);
+  box-shadow:0 14px 40px rgba(10,15,40,.10);overflow:hidden}
+.paper .inner{padding:28px clamp(16px,4vw,40px) 32px}
+.paper h2.sec{color:var(--blue);font-size:19px;margin:30px 0 4px}
+.paper h2.sec:first-child{margin-top:0}
+.paper p{margin:8px 0}
+.paper .conf{font-size:12.5px;color:#6b7187;margin-bottom:10px}
+.c-high{color:var(--high);font-weight:700}.c-med{color:var(--med);font-weight:700}.c-low{color:var(--low);font-weight:700}
+.src{font-size:12.5px;color:#6b7187;font-style:italic;margin-top:6px}
+.src a{color:var(--blue-2)}
+.note{background:#fff7e6;border-left:3px solid #f0b429;padding:10px 12px;border-radius:6px;font-size:13.5px;color:#5c4400;margin:10px 0}
+.note.gap{background:#fdecef;border-color:var(--pink);color:#6d1233}
+
+.tbl{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px 0}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th,td{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid #e7e9f0}
+th{background:#f3f5fa;font-weight:700;color:#1b1f2e;border-bottom:2px solid var(--blue)}
+table.blue th{background:var(--blue);color:#fff;border-bottom:0}
+table.kv td:first-child{font-weight:700;width:26%}
+td.na,span.na{color:#8a90a3;font-style:italic}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.footer{color:var(--muted);font-size:12.5px;text-align:center;padding:36px 0 48px}
+@media print{.topbar,.about,.sample-head .meta{display:none}.hero{padding:20px 0}}
+
+.ob-hero{background:linear-gradient(135deg,#1e3a8a 0%,#4f46e5 55%,#0d9488 100%);color:#fff;padding:34px clamp(16px,4vw,40px) 28px}
+.ob-hero .k{font-size:11.5px;letter-spacing:.2em;font-weight:800;opacity:.9}
+.ob-hero h1{font-size:clamp(28px,5vw,42px);line-height:1.08;margin:12px 0 10px}
+.ob-hero .sub{opacity:.9;max-width:620px;margin:0 0 18px}
+.headline{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:14px 18px;max-width:640px}
+.headline b{display:block;color:#5eead4;font-size:11px;letter-spacing:.18em;margin-bottom:6px}
+.ob-hero .pf{font-size:12px;opacity:.75;margin-top:16px}
+.sh{display:flex;align-items:center;gap:10px;color:#fff;padding:11px 16px;margin:30px 0 0;border-radius:4px 4px 0 0;font-size:17px;font-weight:800}
+.sh span{opacity:.6;font-weight:600;font-size:13px}
+.sh.b{background:#1e3a8a}.sh.p{background:#0d9488}.sh.v{background:#4f46e5}
+.sh + .conf{background:#f3f5fa;padding:7px 16px;margin:0 0 10px;border-radius:0 0 4px 4px;color:#1b1f2e;font-weight:600}
+sup{font-size:10px;color:#6b7187}
+.quad{margin:14px 0 6px}
+.quad svg{width:100%;height:auto;display:block}
+.quote{border-left:3px solid #4f46e5;padding:6px 14px;margin:10px 0;background:#f5f5ff}
+.quote cite{display:block;font-style:normal;font-size:12.5px;color:#6b7187;margin-top:6px}
+.qhead{font-weight:800;color:#4f46e5;margin-top:14px;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+ol.srcs{font-size:13px;color:#3d4358;padding-left:22px}ol.srcs li{margin:3px 0}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="wrap">
+  <div class="brand">GTM <span>·</span> AI Agents</div>
+  <nav class="nav"><a href="external-customer-intelligence.html">External Customer Intelligence</a><a href="account-360.html">Account 360</a><a href="meeting-follow-up.html">Meeting Follow Up</a><a href="one-minute-company-brief.html" class="on">One Minute Company Brief</a></nav>
+</div></header>
+
+<section class="hero"><div class="wrap">
+  <div class="eyebrow">Agent overview</div>
+  <h1>One Minute Company Brief<span class="pill ga">GA</span></h1>
+  <p class="lede">Fast, structured one-minute business briefs for sales, marketing and strategy — company facts, buyers, competitors, trends, news, marketing, challenges and org charts, for a whole company or a single business unit.</p>
+</div></section>
+
+<main class="wrap">
+  <section class="about"><div class="grid"><div class="card"><h3>What it does</h3><p>Generates fast, structured 1-minute business briefs for sales, marketing, and strategy. Includes company facts, buyer insights, competitors, trends, news, marketing, challenges, and org charts. Works for full companies or specific business units.</p></div><div class="card"><h3>Data sources</h3><ul><li>SEC filings &amp; investor relations</li><li>Earnings releases &amp; call recaps</li><li>Trade &amp; business press</li><li>Company announcements &amp; newsroom</li></ul></div><div class="card"><h3>Best used for</h3><ul><li>Pre-meeting prep for sales &amp; CS</li><li>Marketing &amp; ABM account research</li><li>Strategy &amp; competitive context</li><li>Full company <i>or</i> a specific business unit</li></ul></div><div class="card"><h3>Sections included</h3><ul><li>About · Who they sell to</li><li>Top 5 competitors (+ positioning map)</li><li>Trends · This week’s news</li><li>Business health · Recent reports</li><li>Challenges · Marketing · Key quotes · Key people</li></ul></div></div><div class="card flow"><h3>How it works</h3><div class="steps"><div class="step"><b>Name the company</b>Or a specific business unit (e.g. a regional subsidiary).</div><div class="step"><b>Research the essentials</b>Facts, buyers, competitors, trends, news, health, marketing, people.</div><div class="step"><b>Lead with a headline</b>A 3-sentence “so what” to anchor the conversation.</div><div class="step"><b>Rate every section</b>Confidence + last-updated on each block; gaps stated plainly.</div><div class="step"><b>Cite sources</b>Numbered citations back to filings, releases and press.</div></div></div></section>
+
+  <div class="sample-head">
+    <div><div class="tag">Example output</div><h2>Harborline Beverage Co. — Executive Brief</h2></div>
+    <div class="meta">Client meeting brief · September 2026</div>
+  </div>
+  <article class="paper"><div class="ob-hero"><div class="k">CLIENT MEETING BRIEF</div><h1>Harborline Beverage Co. (NYSE: HBV)</h1><p class="sub">Executive briefing for client meeting preparation — company overview, competitive landscape, business health, and stakeholder context.</p><div class="headline"><b>HEADLINE</b>Harborline is mid-transition on two fronts at once: a third straight year of volume decline as hard seltzer erodes, and a leadership reset (CEO returned in 2025, CFO now interim as of Sept 15, 2026). Sunset Rider and Tangle Tea are the two brand stories worth anchoring a conversation around; Clearwave is a managed decline, not a growth pitch.</div><div class="pf">September 2026 • Anonymized sample</div></div><div class="inner"><div class="sh b"><span>01</span>About</div><div class="conf">Confidence: <span class="c-high">High</span> &nbsp;&nbsp; Last Updated: September 2026</div><div class="tbl"><table class="kv"><tbody><tr><td>Industry</td><td>Alcoholic beverages — craft beer, flavored malt beverage (hard tea), hard seltzer, hard cider, spirits-based RTD</td></tr><tr><td>HQ</td><td>Northeast United States</td></tr><tr><td>Founded</td><td>1980s, by its current Chairman</td></tr><tr><td>Ownership</td><td>Public (NYSE: HBV). Dual-class share structure; the founder holds a controlling block of Class B voting stock</td></tr><tr><td>Employees</td><td><span class="na">No current headcount figure independently verified in this pass — flag for confirmation via 10-K</span></td></tr><tr><td>Products / Brands</td><td>Harborline Lager, Tangle Tea, Clearwave Hard Seltzer, Orchard Row Cider, Saltmarsh Craft, Sunset Rider</td></tr><tr><td>Email format</td><td><span class="na">No public data available</span></td></tr></tbody></table></div><p><b>Overview:</b> Harborline is a diversified U.S. alcohol company that pioneered modern craft brewing and has since built a “beyond beer” portfolio spanning hard tea, hard seltzer, cider, and RTD spirits-based cocktails. The center of gravity has shifted decisively: Tangle Tea and Clearwave together drive the large majority of dollar sales, with Tangle Tea now the primary growth engine and Clearwave in structural decline alongside the broader hard seltzer category<sup>[1,10]</sup>.</p><div class="sh p"><span>02</span>Who Do They Sell To?</div><div class="conf">Confidence: <span class="c-med">Medium</span> &nbsp;&nbsp; Last Updated: 2025–2026 brand commentary</div><div class="tbl"><table class=""><thead><tr><th>Customer Segment</th><th>Buyer Roles</th><th>Industries Served</th><th>Sales Motion</th></tr></thead><tbody><tr><td>Legal-drinking-age (21+) beer &amp; RTD consumers</td><td>End consumer; retail category buyers; distributor principals</td><td>Grocery, convenience, on-premise (bars/restaurants), club, liquor retail</td><td>Three-tier system (mandated) — Harborline sells to independent distributors, who sell to retailers</td></tr><tr><td>Tangle Tea drinker — broad, convenience/rural-skewing, expanding urban/multicultural</td><td>Distributor reps; c-store buyers</td><td>Convenience retail, grocery</td><td>Heavy distributor push + national ad spend</td></tr><tr><td>Clearwave drinker — moderation-minded, lighter-flavor seeker</td><td>Grocery category managers</td><td>Grocery, club</td><td>Innovation-led (flavor/ABV line extensions) to defend shelf space</td></tr><tr><td>Sunset Rider / RTD spirits drinker</td><td>On-premise buyers; event/sponsorship partners</td><td>On-premise, golf/sports sponsorship channels</td><td>Sponsorship-driven brand building (golf championship, golf apparel tie-ins) plus rapid retail expansion</td></tr></tbody></table></div><p><b>GTM motion:</b> Harborline is legally required to sell through independent wholesalers in the U.S. three-tier system, so it maintains a large internal sales organization to “pull through” demand at the distributor, retailer, and consumer level rather than selling direct<sup>[7]</sup>. <b>Channel focus:</b> predominantly off-premise retail (grocery, convenience, club) with a growing on-premise and sponsorship push behind Sunset Rider; a small number of company-owned taprooms exist in a handful of states<sup>[8]</sup>. <b>Regional focus:</b> overwhelmingly domestic U.S., with limited Canadian activity (e.g., a gummies launch in Canada)<sup>[12]</sup>.</p><div class="sh v"><span>03</span>Top 5 Competitors</div><div class="conf">Confidence: <span class="c-med">Medium</span> &nbsp;&nbsp; Last Updated: 2025–2026</div><div class="tbl"><table class=""><thead><tr><th>Competitor</th><th>Where They Compete</th><th>Key Differentiator</th><th>Who They Target</th></tr></thead><tbody><tr><td>Competitor A</td><td>Hard seltzer — direct Clearwave rival, category leader</td><td>~46% hard seltzer share historically; private company, no earnings disclosure pressure</td><td>Mainstream seltzer drinkers, moderation-focused</td></tr><tr><td>Competitor B</td><td>FMB / hard tea adjacents, spirits-based RTDs from its vodka and whisky brands</td><td>Global spirits portfolio breadth; deep on-premise relationships</td><td>Spirits-curious RTD drinkers; broad demographic</td></tr><tr><td>Competitor C</td><td>Hard seltzer, FMB, core beer</td><td>Scale brewing infrastructure; owns a hard-tea-adjacent entrant challenging Tangle Tea</td><td>Value and mainstream beer drinkers migrating to RTD</td></tr><tr><td>Competitor D</td><td>Core beer, spirits-based RTD, FMB</td><td>Unmatched U.S. distribution scale; largest ad budgets</td><td>Mass-market beer drinker, though brand equity dented by a recent flagship-brand backlash</td></tr><tr><td>Competitor E</td><td>Imported/high-end beer</td><td>Category-leading growth in traditional beer via Mexican import portfolio</td><td>Premium/import beer drinkers — indirect competitor, limited RTD overlap</td></tr></tbody></table></div><div class="quad"><svg viewBox="0 0 720 360" role="img" aria-label="Competitive positioning map">
+ <rect x="0" y="0" width="720" height="360" fill="#fafbfd" rx="10"/>
+ <line x1="360" y1="30" x2="360" y2="330" stroke="#c9cfe0" stroke-width="1.5"/>
+ <line x1="40" y1="180" x2="680" y2="180" stroke="#c9cfe0" stroke-width="1.5"/>
+ <text x="360" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="#3d4358">↑ Broad Portfolio Scope</text>
+ <text x="360" y="352" text-anchor="middle" font-size="12" font-weight="700" fill="#3d4358">↓ Narrow / Single-Category Focus</text>
+ <text x="44" y="196" font-size="11" fill="#6b7187">← Declining category focus (hard seltzer)</text>
+ <text x="676" y="172" text-anchor="end" font-size="11" fill="#6b7187">Growth category focus (spirits RTD / import beer) →</text>
+ <g font-size="13" font-weight="700">
+  <circle cx="110" cy="75" r="8" fill="#1e3a8a"/><text x="124" y="72" fill="#1b1f2e">Competitor A</text>
+  <text x="124" y="88" font-size="11" font-weight="400" fill="#6b7187">seltzer-focused, category-defining scale</text>
+  <circle cx="540" cy="80" r="8" fill="#4f46e5"/><text x="554" y="85" fill="#1b1f2e">Competitor B</text>
+  <circle cx="560" cy="120" r="8" fill="#4f46e5"/><text x="574" y="125" fill="#1b1f2e">Competitor D</text>
+  <circle cx="160" cy="260" r="8" fill="#1e3a8a"/><text x="174" y="257" fill="#1b1f2e">Competitor C</text>
+  <text x="174" y="273" font-size="11" font-weight="400" fill="#6b7187">concentrated seltzer/tea challengers</text>
+  <circle cx="560" cy="265" r="8" fill="#4f46e5"/><text x="574" y="270" fill="#1b1f2e">Competitor E</text>
+  <text x="574" y="286" font-size="11" font-weight="400" fill="#6b7187">import beer specialist</text>
+  <circle cx="320" cy="150" r="10" fill="#0d9488"/><text x="336" y="155" fill="#0d9488">Harborline</text>
+ </g>
+</svg></div><p class="src">Harborline’s own position: broad portfolio like the top-right players, but internally weighted toward a declining category (Clearwave/seltzer) while its growth bet (Sunset Rider) is still sub-scale versus Competitor B and D’s RTD lines.</p><div class="sh b"><span>04</span>Industry Trends + News</div><div class="conf">Confidence: <span class="c-med">Medium</span> &nbsp;&nbsp; Last Updated: 2025–2026</div><div class="tbl"><table class=""><thead><tr><th>Trend</th><th>Development</th><th>Implication for Harborline</th></tr></thead><tbody><tr><td>Traditional beer volume decline</td><td>Core/traditional beer category (~80% of category volume) has been declining, partly driven by ongoing category “leakage” from a rival’s brand controversy<sup>[24]</sup></td><td>Harborline Lager and Saltmarsh Craft remain exposed to a shrinking base</td></tr><tr><td>Hard seltzer category contraction</td><td>Seltzer’s share of beer-aisle shelf space has been shrinking for several years as retailers reallocate to FMBs and spirits RTDs<sup>[20]</sup></td><td>Clearwave faces a shrinking pie, not just share loss — structural headwind, not one-off</td></tr><tr><td>Spirits-based RTD growth</td><td>Canned cocktails are the fastest-growing “beyond beer” sub-segment; Sunset Rider reached triple-digit growth and a top-5 RTD spirits ranking in Q2 2026<sup>[35]</sup></td><td>Sunset Rider is Harborline’s best-positioned growth vehicle but still sub-scale versus Competitor B/D RTD lines</td></tr><tr><td>Hard tea competitive entry</td><td>Tangle Tea still holds an estimated 85%+ share of malt-based hard tea, but competing entrants (including from Competitor C) have chipped roughly 8 points off its five-year peak share<sup>[19,23]</sup></td><td>Tangle Tea’s growth is decelerating from double digits toward high single digits</td></tr><tr><td>Moderation / GLP-1 consumer shift</td><td>Broader industry commentary points to a moderation trend among younger legal-drinking-age consumers</td><td>Reinforces the case for lighter-ABV and lower-calorie innovation across the portfolio — directional, not company-specific data</td></tr></tbody></table></div><div class="sh p"><span>05</span>This Week’s Top News</div><div class="conf">Confidence: <span class="c-high">High</span> &nbsp;&nbsp; Last Updated: Most recent verified item: August 21, 2026 — see note</div><div class="tbl"><table class=""><thead><tr><th>Topic</th><th>Source</th><th>Relevance</th></tr></thead><tbody><tr><td>CFO Mark Olsen departs Sept 14, 2026; Chief Accounting Officer Karen Liu named interim CFO effective Sept 15</td><td>Company press release (Aug 20, 2026); trade press (Aug 21, 2026)</td><td>Second C-suite disruption in just over a year — CFO search now underway alongside a still-recent CEO transition</td></tr><tr><td>Tangle Tea viral stunt promotion</td><td>Consumer news (Jul 15, 2026)</td><td>Signals continued reliance on stunt/earned-media marketing to keep Tangle Tea culturally relevant as growth decelerates</td></tr><tr><td>Q2 2026 results: revenue in line, adjusted EPS missed by ~24%</td><td>Financial news (Jul 23, 2026)</td><td>Confirms margin and earnings volatility tied to the non-recurring litigation charge</td></tr></tbody></table></div><div class="note">Note on recency: the most recent independently verifiable news item found in this pass is the CFO transition (Aug 20–21, 2026). No confirmed company news specific to the week of September 15–17, 2026 surfaced in search — recommend a same-day news check ahead of the meeting.</div><div class="sh v"><span>06</span>Business Health</div><div class="conf">Confidence: <span class="c-high">High</span> &nbsp;&nbsp; Last Updated: Q2 2026 (reported July 23, 2026)</div><div class="tbl"><table class="kv"><thead><tr><th>Metric</th><th>Status / Change</th></tr></thead><tbody><tr><td>Net revenue (Q2 2026)</td><td>$568.3M, down 3.3% YoY; depletions -6%, shipments -4.5%<sup>[1]</sup></td></tr><tr><td>Net revenue (YTD 2026)</td><td>$1.002B, down 3.8% YoY<sup>[1]</sup></td></tr><tr><td>Gross margin</td><td>50.4% in Q2 (+60 bps YoY); 49.9% YTD (+80 bps YoY), aided by brewery efficiencies and pricing despite tariff/inflation pressure<sup>[1]</sup></td></tr><tr><td>Profitability</td><td>Q2 net income $51.6M (down from $60.4M in Q2 2025); YTD GAAP diluted loss per share of $8.99, driven by a $192.6M non-recurring litigation charge tied to a supplier dispute; non-GAAP EPS still positive at $5.28 YTD<sup>[1,2]</sup></td></tr><tr><td>FY2026 guidance</td><td>Adjusted EPS guidance range $8.50–$10.50, midpoint ~$9.50, reiterated as of Q2<sup>[3]</sup></td></tr><tr><td>Balance sheet</td><td>$265.5M cash, no debt; $54M in buybacks YTD with $174M remaining under authorization<sup>[1,2]</sup></td></tr><tr><td>Market cap</td><td>Approximately $1.77–1.78B as of Q2 2026 reporting<sup>[3]</sup></td></tr><tr><td>Headcount / pipeline</td><td><span class="na">No current disclosure found independent of the 10-K — not pulled in this pass</span></td></tr></tbody></table></div><div class="sh b"><span>07</span>Recent Reports</div><div class="conf">Confidence: <span class="c-high">High</span> &nbsp;&nbsp; Last Updated: September 2026</div><div class="tbl"><table class=""><thead><tr><th>Document</th><th>Date</th><th>Notes</th></tr></thead><tbody><tr><td>Form 8-K — Q2 2026 Results</td><td>July 2026</td><td>Primary source; filed with SEC<sup>[1]</sup></td></tr><tr><td>Form DEF 14A — Proxy Statement</td><td>FY2026</td><td>Leadership changes, governance, compensation<sup>[5]</sup></td></tr><tr><td>Form 8-K — CFO Transition</td><td>August 20, 2026</td><td>Olsen departure, Liu interim appointment<sup>[8]</sup></td></tr><tr><td>Investor Relations site</td><td>Ongoing</td><td>Company IR website — primary source for filings, earnings calls, presentations</td></tr></tbody></table></div><p class="src">Harborline reports as a standalone public company (NYSE: HBV) with full SEC disclosure — no parent-company segment reporting caveat applies here.</p><div class="sh p"><span>08</span>Challenges &amp; Priorities</div><div class="conf">Confidence: <span class="c-med">Medium</span> &nbsp;&nbsp; Last Updated: 2025–2026</div><div class="tbl"><table class="kv"><thead><tr><th>Category</th><th>Challenge / Priority</th></tr></thead><tbody><tr><td>Financial</td><td>Third consecutive year of volume/revenue decline; a $192.6M non-recurring litigation charge distorted GAAP results in H1 2026<sup>[1]</sup></td></tr><tr><td>Operational</td><td>Managing supply chain and margin-improvement initiatives under new COO Daniel Ruiz while absorbing tariff and freight inflation<sup>[14]</sup></td></tr><tr><td>Brand</td><td>Reversing Clearwave’s structural decline while managing Tangle Tea’s deceleration from double-digit to high-single-digit growth<sup>[19,23]</sup></td></tr><tr><td>Market</td><td>Hard seltzer category continuing to shrink; spirits-based RTDs taking share of “beyond beer” occasions<sup>[20,35]</sup></td></tr><tr><td>Organizational</td><td>Three CEO changes in roughly four years and now an unplanned CFO transition — leadership stability is a live question<sup>[12,17]</sup></td></tr><tr><td>Talent</td><td>Active search for a permanent CFO, considering internal and external candidates<sup>[8]</sup></td></tr></tbody></table></div><div class="sh v"><span>09</span>Marketing Initiatives</div><div class="conf">Confidence: <span class="c-med">Medium</span> &nbsp;&nbsp; Last Updated: 2025–2026</div><div class="tbl"><table class="kv"><thead><tr><th>Channel / Brand</th><th>Initiative</th></tr></thead><tbody><tr><td>Tangle Tea — Brand Positioning</td><td>Core platform extended into a summer party pack, a seasonal holiday pack, and an 8% ABV line with new variety packs<sup>[12]</sup></td></tr><tr><td>Tangle Tea — Promotions</td><td>Viral stipend stunt promotion (July 2026) — earned-media-driven activation<sup>[27]</sup></td></tr><tr><td>Clearwave — Product/Positioning</td><td>Pivot toward “lightly flavored” SKUs and a higher-ABV line to defend against continued category decline<sup>[24,19]</sup></td></tr><tr><td>Sunset Rider — Partnerships</td><td>Official RTD cocktail sponsor of a major golf championship series; golf apparel collaboration; celebrity talent partnership<sup>[34,27]</sup></td></tr><tr><td>Sunset Rider — Product Line</td><td>Rapid flavor expansion (new fruit + vodka variants) to scale distribution and trial<sup>[28]</sup></td></tr><tr><td>Innovation / New Categories</td><td>Electric cooler line and a gummies launch (Canada) — diversification beyond core liquid categories<sup>[29,12]</sup></td></tr></tbody></table></div><div class="sh b"><span>10</span>Key Quotes</div><div class="conf">Confidence: <span class="c-med">Medium</span> &nbsp;&nbsp; Last Updated: July–August 2026</div><div class="qhead">Strategy</div><div class="quote">The CEO described the company’s approach in the current environment as disciplined, while continuing to invest behind its category-leading brands and bringing new innovation to market.<cite>Robert Hale, Founder, Chairman &amp; CEO — Q2 2026 earnings release, July 23, 2026<sup>[3]</sup></cite></div><div class="qhead">Finance</div><div class="quote">Then-CFO Mark Olsen emphasized the company’s ability to flex back-half investments when discussing advertising spend flexibility.<cite>Mark Olsen, then-CFO (departed Sept 2026) — Q2 2026 earnings call recap, July 2026<sup>[35]</sup></cite></div><div class="qhead">Operations / Product</div><p class="na">No independently verified direct quotes from COO Daniel Ruiz or supply-chain leadership surfaced in this search pass.</p><div class="qhead">Marketing</div><p class="na">No independently verified direct quotes from current marketing/CMO leadership surfaced in this search pass — brand-level commentary above is attributed to the CEO and the prior CEO in earlier quarters.</p><div class="sh p"><span>11</span>Key People</div><div class="conf">Confidence: <span class="c-high">High</span> &nbsp;&nbsp; Last Updated: September 2026</div><div class="tbl"><table class=""><thead><tr><th>Role</th><th>Name</th><th>Notes</th></tr></thead><tbody><tr><td>Founder, Chairman, President &amp; CEO</td><td>Robert Hale</td><td>Returned to the CEO role in August 2025 after the prior CEO’s departure; also served as CEO 1984–2001<sup>[5,12]</sup></td></tr><tr><td>Chief Operating Officer</td><td>Daniel Ruiz</td><td>Named COO October 2025; previously Chief Supply Chain Officer; prior experience at a global brewer and a multinational food company<sup>[14]</sup></td></tr><tr><td>Interim CFO &amp; Treasurer</td><td>Karen Liu</td><td>Chief Accounting Officer since 2015; appointed interim CFO effective Sept 15, 2026 following Mark Olsen’s departure; also served as interim CFO in 2023<sup>[8]</sup></td></tr><tr><td>Former CFO</td><td>Mark Olsen</td><td>Departed Sept 14, 2026 for an opportunity outside the alcohol industry; served ~3 years<sup>[8,9]</sup></td></tr><tr><td>Chief Supply Chain Officer</td><td>Grace Kim</td><td>Promoted into the role in connection with Ruiz’s move to COO<sup>[14]</sup></td></tr><tr><td>Chief People Officer</td><td>Ellen Park</td><td>Appointed November 2025<sup>[5]</sup></td></tr><tr><td>Former President &amp; CEO</td><td>Steven Ward</td><td>Stepped down August 2025 for personal reasons; remains a non-independent board director through the 2026 Annual Meeting, not standing for re-election<sup>[5,12]</sup></td></tr></tbody></table></div><div class="note">LinkedIn URLs: Not included. LinkedIn blocks reliable external indexing, and generating profile links for common names carries a real risk of pointing to the wrong individual. Recommend verifying current profiles directly in LinkedIn Sales Navigator or a connected CRM before outreach.</div><h2 class="sec" style="margin-top:34px">Sources</h2><ol class="srcs"><li>Company Form 8-K, Q2 2026 results — SEC EDGAR, July 2026</li><li>Q2 2026 earnings call summary — earnings-transcript provider, July 2026</li><li>Q2 2026 earnings analysis — financial news, July 2026</li><li>Q2 earnings snapshot — newswire, 2026</li><li>Company Form DEF 14A (Proxy Statement) — SEC EDGAR, FY2026</li><li>CEO transition coverage — beverage trade press, August 2025</li><li>[reserved]</li><li>COO appointment announcement — company newsroom, October 2025</li><li>CFO transition announcement — company press release, August 20, 2026</li><li>CFO search coverage — beverage trade press, August 21, 2026</li><li>Hard seltzer / hard tea competitive coverage — beverage trade press, 2022–2025</li><li>Analyst note on hard tea / seltzer share shift — beverage trade press, 2024</li><li>Company news &amp; key events — market-data aggregator, 2025–2026</li><li>Stunt promotion coverage — consumer news, July 2026</li><li>RTD strategy coverage — food &amp; beverage business press</li><li>2025 brand plans coverage — beverage trade press, October 2024</li><li>Golf sponsorship announcement — company press release</li><li>Q2 2026 deep dive (RTD gains, hard tea headwinds) — financial news, 2026</li></ol><p class="src">Confidence ratings reflect source type: SEC filings and official company announcements are rated High; earnings-call recaps and trade press are rated Medium; aggregator commentary or dated (pre-2025) figures are rated Medium-to-Low and flagged accordingly in-section.</p></div></article>
+</main>
+
+<footer class="footer wrap">GTM AI Agent examples · September 2026 · Anonymized sample outputs — company, brand and people names are fictional.</footer>
+</body>
+</html>
