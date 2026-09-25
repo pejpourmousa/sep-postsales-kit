@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Post-Sales Effort Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f4f6f8; --card:#ffffff; --sunk:#eef1f4; --ink:#12161c; --ink2:#4b5361; --muted:#7d8594;
+  --line:#e2e6eb; --axis:#c4cad3; --grid:#eceff3; --ring:rgba(18,22,28,.10);
+  --accent:#1d5fb8; --accent-soft:#e3edfa;
+  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4; --c6:#008300;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b; --blackh:#2b2f36;
+  --good-ink:#006300; --crit-ink:#b42f2f;
+  --sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0f1216; --card:#171b21; --sunk:#1d222a; --ink:#eef1f5; --ink2:#b6bdc9; --muted:#8a93a1;
+    --line:#2a3038; --axis:#3a414b; --grid:#232830; --ring:rgba(255,255,255,.10);
+    --accent:#6aa5ee; --accent-soft:#1c2a3d;
+    --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300;
+    --blackh:#9aa1ad; --good-ink:#3ec43e; --crit-ink:#f07a7a;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f1216; --card:#171b21; --sunk:#1d222a; --ink:#eef1f5; --ink2:#b6bdc9; --muted:#8a93a1;
+  --line:#2a3038; --axis:#3a414b; --grid:#232830; --ring:rgba(255,255,255,.10);
+  --accent:#6aa5ee; --accent-soft:#1c2a3d;
+  --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300;
+  --blackh:#9aa1ad; --good-ink:#3ec43e; --crit-ink:#f07a7a;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{margin:0;text-wrap:balance}
+h1{font-size:28px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:16px;font-weight:600}
+h3{font-size:13px;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)} .ink2{color:var(--ink2)}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono)}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+header.top .sub{color:var(--ink2);max-width:70ch;margin-top:6px}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:3px 10px;border-radius:999px;background:var(--sunk);color:var(--ink2);border:1px solid var(--line)}
+.badge i{width:7px;height:7px;border-radius:50%;background:var(--c4);display:inline-block}
+
+/* guide */
+details.guide{background:var(--card);border:1px solid var(--line);border-radius:10px}
+details.guide>summary{cursor:pointer;list-style:none;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+details.guide>summary::-webkit-details-marker{display:none}
+details.guide>summary .chev{transition:transform .2s;color:var(--muted)}
+details.guide[open]>summary .chev{transform:rotate(90deg)}
+details.guide>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:10px}
+.guide-body{padding:0 20px 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;border-top:1px solid var(--line);padding-top:18px}
+.guide-body section{display:flex;flex-direction:column;gap:10px;min-width:0}
+.guide-body ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;color:var(--ink2)}
+.guide-body ol b{color:var(--ink)}
+.tbl-wrap{overflow-x:auto}
+table.mini{border-collapse:collapse;width:100%;font-size:12.5px}
+table.mini th{text-align:left;font-weight:600;color:var(--muted);font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:6px 8px 6px 0;border-bottom:1px solid var(--line)}
+table.mini td{padding:6px 8px 6px 0;border-bottom:1px solid var(--grid);vertical-align:top;color:var(--ink2)}
+table.mini td:first-child{color:var(--ink);font-weight:500}
+table.mini td.r,table.mini th.r{text-align:right}
+pre.schema{margin:0;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:12px;font-family:var(--mono);font-size:11.5px;line-height:1.55;overflow-x:auto;color:var(--ink2)}
+.row-between{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+button,select{font:inherit}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer}
+.btn:hover{background:var(--sunk)}
+.btn:focus-visible,select:focus-visible,.seg button:focus-visible,th[data-k]:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.guide-foot{grid-column:1/-1;display:flex;gap:10px;align-items:flex-start;background:var(--accent-soft);border-radius:8px;padding:12px 14px;color:var(--ink2);font-size:13px}
+.guide-foot b{color:var(--ink)}
+
+/* filters */
+.filters{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);padding-block:10px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;border-bottom:1px solid var(--line)}
+.filters label{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+select{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 28px 6px 10px;font-size:13px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--card)}
+.seg button{border:0;background:transparent;color:var(--ink2);padding:6px 12px;font-size:13px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--card)}
+.filters .spacer{flex:1}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.kpi .v{font-size:28px;font-weight:600;letter-spacing:-.01em;line-height:1.15}
+.kpi .v small{font-size:14px;color:var(--muted);font-weight:500}
+.kpi .d{font-size:12px;color:var(--ink2)}
+.meter{height:6px;background:var(--sunk);border-radius:3px;position:relative;margin-top:6px;overflow:visible}
+.meter>span{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--c1)}
+.meter>em{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);border-radius:1px}
+
+/* panels */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.s12{grid-column:span 12}.s7{grid-column:span 7}.s5{grid-column:span 5}.s6{grid-column:span 6}.s4{grid-column:span 4}.s8{grid-column:span 8}
+@media (max-width:980px){.s7,.s5,.s6,.s4,.s8{grid-column:span 12}}
+.ph{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.ph p{font-size:12.5px;color:var(--muted);margin-top:2px;max-width:70ch}
+.src{font-family:var(--mono);font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 6px;white-space:nowrap}
+.src.real{color:var(--ink2)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.legend .grp{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.legend .dash{width:16px;height:0;border-top:2px dashed var(--ink2);border-radius:0}
+.chart{width:100%;position:relative}
+.chart svg{display:block;width:100%;overflow:visible}
+.chart text{font-family:var(--sans);font-size:11px;fill:var(--muted)}
+.chart text.lbl{fill:var(--ink2);font-size:12px}
+.chart text.val{fill:var(--ink);font-size:11px;font-family:var(--mono)}
+.chart .hit{fill:transparent;cursor:default}
+.insight{display:flex;gap:10px;font-size:13px;color:var(--ink2);background:var(--sunk);border-radius:8px;padding:10px 12px}
+.insight b{color:var(--ink)}
+.insight svg{flex:none;margin-top:2px}
+
+/* status chips */
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:500;padding:1px 8px 1px 6px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink2);white-space:nowrap}
+.chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.chip.crit i{background:var(--crit)}.chip.serious i{background:var(--serious)}.chip.warn i{background:var(--warn)}.chip.good i{background:var(--good)}.chip.black i{background:var(--blackh)}
+.chips{display:flex;flex-wrap:nowrap;gap:4px}
+
+/* health table */
+table.cov{border-collapse:collapse;width:100%;font-size:13px}
+table.cov th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--line)}
+table.cov th:first-child{text-align:left}
+table.cov td{padding:7px 8px;border-bottom:1px solid var(--grid);text-align:right;font-variant-numeric:tabular-nums}
+table.cov td:first-child{text-align:left}
+table.cov tr.tot td{font-weight:600;color:var(--ink)}
+.barcell{width:34%;min-width:90px}
+.hbar{height:8px;background:var(--sunk);border-radius:4px;position:relative}
+.hbar span{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0;background:var(--c1)}
+
+/* scorecard */
+table.score{border-collapse:collapse;width:100%;font-size:13px;min-width:1040px}
+table.score th{position:sticky;top:0;background:var(--card);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:right;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;user-select:none}
+table.score th[data-k]{cursor:pointer}
+table.score th[data-k]:hover{color:var(--ink)}
+table.score th.l,table.score td.l{text-align:left}
+table.score td{padding:8px 10px;border-bottom:1px solid var(--grid);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.score tr{cursor:pointer}
+table.score tbody tr:hover td{background:var(--sunk)}
+table.score tr.sel td{background:var(--accent-soft)}
+table.score .who{display:flex;flex-direction:column;line-height:1.25}
+table.score .who small{color:var(--muted);font-size:11.5px}
+.mini-stack{display:flex;height:8px;width:120px;border-radius:2px;overflow:hidden;gap:1px;margin-left:auto;background:var(--card)}
+.sort-ind{color:var(--accent)}
+
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 6px 24px rgba(0,0,0,.14);border-radius:8px;padding:8px 10px;font-size:12px;min-width:150px;max-width:260px;opacity:0;transition:opacity .08s}
+#tip .t{font-weight:600;margin-bottom:4px}
+#tip .r{display:flex;justify-content:space-between;gap:14px;color:var(--ink2)}
+#tip .r b{color:var(--ink);font-family:var(--mono);font-weight:500}
+#tip .r i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:560px){h1{font-size:23px}.kpi .v{font-size:24px}.wrap{padding-inline:16px}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Post-sales governance · AM &amp; CSM</div>
+      <h1>Post-Sales Effort Ledger</h1>
+      <p class="sub">Where Account Manager and CSM hours go: customer-facing versus internal, playbook execution, activity outcomes, and which accounts have gone quiet. Read it like a billable-hours report for the customer book.</p>
+    </div>
+    <span class="badge"><i></i>Sample rep data · real portfolio snapshot from Sep 22, 2026 export</span>
+  </header>
+
+  <!-- ============ BUILD GUIDE ============ -->
+  <details class="guide" open id="guide">
+    <summary>
+      <div>
+        <div class="eyebrow">Build guide</div>
+        <h2 style="margin-top:2px">How to build this dashboard with your own data</h2>
+      </div>
+      <svg class="chev" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </summary>
+    <div class="guide-body">
+      <section>
+        <h3>1 · Sources to connect</h3>
+        <div class="tbl-wrap"><table class="mini">
+          <thead><tr><th>Source</th><th>What to pull</th><th>Feeds</th></tr></thead>
+          <tbody>
+            <tr><td>CRM activities<br><span class="muted">Salesforce Task / Event</span></td><td>Calls (subtype, disposition, duration), logged emails, events. Owner = AM/CSM role.</td><td>Calls, email, outcomes</td></tr>
+            <tr><td>Calendar<br><span class="muted">Google / Outlook, or Einstein Activity Capture</span></td><td>Meeting start/end and attendee email domains</td><td>Customer vs internal meetings</td></tr>
+            <tr><td>Email metadata<br><span class="muted">Gmail / O365, Outreach, Salesloft</span></td><td>Sent, opened, replied per thread, matched to account by domain</td><td>Email time, reply rate</td></tr>
+            <tr><td>Dialer / call recorder<br><span class="muted">Gong, Aircall, Outreach</span></td><td>Talk time, connect flag, disposition</td><td>Call time, connect rate</td></tr>
+            <tr><td>Playbook engine<br><span class="muted">SF playbook object, Gainsight CTAs, ChurnZero, Vitally</span></td><td>Task name, category, status, due date, completed date, owner</td><td>Playbook backlog, SLA</td></tr>
+            <tr><td>Account master</td><td>ARR, health score, renewal date, segment / market cap, owner</td><td>Coverage gap, cost to serve</td></tr>
+            <tr><td>HRIS / PTO<br><span class="muted">Workday, BambooHR, Rippling</span></td><td>Working days, PTO, role, start date</td><td>Capacity denominator</td></tr>
+            <tr><td>Optional</td><td>Slack message counts, Zendesk / Jira ticket touches, CRM field-edit history</td><td>Internal and admin time</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section>
+        <h3>2 · Turn activity into hours (the time model)</h3>
+        <p class="ink2" style="font-size:13px">Few systems log time directly, so each activity type gets a duration: measured where the system records it, standard minutes where it doesn't. Keep the table in one config sheet so RevOps can tune it.</p>
+        <div class="tbl-wrap"><table class="mini">
+          <thead><tr><th>Category</th><th>Rule</th><th class="r">Minutes</th></tr></thead>
+          <tbody>
+            <tr><td><span style="color:var(--c1)">■</span> Customer meetings</td><td>Calendar duration where 1+ attendee has a customer domain</td><td class="r mono">actual</td></tr>
+            <tr><td><span style="color:var(--c2)">■</span> Calls</td><td>Dialer talk time + wrap-up; a no-connect attempt counts as 2 min</td><td class="r mono">talk + 3</td></tr>
+            <tr><td><span style="color:var(--c3)">■</span> Email</td><td>Per customer email sent; replies received counted at 1 min</td><td class="r mono">4</td></tr>
+            <tr><td><span style="color:var(--c4)">■</span> Playbook tasks</td><td>Prep and follow-up by task template (for example, Business Review = 90, No-contact trigger = 10). The customer touch itself is counted as the call, email or meeting, so nothing is counted twice.</td><td class="r mono">by template</td></tr>
+            <tr><td><span style="color:var(--c5)">■</span> Internal meetings</td><td>Calendar duration where all attendees share the company domain</td><td class="r mono">actual</td></tr>
+            <tr><td><span style="color:var(--c6)">■</span> Admin &amp; CRM</td><td>Field edits × 1 min, notes × 3, internal Slack threads × 2</td><td class="r mono">derived</td></tr>
+            <tr><td>Capacity</td><td>(Working days − PTO) × 8 h</td><td class="r mono">480 / day</td></tr>
+          </tbody>
+        </table></div>
+        <p class="muted" style="font-size:12px">Customer-facing % = meetings + calls + email ÷ all logged hours. Utilization = logged hours ÷ capacity. Anything under ~80% utilization usually means activity isn't being captured, not that the rep is idle.</p>
+      </section>
+
+      <section>
+        <h3>3 · Build steps</h3>
+        <ol>
+          <li><b>Lock the taxonomy.</b> Agree the six categories, the customer vs internal domain rule, and which roles count (AM, CSM, Onboarding).</li>
+          <li><b>Pull 13 weeks of raw activity</b> from each source and match every row to an account (by domain) and an owner (by user ID).</li>
+          <li><b>Apply the time model</b> and write one fact table with one row per rep, week and category, using the schema below.</li>
+          <li><b>Join account snapshots</b> (ARR, health, renewal date, last successful touch) to find accounts with no connected call, replied email or held meeting in 90 days.</li>
+          <li><b>Publish.</b> Build the views in Salesforce reports or CRM Analytics, in a warehouse + BI tool (Snowflake/dbt → Looker, Sigma), or export the CSVs and have Claude regenerate this page from them.</li>
+          <li><b>Set the cadence.</b> Managers review the scorecard weekly in 1:1s; leadership reviews coverage gap and cost to serve monthly.</li>
+        </ol>
+        <div class="row-between"><span class="eyebrow">Fact table schema</span><button class="btn" id="copySchema" type="button">Copy</button></div>
+        <pre class="schema" id="schema">rep_id, rep_name, role, week_start,
+category,        -- meetings | calls | email | playbook | internal | admin
+is_external,     -- TRUE for meetings, calls, email
+hours, activity_count, successful_count,
+capacity_hours   -- per rep-week, after PTO
+
+accounts: account_id, owner_id, arr, health,
+  renewal_date, segment, last_successful_touch</pre>
+      </section>
+
+      <div class="guide-foot">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 7v4M8 4.6v.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <div><b>About the data on this page.</b> Rep names and hours are invented examples that show how the views work. Playbook counts, activity outcomes and the no-activity breakdown come from the Sep 22, 2026 dashboard export you shared; rep-level figures are scaled so team totals match that export (531 untouched accounts, $10.2M ARR, 4.7k open playbook tasks). Chart readings from screenshots are approximate.</div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ============ FILTERS ============ -->
+  <div class="filters" role="group" aria-label="Filters">
+    <label for="fRep">Rep <select id="fRep"></select></label>
+    <label for="fRole">Role <select id="fRole"><option value="all">AM + CSM</option><option value="AM">AM only</option><option value="CSM">CSM only</option></select></label>
+    <label>Period
+      <span class="seg" id="fPeriod"><button type="button" data-v="4" aria-pressed="false">Last 4 wks</button><button type="button" data-v="13" aria-pressed="true">Last 13 wks</button></span>
+    </label>
+    <span class="spacer"></span>
+    <span class="muted" style="font-size:12px" id="periodLbl"></span>
+  </div>
+
+  <!-- ============ KPIs ============ -->
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid">
+    <!-- allocation -->
+    <section class="panel s7">
+      <div class="ph">
+        <div><h2>Time allocation by rep</h2><p>Average hours per week, sorted by customer-facing share. The black tick is each rep's weekly capacity after PTO.</p></div>
+        <div style="display:flex;gap:8px;align-items:center"><span class="seg" id="allocMode"><button type="button" data-v="detail" aria-pressed="true">Categories</button><button type="button" data-v="ext" aria-pressed="false">External vs internal</button></span><span class="src">sample</span></div>
+      </div>
+      <div class="legend" id="allocLegend"></div>
+      <div class="chart" id="allocChart"></div>
+    </section>
+
+    <!-- trend + ledger -->
+    <section class="panel s5">
+      <div class="ph">
+        <div><h2>Customer-facing share by week</h2><p>Target is 55% or more of logged hours spent with customers.</p></div>
+        <span class="src">sample</span>
+      </div>
+      <div class="legend" id="trendLegend"></div>
+      <div class="chart" id="trendChart"></div>
+      <div class="ph" style="margin-top:6px">
+        <div><h2 id="ledgerTitle">Weekly hours ledger</h2><p id="ledgerSub">Team average per rep, by category.</p></div>
+      </div>
+      <div class="chart" id="ledgerChart"></div>
+    </section>
+
+    <!-- playbooks -->
+    <section class="panel s6">
+      <div class="ph">
+        <div><h2>Playbook backlog</h2><p>4.7k open or due tasks across 2.2k active playbooks (Account Trigger ~2k, Upsell 170, New Onboarding 21).</p></div>
+        <span class="src real">export · Sep 22</span>
+      </div>
+      <div class="chart" id="pbCat"></div>
+      <h3 style="margin-top:4px">Top task templates</h3>
+      <div class="chart" id="pbName"></div>
+      <div class="insight"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5l6.5 12H1.5z" fill="none" stroke="var(--serious)" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 6.5v3.2M8 11.6v.1" stroke="var(--serious)" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span><b>About 2.5k of the 4.7k tasks exist because nobody has talked to the customer</b> (no strategic contact in 3 or 6 months, no engagement in 30 days). The backlog mostly measures missing coverage, so clearing it depends on the rep's hours, not on better task hygiene.</span></div>
+    </section>
+
+    <!-- outcomes -->
+    <section class="panel s6">
+      <div class="ph">
+        <div><h2>Activity outcomes by month</h2><p>Share of logged calls and emails by result, plus meetings held. February is a partial month.</p></div>
+        <span class="src real">export · approx.</span>
+      </div>
+      <h3>Calls</h3>
+      <div class="legend" id="callLegend"></div>
+      <div class="chart" id="callChart"></div>
+      <h3>Emails</h3>
+      <div class="legend" id="emailLegend"></div>
+      <div class="chart" id="emailChart"></div>
+      <h3>Meetings held</h3>
+      <div class="chart" id="mtgChart"></div>
+      <div class="insight"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5l6.5 12H1.5z" fill="none" stroke="var(--serious)" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 6.5v3.2M8 11.6v.1" stroke="var(--serious)" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span><b>Logged calls fell from ~300 in November to ~30 a month after.</b> A drop that sharp is usually a dialer sync or logging change rather than behavior. Check it before using call data in the time model. About half of emails get no engagement.</span></div>
+    </section>
+
+    <!-- coverage -->
+    <section class="panel s8">
+      <div class="ph">
+        <div><h2>Coverage gap: active customers with no successful activity in 90 days</h2><p>531 of 2,141 active customers (24.8%) had no connected call, replied email or held meeting. 294 of them renew soon.</p></div>
+        <span class="src real">export · Sep 22</span>
+      </div>
+      <div class="tbl-wrap"><table class="cov" id="covHealth"></table></div>
+      <div class="insight"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="var(--crit)" stroke-width="1.6"/><path d="M8 4.8v3.6M8 10.9v.1" stroke="var(--crit)" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span><b>$8.4M of the $10.2M untouched ARR is scored Green</b>, and $4.7M of that renews soon. Health is built on issues and invoices only, so a silent account looks healthy. Add "no successful touch in 90 days" as a health input.</span></div>
+    </section>
+
+    <section class="panel s4">
+      <div class="ph">
+        <div><h2>Untouched ARR by market cap</h2><p>All untouched vs. those with an upcoming renewal.</p></div>
+        <span class="src real">export</span>
+      </div>
+      <div class="legend"><span><i style="background:var(--c1)"></i>All untouched</span><span><i style="background:var(--c2)"></i>Upcoming renewal</span></div>
+      <div class="chart" id="capChart"></div>
+    </section>
+
+    <!-- cost to serve -->
+    <section class="panel s12">
+      <div class="ph">
+        <div><h2>Effort vs. revenue by segment</h2><p>Share of rep hours compared with share of book ARR. Where the blue bar is longer than the orange one, the segment costs more to serve than it pays.</p></div>
+        <span class="src">sample</span>
+      </div>
+      <div class="legend"><span><i style="background:var(--c1)"></i>Share of hours</span><span><i style="background:var(--c2)"></i>Share of ARR</span></div>
+      <div class="chart" id="segChart"></div>
+    </section>
+
+    <!-- scorecard -->
+    <section class="panel s12">
+      <div class="ph">
+        <div><h2>Rep scorecard</h2><p>Select a row to focus the whole page on that rep. Select a column header to sort.</p></div>
+        <span class="src">sample · totals match export</span>
+      </div>
+      <div class="tbl-wrap"><table class="score" id="score"></table></div>
+      <div class="legend" style="gap:6px 16px">
+        <span class="chip crit"><i></i>Coverage gap</span><span class="muted">over 30% of book untouched in 90 days</span>
+        <span class="chip serious"><i></i>Internal-heavy</span><span class="muted">under 45% customer-facing</span>
+        <span class="chip warn"><i></i>Over capacity</span><span class="muted">logged hours over 105% of capacity</span>
+        <span class="chip black"><i></i>Backlog</span><span class="muted">over 450 open playbook tasks</span>
+      </div>
+    </section>
+  </div>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+(function(){
+/* ---------- deterministic sample data ---------- */
+let seed=20260925; const rnd=()=>{seed=(seed*1664525+1013904223)%4294967296;return seed/4294967296};
+const CATS=[
+ {k:'mtg',n:'Customer meetings',c:'--c1',ext:true},
+ {k:'call',n:'Calls',c:'--c2',ext:true},
+ {k:'email',n:'Email',c:'--c3',ext:true},
+ {k:'pb',n:'Playbook tasks',c:'--c4',ext:false},
+ {k:'int',n:'Internal meetings',c:'--c5',ext:false},
+ {k:'adm',n:'Admin & CRM',c:'--c6',ext:false}];
+const REPS=[
+ ['Avery Lin','CSM',[9,2.5,6,5,7,6]],['Brooke Salgado','AM',[11,4,7,3,6,5]],['Caleb Hart','CSM',[6,1.5,5,7,10,9]],
+ ['Dev Mehra','AM',[13,5,8,4,7,6]],['Elena Novak','CSM',[8,2,6,6,8,7]],['Farah Qureshi','CSM',[10,3,7,6,6,5]],
+ ['Gabe Tran','AM',[7,6,6,3,9,7]],['Hana Ito','CSM',[5,1,4,8,11,9]],['Isaac Boateng','CSM',[9,2,6,6,7,6]],
+ ['Julia Ferris','AM',[12,4,9,4,6,5]],['Kofi Mensah','CSM',[7,2,5,7,8,8]],['Lena Vogt','CSM',[8,2.5,5,6,7,7]]];
+const WEEKS=13; const lastWeek=new Date(2026,8,21);
+const weekLabel=i=>{const d=new Date(lastWeek);d.setDate(d.getDate()-7*(WEEKS-1-i));return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})};
+// allocations that sum to export totals
+function alloc(total,weights){const s=weights.reduce((a,b)=>a+b,0);let out=weights.map(w=>Math.floor(total*w/s));let r=total-out.reduce((a,b)=>a+b,0);for(let i=0;r>0;i=(i+1)%out.length,r--)out[i]++;return out}
+const untW=[.8,.6,1.5,.5,1.1,.7,1.0,1.9,.9,.5,1.3,1.0].map(w=>w*(0.9+rnd()*.2));
+const bookW=REPS.map(()=>0.85+rnd()*.3);
+const books=alloc(2141,bookW), untouched=alloc(531,untW);
+const untArr=alloc(10210958,untW.map((w,i)=>w*(0.8+rnd()*.4)));
+const pbOpen=alloc(4700,[.9,.7,1.3,.6,1.1,.9,.9,1.5,1,.6,1.2,1.1]);
+const reps=REPS.map((r,i)=>{
+  const weeks=[];
+  for(let w=0;w<WEEKS;w++){
+    const pto=rnd()<.09?(rnd()<.5?8:16):0; const cap=40-pto; const f=cap/40*(0.93+rnd()*.14);
+    const drift=1+(w-6)*0.006*(i%3-1);
+    const h={}; CATS.forEach((c,j)=>{h[c.k]=Math.max(0,r[2][j]*f*(0.82+rnd()*.36)*(c.ext?drift:1/drift))});
+    weeks.push({cap,h});
+  }
+  const bookArr=Math.round((books[i]*(r[1]==='AM'?24000:19000))*(0.85+rnd()*.3));
+  return {id:i,name:r[0],role:r[1],weeks,book:books[i],bookArr,untouched:untouched[i],untArr:untArr[i],pbOpen:pbOpen[i],
+    connRate:.18+rnd()*.17, replyRate:.30+rnd()*.16, pbDone:Math.round(pbOpen[i]*(0.5+rnd()*.5))};
+});
+
+/* ---------- state ---------- */
+const S={rep:'all',role:'all',period:13,allocMode:'detail',sort:{k:'ext',d:-1}};
+try{const s=JSON.parse(localStorage.getItem('effortLedger')||'{}');Object.assign(S,s)}catch(e){}
+const save=()=>{try{localStorage.setItem('effortLedger',JSON.stringify(S))}catch(e){}};
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const $=id=>document.getElementById(id);
+const fmt=n=>n.toLocaleString('en-US',{maximumFractionDigits:0});
+const fmt1=n=>n.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
+const money=n=>n>=1e6?'$'+(n/1e6).toFixed(n>=1e7?1:2)+'M':n>=1e3?'$'+Math.round(n/1e3)+'k':'$'+fmt(n);
+const pct=n=>Math.round(n*100)+'%';
+
+function stats(r,N){
+  const ws=r.weeks.slice(WEEKS-N); const h={}; CATS.forEach(c=>h[c.k]=0); let cap=0;
+  ws.forEach(w=>{cap+=w.cap;CATS.forEach(c=>h[c.k]+=w.h[c.k])});
+  const tot=CATS.reduce((a,c)=>a+h[c.k],0), ext=h.mtg+h.call+h.email;
+  const mtgs=h.mtg/0.75, calls=h.call*60/7, emails=h.email*60/4;
+  return {r,h,tot,cap,ext,extPct:ext/tot,util:tot/cap,perWk:tot/N,capWk:cap/N,
+    mtgsWk:mtgs/N,calls,connected:calls*r.connRate,emails,replyRate:r.replyRate,
+    untPct:r.untouched/r.book};
+}
+function flags(s){const f=[];if(s.untPct>.30)f.push(['crit','Coverage gap']);if(s.extPct<.45)f.push(['serious','Internal-heavy']);if(s.util>1.05)f.push(['warn','Over capacity']);if(s.r.pbOpen>450)f.push(['black','Backlog']);return f}
+const inRole=r=>S.role==='all'||r.role===S.role;
+
+/* ---------- tooltip ---------- */
+const tip=$('tip');
+function showTip(e,title,rows){
+  tip.innerHTML=`<div class="t">${title}</div>`+rows.map(r=>`<div class="r"><span>${r[2]?`<i style="background:${r[2]}"></i>`:''}${r[0]}</span><b>${r[1]}</b></div>`).join('');
+  tip.style.opacity=1; moveTip(e);
+}
+function moveTip(e){const w=tip.offsetWidth,h=tip.offsetHeight;let x=e.clientX+14,y=e.clientY+14;if(x+w>innerWidth-8)x=e.clientX-w-14;if(y+h>innerHeight-8)y=e.clientY-h-14;tip.style.left=x+'px';tip.style.top=y+'px'}
+const hideTip=()=>tip.style.opacity=0;
+function bindTips(root,fn){root.querySelectorAll('[data-tip]').forEach(el=>{
+  el.addEventListener('pointerenter',e=>{const t=fn(el.dataset.tip);showTip(e,t[0],t[1])});
+  el.addEventListener('pointermove',moveTip);el.addEventListener('pointerleave',hideTip)})}
+
+/* ---------- controls ---------- */
+const fRep=$('fRep');
+function fillRep(){fRep.innerHTML='<option value="all">All reps (team)</option>'+reps.filter(inRole).map(r=>`<option value="${r.id}">${r.name} · ${r.role}</option>`).join('');
+  if(S.rep!=='all'&&!reps.filter(inRole).some(r=>String(r.id)===String(S.rep)))S.rep='all'; fRep.value=S.rep}
+fRep.onchange=()=>{S.rep=fRep.value;render()};
+$('fRole').value=S.role; $('fRole').onchange=e=>{S.role=e.target.value;fillRep();render()};
+function seg(id,key,num){const el=$(id);el.querySelectorAll('button').forEach(b=>{b.setAttribute('aria-pressed',String(String(S[key])===b.dataset.v));b.onclick=()=>{S[key]=num?+b.dataset.v:b.dataset.v;el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));render()}})}
+seg('fPeriod','period',true); seg('allocMode','allocMode',false);
+$('copySchema').onclick=async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText($('schema').textContent);b.textContent='Copied'}catch(err){const sel=getSelection(),rg=document.createRange();rg.selectNodeContents($('schema'));sel.removeAllRanges();sel.addRange(rg);b.textContent='Selected, press Ctrl/Cmd+C'}setTimeout(()=>b.textContent='Copy',2200)};
+
+/* ---------- render ---------- */
+function render(){
+  save();
+  const N=S.period; const pool=reps.filter(inRole); const all=pool.map(r=>stats(r,N));
+  const sel=S.rep==='all'?null:all.find(s=>String(s.r.id)===String(S.rep));
+  const scope=sel?[sel]:all;
+  $('periodLbl').textContent=`Weeks of ${weekLabel(WEEKS-N)} – ${weekLabel(WEEKS-1)}, 2026`;
+  renderKpis(scope,sel,all,N); renderAlloc(all,sel); renderTrend(pool,sel,N); renderLedger(pool,sel,N); renderScore(all,sel);
+}
+
+function renderKpis(scope,sel,all,N){
+  const sum=(a,f)=>a.reduce((x,s)=>x+f(s),0);
+  const tot=sum(scope,s=>s.tot), ext=sum(scope,s=>s.ext), cap=sum(scope,s=>s.cap);
+  const book=sum(scope,s=>s.r.book), unt=sum(scope,s=>s.r.untouched), uarr=sum(scope,s=>s.r.untArr);
+  const pbO=sum(scope,s=>s.r.pbOpen), pbD=sum(scope,s=>s.r.pbDone);
+  const mtg=sum(scope,s=>s.mtgsWk)/scope.length;
+  const conn=sum(scope,s=>s.connected)/sum(scope,s=>s.calls), rep=sum(scope,s=>s.emails*s.replyRate)/sum(scope,s=>s.emails);
+  const teamExt=sum(all,s=>s.ext)/sum(all,s=>s.tot);
+  const who=sel?sel.r.name.split(' ')[0]:'Team';
+  const k=[
+    ['Customer-facing time',`${pct(ext/tot)}`,`${fmt(ext)} of ${fmt(tot)} hrs${sel?` · team ${pct(teamExt)}`:''}`,{v:ext/tot,t:.55}],
+    ['Utilization',`${pct(tot/cap)}`,`${fmt1(tot/N/scope.length)} hrs logged / ${fmt1(cap/N/scope.length)} capacity per wk`,{v:Math.min(tot/cap,1.2)/1.2,t:1/1.2}],
+    ['Meetings held',`${fmt1(mtg)}<small> /wk</small>`,`${sel?'':'per rep · '}calls connect ${pct(conn)} · email reply ${pct(rep)}`],
+    ['Open playbook tasks',fmt(pbO),`${fmt(pbD)} completed in last 13 wks · ${pct(pbD/(pbD+pbO))} done`],
+    ['Untouched 90+ days',`${fmt(unt)}<small> accts</small>`,`${money(uarr)} ARR · ${pct(unt/book)} of ${fmt(book)} in ${sel?who+"'s":'the'} book`]];
+  $('kpis').innerHTML=k.map(x=>`<div class="kpi"><div class="eyebrow">${x[0]}</div><div class="v num">${x[1]}</div><div class="d">${x[2]}</div>${x[3]?`<div class="meter" aria-hidden="true"><span style="width:${(x[3].v*100).toFixed(1)}%"></span><em style="left:calc(${(x[3].t*100).toFixed(1)}% - 1px)" title="target"></em></div>`:''}</div>`).join('');
+}
+
+function legendHTML(items){return items.map(i=>i.grp?`<span class="grp">${i.grp}</span>`:i.dash?`<span><i class="dash"></i>${i.n}</span>`:`<span><i style="background:var(${i.c})"></i>${i.n}</span>`).join('')}
+
+function renderAlloc(all,sel){
+  const el=$('allocChart'); const W=el.clientWidth||700; const ext=S.allocMode==='ext';
+  const series=ext?[{k:'ext',n:'Customer-facing',c:'--c1'},{k:'intl',n:'Internal',c:'--c2'}]:CATS;
+  $('allocLegend').innerHTML=ext?legendHTML(series):legendHTML([{grp:'Customer-facing'},...CATS.slice(0,3),{grp:'Internal'},...CATS.slice(3)])+'<span><i style="background:var(--ink);width:2px;height:12px;border-radius:0"></i>Capacity</span>';
+  const rows=[...all].sort((a,b)=>b.extPct-a.extPct);
+  const L=W<520?92:128, R=48, rh=26, top=6, H=top+rows.length*rh+24, max=50, x=v=>L+(W-L-R)*v/max;
+  let s=`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Average weekly hours by category per rep">`;
+  for(let t=0;t<=max;t+=10)s+=`<line x1="${x(t)}" x2="${x(t)}" y1="${top}" y2="${H-20}" stroke="${css('--grid')}"/><text x="${x(t)}" y="${H-6}" text-anchor="middle" class="num">${t}h</text>`;
+  rows.forEach((st,i)=>{
+    const y=top+i*rh+5, bh=rh-10, N=S.period; const dim=sel&&sel.r.id!==st.r.id;
+    const vals=ext?[{k:'ext',v:st.ext/N,c:'--c1',n:'Customer-facing'},{k:'intl',v:(st.tot-st.ext)/N,c:'--c2',n:'Internal'}]:CATS.map(c=>({k:c.k,v:st.h[c.k]/N,c:c.c,n:c.n}));
+    let cx=x(0);
+    s+=`<g opacity="${dim?.28:1}">`;
+    s+=`<text x="${L-8}" y="${y+bh/2+4}" text-anchor="end" class="lbl" ${sel&&!dim?'font-weight="600"':''}>${W<520?st.r.name.split(' ')[0]:st.r.name}</text>`;
+    vals.forEach((v,j)=>{const w=Math.max(0,x(v.v)-x(0)-2);const last=j===vals.length-1;
+      s+= last?`<path d="M${cx},${y}h${Math.max(0,w-4)}a4,4 0 0 1 4,4v${bh-8}a4,4 0 0 1 -4,4h${-Math.max(0,w-4)}z" fill="${css(v.c)}"/>`:`<rect x="${cx}" y="${y}" width="${w}" height="${bh}" fill="${css(v.c)}"/>`;
+      cx+=w+2;});
+    s+=`<line x1="${x(st.capWk)}" x2="${x(st.capWk)}" y1="${y-3}" y2="${y+bh+3}" stroke="${css('--ink')}" stroke-width="2"/>`;
+    s+=`<text x="${W-R+6}" y="${y+bh/2+4}" class="val">${pct(st.extPct)}</text>`;
+    s+=`<rect class="hit" x="0" y="${y-5}" width="${W}" height="${rh}" data-tip="${st.r.id}"/></g>`;
+  });
+  s+='</svg>'; el.innerHTML=s;
+  bindTips(el,id=>{const st=all.find(a=>String(a.r.id)===id),N=S.period;return [`${st.r.name} · ${st.r.role}`,[...CATS.map(c=>[c.n,fmt1(st.h[c.k]/N)+' h',css(c.c)]),['Logged / capacity',`${fmt1(st.perWk)} / ${fmt1(st.capWk)} h`],['Customer-facing',pct(st.extPct)]]]});
+  el.querySelectorAll('.hit').forEach(h=>h.addEventListener('click',()=>{S.rep=String(S.rep)===h.dataset.tip?'all':h.dataset.tip;fRep.value=S.rep;render()}));
+}
+
+function weekly(pool,i){const h={};CATS.forEach(c=>h[c.k]=0);let cap=0;pool.forEach(r=>{cap+=r.weeks[i].cap;CATS.forEach(c=>h[c.k]+=r.weeks[i].h[c.k])});const tot=CATS.reduce((a,c)=>a+h[c.k],0);return{h,tot,cap,ext:(h.mtg+h.call+h.email)/tot}}
+
+function renderTrend(pool,sel,N){
+  const el=$('trendChart'); const W=el.clientWidth||480, H=190, L=36, R=14, T=10, B=24;
+  const idx=[...Array(N).keys()].map(i=>WEEKS-N+i);
+  const team=idx.map(i=>weekly(pool,i).ext), mine=sel?idx.map(i=>weekly([sel.r],i).ext):null;
+  const vals=[...team,...(mine||[]),.55]; let lo=Math.floor(Math.min(...vals)*20)/20-.05, hi=Math.ceil(Math.max(...vals)*20)/20+.05; lo=Math.max(0,lo);
+  const x=i=>L+(W-L-R)*(N===1?0:i/(N-1)), y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
+  $('trendLegend').innerHTML=legendHTML([...(sel?[{n:sel.r.name,c:'--c1'},{n:'Team',c:'--c2'}]:[{n:'Team',c:'--c1'}]),{n:'Target 55%',dash:true}]);
+  let s=`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Weekly customer-facing share">`;
+  for(let v=Math.ceil(lo*20)/20;v<=hi+1e-9;v+=.05){s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${css('--grid')}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" class="num">${Math.round(v*100)}%</text>`}
+  const step=N>8?3:1; idx.forEach((wi,i)=>{if(i%step===0||i===N-1)s+=`<text x="${x(i)}" y="${H-6}" text-anchor="middle">${weekLabel(wi)}</text>`});
+  s+=`<line x1="${L}" x2="${W-R}" y1="${y(.55)}" y2="${y(.55)}" stroke="${css('--ink2')}" stroke-dasharray="5 4" stroke-width="1.5"/>`;
+  const line=(arr,c,w)=>`<path d="${arr.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1)).join('')}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const area=(arr,c)=>`<path d="${arr.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1)).join('')}L${x(N-1)},${H-B}L${x(0)},${H-B}Z" fill="${c}" opacity=".10"/>`;
+  if(sel){s+=line(team,css('--c2'),2);s+=area(mine,css('--c1'));s+=line(mine,css('--c1'),2)}else{s+=area(team,css('--c1'));s+=line(team,css('--c1'),2)}
+  const main=mine||team; s+=`<circle cx="${x(N-1)}" cy="${y(main[N-1])}" r="4.5" fill="${css('--c1')}" stroke="${css('--card')}" stroke-width="2"/><text x="${x(N-1)-8}" y="${y(main[N-1])-9}" text-anchor="end" class="val">${pct(main[N-1])}</text>`;
+  s+=`<line id="xh" x1="0" x2="0" y1="${T}" y2="${H-B}" stroke="${css('--axis')}" opacity="0"/>`;
+  s+=`<rect class="hit" id="trendHit" x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}"/></svg>`;
+  el.innerHTML=s;
+  const hit=el.querySelector('#trendHit'), xh=el.querySelector('#xh');
+  hit.addEventListener('pointermove',e=>{const b=hit.getBoundingClientRect();const i=Math.max(0,Math.min(N-1,Math.round((e.clientX-b.left)/b.width*(N-1))));xh.setAttribute('x1',x(i));xh.setAttribute('x2',x(i));xh.setAttribute('opacity',1);
+    const rows=sel?[[sel.r.name.split(' ')[0],pct(mine[i]),css('--c1')],['Team',pct(team[i]),css('--c2')]]:[['Team',pct(team[i]),css('--c1')]];
+    showTip(e,'Week of '+weekLabel(idx[i]),[...rows,['Target','55%']])});
+  hit.addEventListener('pointerleave',()=>{xh.setAttribute('opacity',0);hideTip()});
+}
+
+function renderLedger(pool,sel,N){
+  const el=$('ledgerChart'); const W=el.clientWidth||480, H=170, L=36, R=6, T=8, B=24;
+  const who=sel?[sel.r]:pool, div=sel?1:pool.length;
+  $('ledgerTitle').textContent=sel?`${sel.r.name}'s weekly hours`:'Weekly hours ledger';
+  $('ledgerSub').textContent=sel?'Hours by category each week against capacity (black line).':'Team average per rep, by category, against average capacity (black line).';
+  const idx=[...Array(N).keys()].map(i=>WEEKS-N+i); const wk=idx.map(i=>weekly(who,i));
+  const max=50, y=v=>T+(H-T-B)*(1-v/max), slot=(W-L-R)/N, bw=Math.min(34,slot*.62);
+  let s=`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Weekly hours by category">`;
+  for(let t=0;t<=max;t+=10)s+=`<line x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}" stroke="${css('--grid')}"/><text x="${L-6}" y="${y(t)+4}" text-anchor="end" class="num">${t}h</text>`;
+  wk.forEach((w,i)=>{const cx=L+slot*i+(slot-bw)/2;let acc=0;
+    CATS.forEach((c,j)=>{const v=w.h[c.k]/div;const y1=y(acc+v),y0=y(acc);const h=Math.max(0,y0-y1-(j? 2:0));
+      if(j===CATS.length-1)s+=`<path d="M${cx},${y0-(j?2:0)}v${-Math.max(0,h-4)}a4,4 0 0 1 4,-4h${bw-8}a4,4 0 0 1 4,4v${Math.max(0,h-4)}z" fill="${css(c.c)}"/>`;
+      else s+=`<rect x="${cx}" y="${y0-h-(j?2:0)}" width="${bw}" height="${h}" fill="${css(c.c)}"/>`; acc+=v});
+    s+=`<line x1="${cx-3}" x2="${cx+bw+3}" y1="${y(w.cap/div)}" y2="${y(w.cap/div)}" stroke="${css('--ink')}" stroke-width="2"/>`;
+    if(N<=4||i%3===0||i===N-1)s+=`<text x="${cx+bw/2}" y="${H-6}" text-anchor="middle">${weekLabel(idx[i])}</text>`;
+    s+=`<rect class="hit" x="${L+slot*i}" y="${T}" width="${slot}" height="${H-T-B}" data-tip="${i}"/>`});
+  s+='</svg>'; el.innerHTML=s;
+  bindTips(el,i=>{const w=wk[+i];return ['Week of '+weekLabel(idx[+i]),[...CATS.map(c=>[c.n,fmt1(w.h[c.k]/div)+' h',css(c.c)]),['Logged / capacity',`${fmt1(w.tot/div)} / ${fmt1(w.cap/div)} h`]]]});
+}
+
+/* ---------- static export panels ---------- */
+function hbars(el,rows,opts={}){
+  const W=el.clientWidth||520, L=opts.L||(W<520?140:210), R=54, rh=opts.rh||22, H=rows.length*rh+22, max=opts.max||Math.max(...rows.map(r=>r[1]));
+  const x=v=>L+(W-L-R)*v/max; let s=`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="${opts.aria||''}">`;
+  const tickStep=opts.tick||max/4; for(let t=0;t<=max+1e-9;t+=tickStep)s+=`<line x1="${x(t)}" x2="${x(t)}" y1="0" y2="${H-18}" stroke="${css('--grid')}"/><text x="${x(t)}" y="${H-4}" text-anchor="middle" class="num">${opts.tf?opts.tf(t):fmt(t)}</text>`;
+  rows.forEach((r,i)=>{const y=i*rh+5,bh=rh-10,w=Math.max(2,x(r[1])-x(0));let name=r[0];const maxc=Math.floor((L-10)/6.1);if(name.length>maxc)name=name.slice(0,maxc-1)+'…';
+    s+=`<text x="${L-8}" y="${y+bh/2+4}" text-anchor="end" class="lbl">${name}</text><path d="M${x(0)},${y}h${w-4}a4,4 0 0 1 4,4v${bh-8}a4,4 0 0 1 -4,4h${-(w-4)}z" fill="${css(r[2]||'--c1')}"/><text x="${x(0)+w+6}" y="${y+bh/2+4}" class="val">${r[3]||fmt(r[1])}</text><rect class="hit" x="0" y="${y-5}" width="${W}" height="${rh}" data-tip="${i}"/>`});
+  el.innerHTML=s+'</svg>';
+  bindTips(el,i=>[rows[+i][0],[[opts.unit||'Tasks',rows[+i][3]||fmt(rows[+i][1])]]]);
+}
+const PB_CAT=[['Strategic Engagement',3800,'--c1','~3.8k'],['Upsell',399],['Adoption',231],['New Onboarding',154],['Billing',119]];
+const PB_NAME=[['No strategic contact in 3 months',1200,'--c1','~1.2k'],['Schedule Account Business Review',1000,'--c1','~1.0k'],['No strategic contact in 6 months',750],['No engagement in 30 days',587],['Adoption Score is Red or Yellow',231],['Upsell Training – Website Upsell',125],['Invoice 60+ days overdue',119],['Renewal date has passed',94],['Upsell Training – Platform Upsell',62],['No AM/CSM activity in 30 days',59]];
+const CALLS={m:['Nov 2025','Dec 2025','Jan 2026','Feb 2026'],s:[['Connected','--c1',[2,22,20,20]],['Connected – no interest','--c2',[2,3,1,3]],['Left voicemail','--c3',[4,33,15,13]],['No connection','--c4',[92,42,64,64]]],n:[300,30,35,28]};
+const EMAILS={m:CALLS.m,s:[['No engagement','--c1',[49,52,53,52]],['Opened','--c2',[13,11,11,16]],['Replied','--c3',[38,37,36,32]]],n:[2650,3150,3600,1300]};
+const MTG=[['Nov 2025',220],['Dec 2025',271],['Jan 2026',357],['Feb 2026 (partial)',84]];
+function stack100(el,legEl,D){
+  legEl.innerHTML=legendHTML(D.s.map(s=>({n:s[0],c:s[1]})));
+  const W=el.clientWidth||520,L=W<520?70:84,R=10,rh=24,H=D.m.length*rh+20,x=v=>L+(W-L-R)*v/100;
+  let s=`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img">`;
+  [0,25,50,75,100].forEach(t=>s+=`<line x1="${x(t)}" x2="${x(t)}" y1="0" y2="${H-18}" stroke="${css('--grid')}"/><text x="${x(t)}" y="${H-4}" text-anchor="middle" class="num">${t}%</text>`);
+  D.m.forEach((m,i)=>{const y=i*rh+4,bh=rh-8;let acc=0;s+=`<text x="${L-8}" y="${y+bh/2+4}" text-anchor="end" class="lbl">${m.replace(' 20',' ’')}</text>`;
+    D.s.forEach((sr,j)=>{const w=Math.max(0,x(acc+sr[2][i])-x(acc)-(j<D.s.length-1?2:0));s+=`<rect x="${x(acc)}" y="${y}" width="${w}" height="${bh}" fill="${css(sr[1])}" ${j===D.s.length-1?'rx="0"':''}/>`;acc+=sr[2][i]});
+    s+=`<rect class="hit" x="0" y="${y-4}" width="${W}" height="${rh}" data-tip="${i}"/>`});
+  el.innerHTML=s+'</svg>';
+  bindTips(el,i=>[`${D.m[+i]} · ~${fmt(D.n[+i])} logged`,D.s.map(sr=>[sr[0],sr[2][+i]+'%',css(sr[1])])]);
+}
+const HEALTH=[['Black','black','Open cancellation notice',12,328999,5,127510],['Red','crit','At-risk issue or invoice 60+ days overdue',50,990065,30,593376],['Yellow','warn','3+ escalated issues in 6 months',23,457509,13,215033],['Green','good','No open issues or overdue invoices',446,8434384,246,4732778]];
+function covTable(){
+  const maxA=Math.max(...HEALTH.map(h=>h[4]));
+  let s=`<thead><tr><th>Health score</th><th>Customers</th><th>ARR</th><th class="barcell" style="text-align:left">Untouched ARR</th><th>Upcoming renewal</th><th>Renewal ARR</th></tr></thead><tbody>`;
+  HEALTH.forEach(h=>{s+=`<tr><td><span class="chip ${h[1]}"><i></i>${h[0]}</span><div class="muted" style="font-size:11.5px;margin-top:2px">${h[2]}</div></td><td>${fmt(h[3])}</td><td>${money(h[4])}</td><td class="barcell"><div class="hbar"><span style="width:${(h[4]/maxA*100).toFixed(1)}%;background:var(--c1)"></span><span style="width:${(h[6]/maxA*100).toFixed(1)}%;background:var(--c2);top:2px;bottom:2px;opacity:1"></span></div></td><td>${fmt(h[5])}</td><td>${money(h[6])}</td></tr>`});
+  s+=`<tr class="tot"><td>All untouched</td><td>531</td><td>$10.21M</td><td class="barcell"><span class="legend" style="font-weight:400"><span><i style="background:var(--c1)"></i>all</span><span><i style="background:var(--c2)"></i>renewing</span></span></td><td>294</td><td>$5.67M</td></tr></tbody>`;
+  $('covHealth').innerHTML=s;
+}
+const CAP=[['Mega',42488,42488,5,4],['Large',1239025,538349,59,30],['Mid',2068324,1425114,93,58],['Small',3472311,2041838,166,96],['Micro',1832752,999403,107,59],['Nano',88528,21137,12,4],['Private',1326081,600368,82,41],['Unknown',141449,0,7,2]];
+function capChart(){
+  const el=$('capChart'),W=el.clientWidth||360,L=64,R=50,gh=34,H=CAP.length*gh+20,max=3.6e6,x=v=>L+(W-L-R)*v/max;
+  let s=`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Untouched ARR by market cap">`;
+  [0,1e6,2e6,3e6].forEach(t=>s+=`<line x1="${x(t)}" x2="${x(t)}" y1="0" y2="${H-18}" stroke="${css('--grid')}"/><text x="${x(t)}" y="${H-4}" text-anchor="middle" class="num">${t?'$'+t/1e6+'M':'0'}</text>`);
+  CAP.forEach((c,i)=>{const y=i*gh+4;s+=`<text x="${L-8}" y="${y+13}" text-anchor="end" class="lbl">${c[0]}</text>`;
+    [[c[1],'--c1'],[c[2],'--c2']].forEach((b,j)=>{const w=Math.max(2,x(b[0])-x(0)),yy=y+j*13;s+=`<path d="M${x(0)},${yy}h${Math.max(0,w-3)}a3,3 0 0 1 3,3v5a3,3 0 0 1 -3,3h${-Math.max(0,w-3)}z" fill="${css(b[1])}"/>`});
+    s+=`<text x="${x(c[1])+6}" y="${y+9}" class="val">${money(c[1])}</text><rect class="hit" x="0" y="${y-2}" width="${W}" height="${gh}" data-tip="${i}"/>`});
+  el.innerHTML=s+'</svg>';
+  bindTips(el,i=>{const c=CAP[+i];return [c[0],[['All untouched',`${c[3]} · ${money(c[1])}`,css('--c1')],['Upcoming renewal',`${c[4]} · ${money(c[2])}`,css('--c2')]]]});
+}
+const SEG=[['Enterprise (Mega + Large)',14,31,'62 h per $100k'],['Mid',22,27,'24'],['Small',31,24,'17'],['Micro + Nano',23,11,'9'],['Private / unknown',10,7,'6']];
+function segChart(){
+  const el=$('segChart'),W=el.clientWidth||900,L=W<520?120:190,R=60,gh=40,H=SEG.length*gh+20,max=35,x=v=>L+(W-L-R)*v/max;
+  let s=`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Share of hours vs share of ARR by segment">`;
+  [0,10,20,30].forEach(t=>s+=`<line x1="${x(t)}" x2="${x(t)}" y1="0" y2="${H-18}" stroke="${css('--grid')}"/><text x="${x(t)}" y="${H-4}" text-anchor="middle" class="num">${t}%</text>`);
+  SEG.forEach((g,i)=>{const y=i*gh+5;s+=`<text x="${L-8}" y="${y+16}" text-anchor="end" class="lbl">${g[0]}</text>`;
+    [[g[1],'--c1'],[g[2],'--c2']].forEach((b,j)=>{const w=x(b[0])-x(0),yy=y+j*15;s+=`<path d="M${x(0)},${yy}h${w-4}a4,4 0 0 1 4,4v4a4,4 0 0 1 -4,4h${-(w-4)}z" fill="${css(b[1])}"/><text x="${x(b[0])+6}" y="${yy+10}" class="val">${b[0]}%</text>`});
+    const over=g[1]>g[2];s+=`<rect class="hit" x="0" y="${y-4}" width="${W}" height="${gh}" data-tip="${i}"/>`});
+  el.innerHTML=s+'</svg>';
+  bindTips(el,i=>{const g=SEG[+i];return [g[0],[['Share of hours',g[1]+'%',css('--c1')],['Share of ARR',g[2]+'%',css('--c2')],['Effort ratio',(g[1]/g[2]).toFixed(2)+'×']]]});
+}
+
+/* ---------- scorecard ---------- */
+const COLS=[
+ {k:'name',n:'Rep',l:true,v:s=>s.r.name,f:s=>`<div class="who">${s.r.name}<small>${s.r.role} · ${s.r.book} accts · ${money(s.r.bookArr)}</small></div>`},
+ {k:'mix',n:'Time mix',v:s=>s.extPct,f:s=>`<div class="mini-stack" title="Category mix">${CATS.map(c=>`<span style="flex:${s.h[c.k].toFixed(2)};background:var(${c.c})"></span>`).join('')}</div>`},
+ {k:'perWk',n:'Hrs / wk',v:s=>s.perWk,f:s=>fmt1(s.perWk)},
+ {k:'util',n:'Utilization',v:s=>s.util,f:s=>pct(s.util)},
+ {k:'ext',n:'Customer-facing',v:s=>s.extPct,f:s=>pct(s.extPct)},
+ {k:'int',n:'Internal',v:s=>1-s.extPct,f:s=>pct(1-s.extPct)},
+ {k:'mtg',n:'Mtgs / wk',v:s=>s.mtgsWk,f:s=>fmt1(s.mtgsWk)},
+ {k:'conn',n:'Calls connected',v:s=>s.connected,f:s=>`${fmt(s.connected)} <span class="muted">/ ${fmt(s.calls)}</span>`},
+ {k:'reply',n:'Email reply',v:s=>s.replyRate,f:s=>pct(s.replyRate)},
+ {k:'pb',n:'Open tasks',v:s=>s.r.pbOpen,f:s=>fmt(s.r.pbOpen)},
+ {k:'unt',n:'Untouched 90d',v:s=>s.untPct,f:s=>`${s.r.untouched} <span class="muted">(${pct(s.untPct)})</span>`},
+ {k:'uarr',n:'Untouched ARR',v:s=>s.r.untArr,f:s=>money(s.r.untArr)},
+ {k:'flags',n:'Flags',l:true,v:s=>flags(s).length,f:s=>`<div class="chips">${flags(s).map(f=>`<span class="chip ${f[0]}"><i></i>${f[1]}</span>`).join('')||'<span class="muted">—</span>'}</div>`}];
+function renderScore(all,sel){
+  const c=COLS.find(c=>c.k===S.sort.k)||COLS[4]; const rows=[...all].sort((a,b)=>{const va=c.v(a),vb=c.v(b);return (va>vb?1:va<vb?-1:0)*S.sort.d});
+  let h=`<thead><tr>${COLS.map(col=>`<th class="${col.l?'l':''}" data-k="${col.k}" tabindex="0" aria-sort="${S.sort.k===col.k?(S.sort.d>0?'ascending':'descending'):'none'}">${col.n}${S.sort.k===col.k?` <span class="sort-ind">${S.sort.d>0?'↑':'↓'}</span>`:''}</th>`).join('')}</tr></thead><tbody>`;
+  rows.forEach(s=>h+=`<tr data-id="${s.r.id}" class="${sel&&sel.r.id===s.r.id?'sel':''}">${COLS.map(col=>`<td class="${col.l?'l':''}">${col.f(s)}</td>`).join('')}</tr>`);
+  const t=all.reduce((a,s)=>({tot:a.tot+s.tot,ext:a.ext+s.ext,cap:a.cap+s.cap,unt:a.unt+s.r.untouched,book:a.book+s.r.book,uarr:a.uarr+s.r.untArr,pb:a.pb+s.r.pbOpen}),{tot:0,ext:0,cap:0,unt:0,book:0,uarr:0,pb:0});
+  h+=`<tr style="cursor:default"><td class="l"><b>Team</b></td><td></td><td>${fmt1(t.tot/S.period/all.length)}</td><td>${pct(t.tot/t.cap)}</td><td>${pct(t.ext/t.tot)}</td><td>${pct(1-t.ext/t.tot)}</td><td></td><td></td><td></td><td><b>${fmt(t.pb)}</b></td><td><b>${fmt(t.unt)}</b> <span class="muted">(${pct(t.unt/t.book)})</span></td><td><b>${money(t.uarr)}</b></td><td></td></tr></tbody>`;
+  const tb=$('score'); tb.innerHTML=h;
+  tb.querySelectorAll('th[data-k]').forEach(th=>{const go=()=>{const k=th.dataset.k;S.sort=S.sort.k===k?{k,d:-S.sort.d}:{k,d:k==='name'?1:-1};render()};th.onclick=go;th.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}}});
+  tb.querySelectorAll('tbody tr[data-id]').forEach(tr=>tr.onclick=()=>{S.rep=String(S.rep)===tr.dataset.id?'all':tr.dataset.id;fillRep();render();window.scrollTo({top:$('kpis').offsetTop-70,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})});
+}
+
+function renderStatic(){
+  hbars($('pbCat'),PB_CAT.map(r=>[r[0],r[1],r[2]||'--c1',r[3]]),{max:4000,tick:1000,tf:t=>t?t/1000+'k':'0',aria:'Open playbook tasks by category'});
+  hbars($('pbName'),PB_NAME.map(r=>[r[0],r[1],'--c1',r[3]]),{max:1250,tick:250,rh:21,aria:'Open playbook tasks by template'});
+  stack100($('callChart'),$('callLegend'),CALLS); stack100($('emailChart'),$('emailLegend'),EMAILS);
+  hbars($('mtgChart'),MTG.map(r=>[r[0],r[1],'--c1']),{max:400,tick:100,L:120,unit:'Meetings',aria:'Meetings held by month'});
+  covTable(); capChart(); segChart();
+}
+function all(){fillRep();render();renderStatic()}
+all();
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(all,120)});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',all);
+new MutationObserver(all).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+})();
+</script>
+</body>
+</html>
