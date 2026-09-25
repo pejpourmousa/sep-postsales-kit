@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body style="margin:0">
+<title>Automated QBR Template</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<style>
+:root{
+  color-scheme: light;
+  --ink:#14213D; --ink-2:#3B4760; --muted:#6B7488; --line:#DCE0E8;
+  --paper:#FFFFFF; --tint:#F6F4F1; --canvas:#E7E9EE; --accent:#EB6A2E; --accent-soft:#FDEEE6;
+  --hs:#FF7A59; --sf:#29B5E8; --calc:#7A5AF8; --csm:#C28A00;
+  --display:"Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body:"Source Sans 3", "Segoe UI", Arial, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--canvas);color:var(--ink);font-family:var(--body);}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--paper);border-bottom:1px solid var(--line);}
+.bar-in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.bar h1{font:700 15px/1.2 var(--display);margin:0;letter-spacing:.01em}
+.bar .meta{font-size:13px;color:var(--muted)}
+.bar .sp{flex:1}
+.tg{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);cursor:pointer;user-select:none}
+.tg input{accent-color:var(--accent);width:15px;height:15px}
+.btn{font:600 13px var(--body);border-radius:6px;padding:7px 13px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn:focus-visible,.tg input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.status{font-size:12px;color:var(--muted);min-height:1em}
+.deck{max-width:1180px;margin:0 auto;padding-block:22px 60px;padding-inline:16px;display:flex;flex-direction:column;gap:22px}
+.frame{width:100%;aspect-ratio:16/9;position:relative;overflow:hidden;border-radius:4px;box-shadow:0 1px 2px rgba(20,33,61,.08),0 8px 24px rgba(20,33,61,.08);background:var(--paper)}
+.frame.setup{outline:2px dashed var(--accent);outline-offset:4px}
+.slide{position:absolute;top:0;left:0;width:1280px;height:720px;transform-origin:0 0;transform:scale(var(--k,.5));background:var(--paper);overflow:hidden}
+.slide.dark{background:var(--ink);color:#fff}
+
+/* chrome */
+.eyebrow{position:absolute;left:56px;top:40px;font:700 12px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.title{position:absolute;left:56px;top:60px;right:200px;font:800 38px/1.1 var(--display);letter-spacing:-.01em;margin:0;text-wrap:balance}
+.title em{font-style:normal;color:var(--accent)}
+.sub{position:absolute;left:56px;top:112px;right:200px;font-size:17px;color:var(--ink-2);line-height:1.35}
+.sub b{color:var(--ink)}
+.mark{position:absolute;right:56px;top:40px;display:flex;align-items:center;gap:8px;font:700 15px var(--display);color:var(--ink)}
+.mark i{width:26px;height:26px;border-radius:6px;background:var(--accent);color:#fff;display:grid;place-items:center;font:800 14px var(--display);font-style:normal}
+.dark .mark{color:#fff}
+.foot{position:absolute;left:56px;right:56px;bottom:26px;display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.body{position:absolute;left:56px;right:56px;top:176px;bottom:68px;display:flex;flex-direction:column;gap:20px}
+
+/* blocks */
+.tiles{display:grid;gap:20px}
+.tile{position:relative;border:1px solid var(--line);border-top:3px solid var(--accent);background:var(--paper);padding:22px 22px 18px;display:flex;flex-direction:column;gap:6px}
+.tile .v{font:800 52px/1 var(--display);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tile .v .ph{font-size:28px;vertical-align:middle}
+.tile .l{font:700 16px var(--display);margin-top:10px}
+.tile .s{font-size:14px;color:var(--muted)}
+.card{position:relative;background:var(--tint);border-top:3px solid var(--accent);padding:20px 22px;display:flex;flex-direction:column;gap:8px}
+.card h3{margin:0;font:700 19px/1.2 var(--display)}
+.card p{margin:0;font-size:15.5px;line-height:1.45;color:var(--ink-2)}
+.card .tag{font:700 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.callout{background:var(--accent-soft);padding:16px 20px;font-size:16px;line-height:1.4;color:var(--ink);margin-top:auto}
+.callout b{color:var(--accent)}
+table.t{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
+.t th{background:var(--ink);color:#fff;font:700 13px var(--display);letter-spacing:.04em;text-align:left;padding:11px 14px}
+.t td{padding:10px 14px;border-bottom:1px solid var(--line)}
+.t tr:nth-child(even) td{background:var(--tint)}
+.t .r{text-align:right}.t .c{text-align:center}
+.pos{color:#1F8A5B;font-weight:700}.neg{color:#B3261E;font-weight:700}
+.pill{display:inline-block;padding:3px 10px;border-radius:99px;font:700 12px var(--display);letter-spacing:.03em}
+.st-achieved{background:#E3F4EC;color:#1F7A50}.st-ontrack{background:#E6EEFB;color:#2B5FBF}.st-focus{background:#FDF0DC;color:#9A5A00}.st-atrisk{background:#FBE6E4;color:#B3261E}.st-shipped{background:#E3F4EC;color:#1F7A50}.st-inbeta{background:#E6EEFB;color:#2B5FBF}.st-planned{background:#EEE9FD;color:#5B3FC4}.st-underreview{background:#FDF0DC;color:#9A5A00}.st-notplanned{background:#ECEEF2;color:#5A6378}
+.col{display:flex;flex-direction:column;gap:12px}.col-h{display:flex;align-items:baseline;gap:10px;border-bottom:3px solid var(--ink);padding-bottom:8px}.col-h b{font:800 22px var(--display)}.col-h span{font-size:14px;color:var(--muted)}
+.col:first-child .col-h{border-color:var(--accent)}
+.ph{background:#FFF4CC;outline:1px dashed #C28A00;padding:0 4px;border-radius:2px;color:#7A5600}
+.cap{font:700 14px var(--display);color:var(--ink-2)}
+.cap span{font-weight:500;color:var(--muted)}
+
+/* source chips */
+.chip{display:none;position:absolute;top:8px;right:8px;font:500 10.5px var(--mono);padding:3px 7px;border-radius:3px;color:#fff;white-space:nowrap;z-index:2}
+.show-src .chip{display:inline-block}
+.chip.hubspot{background:var(--hs)}.chip.snowflake{background:#1B8DB8}.chip.calc{background:var(--calc)}.chip.csm{background:var(--csm)}.chip.claude{background:var(--ink-2)}
+.srcstrip{display:none;position:absolute;right:56px;top:80px;gap:6px;flex-direction:column;align-items:flex-end}
+.show-src .srcstrip{display:flex}
+.srcstrip .chip{position:static;display:inline-block}
+
+/* cover / section / close */
+.cover .band{position:absolute;left:0;top:0;bottom:0;width:14px;background:var(--accent)}
+.cover .k{position:absolute;left:84px;top:220px;font:700 13px var(--display);letter-spacing:.16em;color:var(--accent);text-transform:uppercase}
+.cover h2{position:absolute;left:84px;top:246px;margin:0;font:800 74px/1 var(--display);letter-spacing:-.02em}
+.cover h2 em{font-style:normal;color:var(--accent)}
+.cover .hl{position:absolute;left:84px;top:350px;font-size:24px;color:#C9D0DE;max-width:860px;line-height:1.3}
+.cover .dates{position:absolute;left:84px;top:430px;border:1.5px solid var(--accent);padding:10px 22px;font:700 16px var(--display)}
+.cover .by{position:absolute;left:84px;bottom:56px;font-size:14px;color:#8F9AB0}
+.section .num{position:absolute;left:84px;top:230px;font:800 150px/1 var(--display);color:var(--accent);letter-spacing:-.03em}
+.section .num small{font-size:44px;color:#8F9AB0;font-weight:700;letter-spacing:0}
+.section h2{position:absolute;left:84px;top:410px;margin:0;font:800 52px var(--display)}
+.section .rule{position:absolute;left:84px;top:488px;width:56px;height:5px;background:var(--accent)}
+.section p{position:absolute;left:84px;top:508px;font-size:20px;color:#C9D0DE}
+
+/* setup */
+.setup-badge{position:absolute;right:56px;top:40px;font:700 12px var(--display);letter-spacing:.12em;background:var(--accent);color:#fff;padding:6px 12px;border-radius:3px}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.step{background:var(--tint);padding:18px 18px 16px;display:flex;flex-direction:column;gap:8px;border-top:3px solid var(--ink)}
+.step .n{font:800 30px var(--display);color:var(--accent);line-height:1}
+.step h3{margin:0;font:700 17px/1.2 var(--display)}
+.step p{margin:0;font-size:14px;line-height:1.42;color:var(--ink-2)}
+.prompt{background:var(--ink);color:#EDEFF4;padding:16px 20px;font:500 14px/1.5 var(--mono);border-left:4px solid var(--accent)}
+.prompt .lbl{display:block;font:700 11px var(--display);letter-spacing:.14em;color:var(--accent);margin-bottom:6px}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13.5px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.team{display:flex;gap:28px;justify-content:center;padding-top:10px}
+.person{position:relative;width:380px;background:var(--tint);padding:34px 28px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center}
+.avatar{width:84px;height:84px;border-radius:50%;background:var(--accent-soft);border:2px solid var(--accent);display:grid;place-items:center;font:800 26px var(--display);color:var(--accent);margin-bottom:8px}
+.person h3{margin:0;font:800 22px var(--display)}
+.person .role{font:700 14px var(--display);color:var(--accent)}
+.person p{margin:0;font-size:15px;color:var(--ink-2)}
+svg text{font-family:var(--body)}
+@media (max-width:640px){.bar .meta{display:none}}
+@media (prefers-reduced-motion:no-preference){.btn{transition:background .15s}}
+</style>
+
+<div class="bar"><div class="bar-in">
+  <div><h1 id="barTitle">QBR</h1><div class="meta" id="barMeta"></div></div>
+  <div class="sp"></div>
+  <label class="tg"><input type="checkbox" id="tgSrc"> Show data sources</label>
+  <label class="tg"><input type="checkbox" id="tgSetup" checked> Include setup slides in download</label>
+  <button class="btn" id="btnPrompt" type="button">Copy Claude prompt</button>
+  <button class="btn primary" id="btnPptx" type="button">Download PPTX</button>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+</div></div>
+<main class="deck" id="deck"></main>
+
+<script>
+/* =====================================================================
+   QBR DATA BLOCK — the only part Claude edits for each account.
+   Everything in the deck (HTML + PPTX export) renders from this object.
+   src codes: hubspot | snowflake | calc | csm | claude
+   Values below are ILLUSTRATIVE SAMPLE DATA (fictional, anonymized account).
+   ===================================================================== */
+const QBR = {
+  meta: {
+    vendor: "Portco",                 // portco name (brand mark)
+    vendorInitial: "P",
+    accent: "#EB6A2E",                // portco brand accent
+    customer: "Customer Co.",         // HubSpot: company.name
+    periodLabel: "2026 YTD",
+    periodText: "January 1 – June 30, 2026",
+    headline: "Win rate up 3.8 points. Here's how we reach the 27% goal.",
+    preparedBy: "Prepared by the Portco Customer Success team",
+    generated: "Anonymized sample data · fictional account"
+  },
+  prompt: "Build the QBR for [Account name] covering [start date] – [end date]. Use the Automated QBR Template. Start with the customer's success plan in HubSpot (business goals, baselines, targets) and measure progress against it using the CRM outcome data in Snowflake (win rate, sales cycle, pipeline, ramp). Then pull program metrics from Snowflake or the ThoughtSpot \"Customer Usage\" Liveboard, contract and owners from HubSpot, their open feature requests, and the current product roadmap. Lead with outcomes, keep metrics to one section, write recommendations tied to each goal, mark anything you can't find as [CSM to fill], and publish a new copy for me to review.",
+  exec: [
+    { tag:"The outcome", title:"Win rate up 3.8 points, from 22.0% to 25.8%", body:"The team is on track for the 27% goal set at kickoff. Deals where buyers engaged with Portco content won at 1.8 times the rate of deals where they didn't.", src:"snowflake" },
+    { tag:"The gap", title:"New-rep ramp is 4.5 months against a 4.0 target", body:"Tenured reps use the program well. New hires reach it late, so they don't get the lift until their second quarter.", src:"snowflake" },
+    { tag:"Our recommendation", title:"Make buyer engagement a stage-exit criterion", body:"Require one engaged buyer before a deal moves past Discovery. This is the single change most likely to close the remaining 1.2-point gap.", src:"claude" }
+  ],
+  goals: {
+    sub:["Measured against the plan we set together.", " Goals and baselines agreed at kickoff, April 2025."],
+    head:["Business goal","Baseline","Target","Today","Status"],
+    rows:[
+      ["Increase win rate","22.0%","27.0%","25.8%","On track"],
+      ["Shorten sales cycle","74 days","60 days","63 days","On track"],
+      ["Double EMEA pipeline per half","$4.0M","$8.0M","$8.6M","Achieved"],
+      ["Cut first-call demos run by SEs","—","−30%","−34%","Achieved"],
+      ["Faster new-rep ramp","6.0 mo","4.0 mo","4.5 mo","Focus"]
+    ],
+    src:"hubspot"
+  },
+  outcomes: {
+    tiles: [
+      { v:"+3.8 pts", l:"Win Rate", s:"22.0% → 25.8%", src:"snowflake" },
+      { v:"−11 days", l:"Sales Cycle", s:"74 → 63 days", src:"snowflake" },
+      { v:"$14.2M",   l:"Influenced Pipeline", s:"opps with an engaged buyer", src:"snowflake" },
+      { v:"−1.5 mo",  l:"New-Rep Ramp", s:"6.0 → 4.5 months", src:"snowflake" }
+    ],
+    callout:{ lead:"What changed:", text:"reps now send a tailored demo after every first call, so buyers show up to the second meeting already educated." }
+  },
+  impact: {
+    caption:["Win rate by quarter", " · deals with an engaged buyer vs. without"],
+    labels:["Q3 '25","Q4 '25","Q1 '26","Q2 '26"],
+    series:[
+      { name:"No buyer engagement", values:[21,20,22,21] },
+      { name:"Buyer engaged with Portco", values:[31,33,36,38] }
+    ],
+    fmt:"%",
+    callout:{ lead:"The link to revenue:", text:"in Q2, deals with an engaged buyer won 38% of the time against 21% without. The gap has widened every quarter." },
+    src:"snowflake"
+  },
+  value: {
+    tiles:[
+      { v:"$4.9M",  l:"Influenced Closed-Won", s:"deals with an engaged buyer", src:"snowflake" },
+      { v:"$324K",  l:"Ramp Productivity", s:"faster time to quota", src:"calc" },
+      { v:"$80.3K", l:"SE Time Returned", s:"1,235 hours", src:"calc" },
+      { v:"[CSM to fill]", l:"Return on Subscription", s:"quantified value ÷ annual fee", src:"csm" }
+    ],
+    callout:{ lead:"Methodology:", text:"ramp = 1.5 months faster × 18 new reps × $12K monthly loaded cost. SE time = 14,820 sends × 5 min × $65/hr. Assumptions agreed with the customer's RevOps team." }
+  },
+  wins: [
+    { tag:"Achievement", title:"EMEA pipeline more than doubled", body:"$8.6M in the first half against a $4.0M baseline, helped by the new localized content in French, German and Spanish.", src:"snowflake" },
+    { tag:"Achievement", title:"Best win-rate quarter on record", body:"25.8% in Q2. Three of the top five closed deals had buyers who watched the product overview more than twice.", src:"snowflake" },
+    { tag:"Achievement", title:"SDR and partner teams live", body:"Two new teams onboarded in Q2, adding 38 active users and extending the program to the top of the funnel.", src:"csm" }
+  ],
+  program: {
+    tiles: [
+      { v:"79%", l:"Seat Utilization", s:"198 of 250 seats active", src:"snowflake" },
+      { v:"41%", l:"Buyer Engagement Rate", s:"of sends opened · up from 36%", src:"snowflake" },
+      { v:"82",  l:"Health Score", s:"Healthy · up from 74", src:"hubspot" },
+      { v:"48",  l:"NPS", s:"12 respondents in H1", src:"hubspot" }
+    ],
+    callout:{ lead:"In short:", text:"a healthy program with room to grow. 52 seats have been idle for 60+ days, mostly in regional teams." }
+  },
+  adoption: {
+    caption:["Monthly active users", " · dashed line = 250 licensed seats"],
+    labels:["Jan","Feb","Mar","Apr","May","Jun"],
+    series:[{ name:"Active users", values:[176,184,192,201,209,226] }],
+    ref:{ value:250, label:"250 seats" },
+    callout:{ lead:"Room to grow:", text:"active users rose every month, but 24 seats were still unused in June." },
+    src:"snowflake"
+  },
+  yoy: {
+    head:["Metric","2025 YTD","2026 YTD","YoY"],
+    rows:[
+      ["Avg monthly active users","171","198","+16%"],
+      ["Content sent to buyers","10,437","14,820","+42%"],
+      ["Buyer engagement rate","36%","41%","+5 pts"],
+      ["Support tickets","64","41","−36%"]
+    ],
+    goodWhenDown:[3],
+    src:"snowflake"
+  },
+  topAssets: {
+    head:["Asset","Used by","Sends","Buyer views","Win rate when viewed"],
+    rows:[
+      ["Platform overview demo","AEs","4,120","1,980","41%"],
+      ["ROI calculator walkthrough","AEs, SEs","2,210","1,160","44%"],
+      ["Security and compliance tour","SEs","1,480","870","39%"],
+      ["Integration deep-dive","SEs","1,105","520","36%"],
+      ["Localized overview (DE)","EMEA AEs","690","410","40%"]
+    ],
+    src:"snowflake"
+  },
+  delivered: {
+    head:["Enhancement","What it means for you","Status","You asked"],
+    rows:[
+      ["CRM opportunity sync","Buyer engagement appears on every opportunity automatically","Shipped","Yes"],
+      ["Localized content (FR, DE, ES)","Supports the EMEA pipeline goal","Shipped","Yes"],
+      ["AI follow-up drafts","Reps send a tailored follow-up in one click","Shipped","—"],
+      ["SSO group mapping","New hires get the right content on day one","Shipped","Yes"],
+      ["Manager coaching dashboard","See which reps' deals are stalling and why","In beta","Yes"]
+    ],
+    src:"csm"
+  },
+  roadmap: [
+    { head:"Now", sub:"Q3 2026", items:[
+      { title:"Deal-room templates", body:"One shared space per opportunity for every stakeholder. Supports the sales-cycle goal." },
+      { title:"Buyer intent alerts", body:"Notify the rep in chat when a buying group re-engages." } ] },
+    { head:"Next", sub:"Q4 2026", items:[
+      { title:"Forecast signal scoring", body:"Engagement signals feed deal-risk scores for managers." },
+      { title:"Bulk content permissions", body:"Your request. Manage access by team in one step." } ] },
+    { head:"Later", sub:"2027", items:[
+      { title:"Call-recording integrations", body:"Link call moments to the content buyers watched." },
+      { title:"Territory analytics", body:"Your request. Under review with product." } ] }
+  ],
+  roadmapNote:{ lead:"Note:", text:"roadmap items and timing are plans, not commitments, and may change. Your CSM will confirm dates before you plan around them." },
+  requests: {
+    head:["Your request","Status","Target"],
+    rows:[
+      ["SSO group mapping","Shipped","Jul 2026"],
+      ["Manager coaching dashboard","In beta","Join now"],
+      ["Bulk-edit content permissions","Planned","Q4 2026"],
+      ["Territory-based analytics","Under review","—"],
+      ["Offline mobile mode","Not planned","—"]
+    ],
+    src:"hubspot"
+  },
+  recommendations: [
+    { tag:"Impact: +1 to 2 pts win rate", title:"Make buyer engagement a stage-exit criterion", body:"Require one engaged buyer before a deal leaves Discovery. We'll configure the CRM field and the manager report.", src:"claude" },
+    { tag:"Impact: ramp 4.5 → 4.0 months", title:"Build a ramp path for new reps", body:"Put the five highest-win-rate assets into onboarding weeks 1 to 4 so new hires see the lift in their first quarter.", src:"claude" },
+    { tag:"Impact: utilization 79% → 90%", title:"Re-activate 52 idle seats", body:"A short training series for regional teams, led by their top-performing peers.", src:"claude" },
+    { tag:"Impact: forecast accuracy", title:"Join the coaching dashboard beta", body:"Managers see stalled deals a week earlier. You asked for this and it's ready to try.", src:"claude" }
+  ],
+  nextGoals: {
+    head:["Goal","Today","Target by Dec 31","Main lever"],
+    rows:[
+      ["Win rate","25.8%","27.0%","Engagement as stage-exit criterion"],
+      ["Sales cycle","63 days","60 days","Deal-room templates"],
+      ["New-rep ramp","4.5 months","4.0 months","Onboarding ramp path"],
+      ["Seat utilization","79%","90%","Regional re-onboarding"]
+    ],
+    src:"csm"
+  },
+  actionPlan: {
+    head:["Action","Customer owner","Portco owner","Target"],
+    rows:[
+      ["Add engagement stage-exit field and manager report","[CSM to fill]","[CSM to fill]","[tbd]"],
+      ["Launch new-rep ramp path in onboarding","[CSM to fill]","[CSM to fill]","[tbd]"],
+      ["Run regional re-onboarding for 52 idle seats","[CSM to fill]","[CSM to fill]","[tbd]"],
+      ["Enroll sales managers in coaching dashboard beta","[CSM to fill]","[CSM to fill]","[tbd]"],
+      ["Confirm next-period targets with exec sponsor","[CSM to fill]","[CSM to fill]","[tbd]"]
+    ],
+    src:"csm"
+  },
+  team:[
+    { name:"[CSM to fill]", role:"Customer Success Manager", body:"Day-to-day partner for adoption, outcomes and ROI.", src:"hubspot" },
+    { name:"[CSM to fill]", role:"Account Executive", body:"Commercial partner for renewal and expansion planning.", src:"hubspot" }
+  ],
+  close: { line:"Win rate is moving. Let's reach 27% together.", nextReview:"date to confirm" },
+  sourceMap: {
+    head:["Slides","What's pulled","Source","Field or query"],
+    rows:[
+      ["Goals, Next-period targets","Business goals, baselines, targets, exec sponsor","HubSpot success plan","success_plan.goal · baseline · target (custom object)"],
+      ["Outcomes, Impact, Value","Win rate, sales cycle, pipeline, ramp, closed-won with engagement","Snowflake (CRM share)","CRM_OPPORTUNITIES joined to ENGAGEMENT_EVENTS by opp_id"],
+      ["Program performance","Active users, engagement rate, top assets, same period last year","Snowflake / ThoughtSpot","ANALYTICS.USAGE_MONTHLY · Liveboard \"Customer Usage\""],
+      ["Health, Team, Requests","Health score, NPS, owners, feature requests","HubSpot","company.health_score · csm_owner · tickets.type = feature"],
+      ["Delivered, Roadmap","Shipped enhancements and planned items","Product roadmap","Roadmap export, filtered to this customer's requests"],
+      ["Summary, Recommendations","Narrative and recommended actions","Claude drafts","CSM reviews every sentence"],
+      ["Action plan, Value multiple","Owners, dates, subscription value","CSM","Anything marked [CSM to fill]"]
+    ]
+  }
+};
+
+/* ===================== deck definition ===================== */
+const M = QBR.meta;
+const SRC = { hubspot:"HubSpot", snowflake:"Snowflake", calc:"Calculated", csm:"CSM input", claude:"Claude draft" };
+function deckSpec(){
+  return [
+    { kind:"setupSteps", setup:true },
+    { kind:"setupMap", setup:true },
+    { kind:"cover" },
+    { kind:"agenda", eyebrow:"Agenda", title:["What we'll ","cover"], sub:["Outcomes first.", " Your goals and results lead. Program metrics support them, and most of the time goes to what's next."],
+      items:[
+        {n:"01",t:"Business outcomes",b:"Progress against your goals, impact on revenue, value delivered."},
+        {n:"02",t:"Program performance",b:"Adoption and engagement: the metrics behind the outcomes."},
+        {n:"03",t:"Roadmap and enhancements",b:"What we shipped for you, what's coming, where your requests stand."},
+        {n:"04",t:"Recommendations and plan",b:"What to change next, the targets it moves, and who owns each step."}
+      ]},
+    { kind:"cards", cols:1, eyebrow:"Executive summary", title:["The period ","in brief"], sub:["If you read nothing else.", " One outcome, one gap, one recommendation."], items:QBR.exec },
+    { kind:"section", n:"01", title:"Business outcomes", sub:"Progress against the goals we set together" },
+    { kind:"table", eyebrow:"Success plan", title:["Your business ","goals"], sub:QBR.goals.sub, head:QBR.goals.head, rows:QBR.goals.rows, colW:[.36,.14,.14,.14,.22], align:["l","r","r","r","c"], statusCol:4, src:QBR.goals.src },
+    { kind:"kpis", eyebrow:"Outcomes", title:["Results ","this period"], sub:["The numbers your leadership tracks.", " Measured from your CRM, "+M.periodText+"."], ...QBR.outcomes },
+    { kind:"chart", eyebrow:"Impact", title:["Engaged buyers ","win more"], sub:["1.8× the win rate.", " Deals where buyers engaged with Portco content, against those where they didn't."], ...QBR.impact },
+    { kind:"kpis", eyebrow:"Value", title:["Value ","delivered"], sub:["What the program is worth.", " Quantified with the method shown."], ...QBR.value },
+    { kind:"cards", cols:3, eyebrow:"Achievements", title:["Wins ","worth celebrating"], sub:["Milestones this period.", " Results your team drove with the program."], items:QBR.wins },
+    { kind:"section", n:"02", title:"Program performance", sub:"Adoption and engagement behind the outcomes" },
+    { kind:"kpis", eyebrow:"Program health", title:["Program ","snapshot"], sub:["Healthy and growing.", " The 10-second view of adoption and satisfaction."], ...QBR.program },
+    { kind:"chart", eyebrow:"Adoption", title:["Seat ","utilization"], sub:["Rising, not yet full.", " 198 average monthly active users against 250 licensed seats."], ...QBR.adoption },
+    { kind:"table", eyebrow:"What works", title:["Top-performing ","assets"], sub:["Content that wins deals.", " Ranked by win rate when a buyer viewed it."], head:QBR.topAssets.head, rows:QBR.topAssets.rows, colW:[.34,.16,.14,.16,.2], align:["l","l","r","r","r"], src:QBR.topAssets.src },
+    { kind:"table", eyebrow:"Momentum", title:["Year-over-year ","growth"], sub:["More reach, better engagement.", " Same period, 2025 vs. 2026."], head:QBR.yoy.head, rows:QBR.yoy.rows, colW:[.4,.2,.2,.2], align:["l","r","r","r"], deltaCol:3, goodWhenDown:QBR.yoy.goodWhenDown, src:QBR.yoy.src },
+    { kind:"section", n:"03", title:"Roadmap and enhancements", sub:"What we built for you and what's coming next" },
+    { kind:"table", eyebrow:"Delivered", title:["Shipped ","for you"], sub:["Built with your input.", " Enhancements released this period and what each one means for your team."], head:QBR.delivered.head, rows:QBR.delivered.rows, colW:[.28,.46,.13,.13], align:["l","l","c","c"], statusCol:2, src:QBR.delivered.src },
+    { kind:"columns", eyebrow:"Roadmap", title:["What's ","coming"], sub:["Now, next, later.", " Items chosen for their fit with your goals."], cols:QBR.roadmap, callout:QBR.roadmapNote },
+    { kind:"table", eyebrow:"Your feedback", title:["Where your requests ","stand"], sub:["Every request tracked.", " Status of each enhancement your team raised."], head:QBR.requests.head, rows:QBR.requests.rows, colW:[.5,.25,.25], align:["l","c","l"], statusCol:1, src:QBR.requests.src },
+    { kind:"section", n:"04", title:"Recommendations and plan", sub:"What to change next and who owns it" },
+    { kind:"grid", eyebrow:"Recommendations", title:["Our ","recommendations"], sub:["Each tied to a goal.", " Four changes, with the result we expect from each."], items:QBR.recommendations },
+    { kind:"table", eyebrow:"Next period", title:["Targets for the ","second half"], sub:["Where we'll be by December 31.", " Proposed targets to confirm with your executive sponsor."], head:QBR.nextGoals.head, rows:QBR.nextGoals.rows, colW:[.24,.18,.2,.38], align:["l","r","r","l"], src:QBR.nextGoals.src },
+    { kind:"table", eyebrow:"Mutual action plan", title:["Next ","steps"], sub:["Shared ownership.", " Each action traces to a recommendation. Owners and dates to confirm in the room."], head:QBR.actionPlan.head, rows:QBR.actionPlan.rows, colW:[.46,.2,.2,.14], align:["l","l","l","l"], src:QBR.actionPlan.src },
+    { kind:"team", eyebrow:"Relationship", title:["Your "+M.vendor+" ","team"], sub:["Your partners.", " Two points of contact for outcomes and for the commercial relationship."] },
+    { kind:"close" }
+  ];
+}
+
+/* ===================== HTML renderer ===================== */
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ph = s => esc(s).replace(/\[(CSM to fill|tbd)\]/g, '<span class="ph">[$1]</span>');
+const chip = src => src ? `<span class="chip ${src}" title="Source: ${SRC[src]}">${SRC[src]}</span>` : "";
+const titleHTML = t => `${esc(t[0])}<em>${esc(t[1]||"")}</em>${esc(t[2]||"")}`;
+const subHTML = s => `<b>${esc(s[0])}</b>${esc(s[1]||"")}`;
+const markHTML = () => `<div class="mark"><i>${esc(M.vendorInitial)}</i>${esc(M.vendor)}</div>`;
+const statusCls = s => "st-" + s.toLowerCase().replace(/\s/g,"");
+function deltaCls(v, down){ if(/^\+/.test(v)) return down?"neg":"pos"; if(/^[−-]/.test(v)) return down?"pos":"neg"; return ""; }
+
+function chrome(s, num, total){
+  return `<div class="eyebrow">${esc(s.eyebrow)}</div><h2 class="title">${titleHTML(s.title)}</h2>
+  <div class="sub">${subHTML(s.sub)}</div>${markHTML()}
+  ${s.src?`<div class="srcstrip">${chip(s.src)}</div>`:""}
+  <div class="foot"><span>${esc(M.customer)}  ·  ${esc(M.periodLabel)}</span><span>${num} / ${total}</span></div>`;
+}
+function callout(c){ return c ? `<div class="callout"><b>${esc(c.lead)}</b> ${esc(c.text)}</div>` : ""; }
+function tile(t){ return `<div class="tile">${chip(t.src)}<div class="v">${ph(t.v)}</div><div class="l">${esc(t.l)}</div><div class="s">${esc(t.s)}</div></div>`; }
+function card(c, big){ return `<div class="card" style="${big?'flex:1':''}">${chip(c.src)}${c.tag?`<div class="tag">${esc(c.tag)}</div>`:""}<h3>${ph(c.title)}</h3><p>${ph(c.body)}</p></div>`; }
+
+function svgChart(s){
+  const W=1168, H=s.callout?330:410, padL=10, padB=34, padT=26;
+  const all = s.series.flatMap(x=>x.values).concat(s.ref?[s.ref.value]:[]);
+  const max = Math.max(...all)*1.12;
+  const n=s.labels.length, groupW=(W-padL*2)/n, k=s.series.length, bw=Math.min(54,(groupW*.62)/k);
+  const y = v => padT + (H-padT-padB)*(1-v/max);
+  const colors = k===1?["var(--ink)"]:["#AEB6C6","var(--accent)"];
+  let g = `<line x1="0" x2="${W}" y1="${H-padB}" y2="${H-padB}" stroke="var(--line)" stroke-width="1.5"/>`;
+  s.labels.forEach((lab,i)=>{
+    const cx = padL + groupW*i + groupW/2, start = cx - (bw*k + 6*(k-1))/2;
+    s.series.forEach((ser,j)=>{
+      const v=ser.values[i], x=start+j*(bw+6), yy=y(v);
+      g+=`<rect x="${x}" y="${yy}" width="${bw}" height="${H-padB-yy}" fill="${colors[j]}"/>`;
+      g+=`<text x="${x+bw/2}" y="${yy-7}" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">${v.toLocaleString()}${s.fmt||""}</text>`;
+    });
+    g+=`<text x="${cx}" y="${H-padB+22}" text-anchor="middle" font-size="14" fill="var(--muted)">${esc(lab)}</text>`;
+  });
+  if(s.ref){ const ry=y(s.ref.value); g+=`<line x1="0" x2="${W}" y1="${ry}" y2="${ry}" stroke="var(--accent)" stroke-width="2" stroke-dasharray="7 6"/><text x="${W-4}" y="${ry-8}" text-anchor="end" font-size="13" font-weight="700" fill="var(--accent)">${esc(s.ref.label)}</text>`; }
+  const legend = k>1 ? `<div class="legend">${s.series.map((x,j)=>`<span><i style="background:${colors[j]}"></i>${esc(x.name)}</span>`).join("")}</div>` : "";
+  return `<div style="display:flex;justify-content:space-between;align-items:center"><div class="cap">${esc(s.caption[0])}<span>${esc(s.caption[1]||"")}</span></div>${legend}</div>
+  <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(s.caption.join(''))}">${g}</svg>`;
+}
+
+function tableHTML(s){
+  const head = s.head.map((h,i)=>`<th class="${s.align[i]}" style="width:${s.colW[i]*100}%">${esc(h)}</th>`).join("");
+  const rows = s.rows.map(r=>{
+    const down = (s.goodWhenDown||[]).includes(s.rows.indexOf(r));
+    return "<tr>"+r.map((c,i)=>{
+      let inner = ph(c);
+      if(i===s.statusCol) inner = `<span class="pill ${statusCls(c)}">${esc(c)}</span>`;
+      if(i===s.deltaCol) inner = `<span class="${deltaCls(c,down)}">${esc(c)}</span>`;
+      return `<td class="${s.align[i]}">${inner}</td>`;
+    }).join("")+"</tr>";
+  }).join("");
+  return `<table class="t"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function slideHTML(s, num, total){
+  switch(s.kind){
+    case "setupSteps": return `<div class="slide">
+      <div class="eyebrow">Setup · delete before presenting</div><h2 class="title">How to build this QBR <em>with Claude</em></h2>
+      <div class="sub"><b>About 10 minutes per account.</b> The CSM gives Claude an account and a date range. Claude pulls the data, fills the deck and drafts the story.</div>
+      <div class="setup-badge">SETUP</div>
+      <div class="body" style="top:172px">
+        <div class="steps">
+          <div class="step"><div class="n">1</div><h3>Ask Claude</h3><p>Paste the prompt below. Swap in the <b>account name</b> exactly as it appears in HubSpot and the <b>start and end dates</b>.</p></div>
+          <div class="step"><div class="n">2</div><h3>Claude pulls the data</h3><p><b>HubSpot:</b> success-plan goals, owners, health, requests.<br><b>Snowflake:</b> CRM outcomes (win rate, cycle, pipeline) and program usage. Plus the roadmap.</p></div>
+          <div class="step"><div class="n">3</div><h3>Review and fill</h3><p>Turn on <b>Show data sources</b> to check each number's origin. Complete anything highlighted <span class="ph">[CSM to fill]</span> and edit the narrative.</p></div>
+          <div class="step"><div class="n">4</div><h3>Download and present</h3><p><b>Download PPTX</b> opens in PowerPoint or Keynote. For Google Slides use <b>File › Import slides</b>. Save as PDF from either app.</p></div>
+        </div>
+        <div class="prompt"><span class="lbl">PROMPT FOR CLAUDE</span>${esc(QBR.prompt)}</div>
+        <div class="legend"><span style="font-weight:700;color:var(--ink)">Source tags:</span>
+          <span><i style="background:var(--hs)"></i>HubSpot</span><span><i style="background:#1B8DB8"></i>Snowflake / ThoughtSpot</span>
+          <span><i style="background:var(--calc)"></i>Calculated</span><span><i style="background:var(--ink-2)"></i>Claude draft</span><span><i style="background:var(--csm)"></i>CSM input</span></div>
+        <div style="font-size:14px;color:var(--ink-2)"><b style="color:var(--ink)">Deck order:</b> business outcomes → program metrics → roadmap → recommendations. Aim to spend over half the meeting on what's next.</div>
+      </div></div>`;
+    case "setupMap": return `<div class="slide">
+      <div class="eyebrow">Setup · delete before presenting</div><h2 class="title">Where every number <em>comes from</em></h2>
+      <div class="sub"><b>One data block drives the deck.</b> Claude fills it from these sources. Metric definitions stay the same for every account.</div>
+      <div class="setup-badge">SETUP</div>
+      <div class="body" style="top:170px">${tableHTML({head:QBR.sourceMap.head, rows:QBR.sourceMap.rows, colW:[.2,.3,.16,.34], align:["l","l","l","l"]}).replace(/<td class="l">([^<]*(?:\/|\.|·)[^<]*)<\/td>(?=<\/tr>)/g,(m,a)=>`<td class="l" style="font:500 12.5px var(--mono);color:var(--ink-2)">${a}</td>`)}
+      </div></div>`;
+    case "cover": return `<div class="slide dark cover"><div class="band"></div>
+      <div class="mark" style="left:84px;right:auto;top:64px"><i>${esc(M.vendorInitial)}</i>${esc(M.vendor)}</div>
+      <div class="k">Business review</div><h2>${esc(M.customer)} <em>${esc(M.periodLabel)}</em></h2>
+      <div class="hl">${esc(M.headline)}</div><div class="dates">${esc(M.periodText)}</div>
+      <div class="by">${esc(M.preparedBy)}</div></div>`;
+    case "section": return `<div class="slide dark section"><div class="cover"><div class="band"></div></div>
+      <div class="eyebrow" style="left:84px;top:196px">Section</div>
+      <div class="num">${s.n}<small> / 04</small></div><h2>${esc(s.title)}</h2><div class="rule"></div><p>${esc(s.sub)}</p>${markHTML().replace('class="mark"','class="mark" style="top:auto;bottom:40px"')}</div>`;
+    case "close": return `<div class="slide dark cover"><div class="band"></div>
+      <div class="mark" style="left:84px;right:auto;top:64px"><i>${esc(M.vendorInitial)}</i>${esc(M.vendor)}</div>
+      <div class="k">${esc(M.vendor)}  ×  ${esc(M.customer)}</div><h2>Thank you</h2>
+      <div class="hl">${esc(QBR.close.line)}</div>
+      <div class="by" style="bottom:90px;color:#fff;font-size:17px"><b style="color:var(--accent)">Next review:</b> ${ph(QBR.close.nextReview)}</div>
+      <div class="by">${esc(M.preparedBy)}</div></div>`;
+  }
+  let body="";
+  if(s.kind==="agenda") body = `<div style="display:flex;flex-direction:column;gap:14px">${s.items.map(it=>`<div class="card" style="flex-direction:row;align-items:center;gap:26px;border-top:0;border-left:3px solid var(--accent);padding:16px 22px"><div style="font:800 30px var(--display);color:var(--accent);width:44px">${it.n}</div><div><h3>${esc(it.t)}</h3><p style="font-size:14.5px">${esc(it.b)}</p></div></div>`).join("")}</div>`;
+  if(s.kind==="cards") body = s.cols===1 ? `<div style="display:flex;flex-direction:column;gap:16px;flex:1">${s.items.map(c=>card(c,true)).join("")}</div>`
+                                         : `<div class="tiles" style="grid-template-columns:repeat(3,1fr);flex:1">${s.items.map(c=>card(c)).join("")}</div>${callout(s.callout)}`;
+  if(s.kind==="kpis") body = `<div class="tiles" style="grid-template-columns:repeat(${s.tiles.length},1fr)">${s.tiles.map(tile).join("")}</div>${callout(s.callout)}`;
+  if(s.kind==="table") body = tableHTML(s) + callout(s.callout);
+  if(s.kind==="chart") body = `<div style="display:flex;flex-direction:column;gap:6px">${svgChart(s)}</div>${callout(s.callout)}`;
+  if(s.kind==="grid") body = `<div class="tiles" style="grid-template-columns:1fr 1fr;flex:1">${s.items.map(c=>card(c)).join("")}</div>${callout(s.callout)}`;
+  if(s.kind==="reflect") body = `<div class="tiles" style="grid-template-columns:1fr 1fr;gap:16px 20px;flex:1">
+    <div class="cap" style="color:#1F7A50">WHAT'S WORKING</div><div class="cap" style="color:var(--accent)">WHAT'S NEXT</div>
+    ${QBR.reflection.working.map((w,i)=>card(w)+card(QBR.reflection.next[i])).join("")}</div>`;
+  if(s.kind==="columns") body = `<div class="tiles" style="grid-template-columns:repeat(3,1fr);flex:1">${s.cols.map(c=>`<div class="col"><div class="col-h"><b>${esc(c.head)}</b><span>${esc(c.sub)}</span></div>${c.items.map(it=>card({title:it.title, body:it.body})).join("")}</div>`).join("")}</div>${callout(s.callout)}`;
+  if(s.kind==="team") body = `<div class="team">${QBR.team.map(p=>`<div class="person">${chip(p.src)}<div class="avatar">${p.name.startsWith("[")?"?":esc(p.name.split(" ").map(x=>x[0]).join("").slice(0,2))}</div><h3>${ph(p.name)}</h3><div class="role">${esc(p.role)}</div><p>${esc(p.body)}</p></div>`).join("")}</div>`;
+  return `<div class="slide">${chrome(s,num,total)}<div class="body">${body}</div></div>`;
+}
+
+/* ===================== render + scale ===================== */
+const deckEl = document.getElementById("deck");
+function render(){
+  const spec = deckSpec(), total = spec.filter(s=>!s.setup).length;
+  let num = 0;
+  deckEl.innerHTML = spec.map((s,i)=>{
+    if(!s.setup) num++;
+    return `<section class="frame${s.setup?' setup':''}" aria-label="Slide ${i+1}">${slideHTML(s, num, total)}</section>`;
+  }).join("");
+  document.documentElement.style.setProperty("--accent", M.accent);
+  document.getElementById("barTitle").textContent = `${M.customer} · ${M.periodLabel} QBR`;
+  document.getElementById("barMeta").textContent = `${total} slides + 2 setup slides · ${M.generated}`;
+  fit();
+}
+function fit(){ const f = deckEl.querySelector(".frame"); if(f) deckEl.style.setProperty("--k", f.clientWidth/1280); }
+new ResizeObserver(fit).observe(deckEl);
+render();
+
+/* toggles */
+const tgSrc = document.getElementById("tgSrc");
+tgSrc.addEventListener("change", ()=> deckEl.classList.toggle("show-src", tgSrc.checked));
+try{ if(localStorage.getItem("qbr-src")==="1"){ tgSrc.checked=true; deckEl.classList.add("show-src"); } }catch(e){}
+tgSrc.addEventListener("change", ()=>{ try{ localStorage.setItem("qbr-src", tgSrc.checked?"1":"0"); }catch(e){} });
+
+const statusEl = document.getElementById("status");
+const say = t => { statusEl.textContent = t; };
+document.getElementById("btnPrompt").addEventListener("click", async ()=>{
+  try{ await navigator.clipboard.writeText(QBR.prompt); say("Prompt copied."); }
+  catch(e){ say("Copy was blocked. Select the prompt text on slide 1 instead."); }
+});
+
+/* ===================== PPTX export ===================== */
+let downloadsP = null;
+try{ downloadsP = window.claude?.use ? window.claude.use("downloads") : null; }catch(e){ downloadsP = null; }
+
+const P = v => v/96;               // px on the 1280×720 canvas → inches (13.333 × 7.5)
+const PT = v => v*0.75;            // px → pt
+const hx = c => c.replace("#","");
+const C = { ink:"14213D", ink2:"3B4760", muted:"6B7488", line:"DCE0E8", tint:"F6F4F1", accentSoft:"FDEEE6", white:"FFFFFF", grey:"AEB6C6" };
+const FONT = "Arial";
+const stripPh = s => s; // placeholders exported as plain text so CSMs can find/replace
+
+function pChrome(pptx, sl, s, num, total){
+  const A = hx(M.accent);
+  sl.addText(s.eyebrow.toUpperCase(), { x:P(56), y:P(34), w:P(700), h:P(22), fontFace:FONT, fontSize:PT(12), bold:true, color:A, charSpacing:2, margin:0 });
+  sl.addText([{text:s.title[0], options:{color:C.ink}},{text:s.title[1]||"", options:{color:A}},{text:s.title[2]||"", options:{color:C.ink}}],
+    { x:P(56), y:P(58), w:P(1000), h:P(50), fontFace:FONT, fontSize:PT(36), bold:true, margin:0, valign:"middle" });
+  sl.addText([{text:s.sub[0], options:{bold:true,color:C.ink}},{text:s.sub[1]||"", options:{color:C.ink2}}],
+    { x:P(56), y:P(110), w:P(1020), h:P(30), fontFace:FONT, fontSize:PT(16), margin:0, valign:"top" });
+  pMark(pptx, sl, 1224-110, 38, false);
+  sl.addText(`${M.customer}  ·  ${M.periodLabel}`, { x:P(56), y:P(680), w:P(600), h:P(20), fontFace:FONT, fontSize:9, color:C.muted, margin:0 });
+  sl.addText(`${num} / ${total}`, { x:P(1024), y:P(680), w:P(200), h:P(20), fontFace:FONT, fontSize:9, color:C.muted, align:"right", margin:0 });
+}
+function pMark(pptx, sl, x, y, dark){
+  sl.addText(M.vendorInitial, { shape:pptx.ShapeType.roundRect, rectRadius:0.06, x:P(x), y:P(y), w:P(26), h:P(26), fill:{color:hx(M.accent)}, color:C.white, bold:true, fontFace:FONT, fontSize:11, align:"center", valign:"middle", margin:0 });
+  sl.addText(M.vendor, { x:P(x+32), y:P(y), w:P(140), h:P(26), fontFace:FONT, fontSize:12, bold:true, color:dark?C.white:C.ink, valign:"middle", margin:0 });
+}
+function pCallout(sl, c, y){
+  if(!c) return;
+  sl.addShape("rect", { x:P(56), y:P(y), w:P(1168), h:P(64), fill:{color:C.accentSoft}, line:{color:C.accentSoft} });
+  sl.addText([{text:c.lead+" ", options:{bold:true,color:hx(M.accent)}},{text:c.text, options:{color:C.ink}}],
+    { x:P(76), y:P(y), w:P(1128), h:P(64), fontFace:FONT, fontSize:PT(15.5), valign:"middle", margin:0 });
+}
+function pTiles(sl, tiles, y, h){
+  const n=tiles.length, gap=20, w=(1168-gap*(n-1))/n;
+  tiles.forEach((t,i)=>{
+    const x=56+i*(w+gap);
+    sl.addShape("rect", { x:P(x), y:P(y), w:P(w), h:P(h), fill:{color:C.white}, line:{color:C.line, width:0.75} });
+    sl.addShape("rect", { x:P(x), y:P(y), w:P(w), h:P(3), fill:{color:hx(M.accent)}, line:{color:hx(M.accent), width:0} });
+    sl.addText(t.v, { x:P(x+22), y:P(y+22), w:P(w-44), h:P(58), fontFace:FONT, fontSize:n>3?34:40, bold:true, color:C.ink, margin:0, valign:"top", fit:"shrink" });
+    sl.addText(t.l, { x:P(x+22), y:P(y+92), w:P(w-44), h:P(24), fontFace:FONT, fontSize:PT(16), bold:true, color:C.ink, margin:0 });
+    sl.addText(t.s, { x:P(x+22), y:P(y+118), w:P(w-44), h:P(40), fontFace:FONT, fontSize:PT(14), color:C.muted, margin:0, valign:"top" });
+  });
+}
+function pCards(sl, items, cols, y, h, gap=20){
+  const rows = Math.ceil(items.length/cols), w=(1168-gap*(cols-1))/cols, ch=(h-gap*(rows-1))/rows;
+  items.forEach((c,i)=>{
+    const x=56+(i%cols)*(w+gap), yy=y+Math.floor(i/cols)*(ch+gap);
+    sl.addShape("rect", { x:P(x), y:P(yy), w:P(w), h:P(ch), fill:{color:C.tint}, line:{color:C.tint, width:0} });
+    sl.addShape("rect", { x:P(x), y:P(yy), w:P(w), h:P(3), fill:{color:hx(M.accent)}, line:{color:hx(M.accent), width:0} });
+    const runs=[];
+    if(c.tag) runs.push({text:c.tag.toUpperCase(), options:{fontSize:8.5, bold:true, color:C.muted, breakLine:true}});
+    runs.push({text:c.title, options:{fontSize:PT(19), bold:true, color:C.ink, breakLine:true}});
+    runs.push({text:c.body, options:{fontSize:PT(15), color:C.ink2}});
+    sl.addText(runs, { x:P(x+22), y:P(yy+16), w:P(w-44), h:P(ch-28), fontFace:FONT, valign:"top", margin:0, paraSpaceAfter:4 });
+  });
+}
+function pTable(sl, s, y){
+  const A = hx(M.accent);
+  const stFill = {"achieved":["E3F4EC","1F7A50"],"on track":["E6EEFB","2B5FBF"],"focus":["FDF0DC","9A5A00"],"at risk":["FBE6E4","B3261E"],"shipped":["E3F4EC","1F7A50"],"in beta":["E6EEFB","2B5FBF"],"planned":["EEE9FD","5B3FC4"],"under review":["FDF0DC","9A5A00"],"not planned":["ECEEF2","5A6378"]};
+  const al = a => a==="r"?"right":a==="c"?"center":"left";
+  const head = s.head.map((h,i)=>({ text:h, options:{ bold:true, color:C.white, fill:{color:C.ink}, align:al(s.align[i]), fontSize:10 } }));
+  const body = s.rows.map((r,ri)=>r.map((c,i)=>{
+    const o = { color:C.ink, align:al(s.align[i]), fill:{color: ri%2 ? C.tint : C.white}, fontSize:11 };
+    if(/\[(CSM to fill|tbd)\]/.test(c)) o.color="9A5A00";
+    if(i===s.statusCol){ const f=stFill[c.toLowerCase()]||[C.tint,C.ink]; o.fill={color:f[0]}; o.color=f[1]; o.bold=true; }
+    if(i===s.deltaCol){ const down=(s.goodWhenDown||[]).includes(ri); const cls=deltaCls(c,down); if(cls){o.color=cls==="pos"?"1F8A5B":"B3261E"; o.bold=true;} }
+    return { text:c, options:o };
+  }));
+  sl.addTable([head, ...body], { x:P(56), y:P(y), w:P(1168), colW:s.colW.map(f=>P(1168*f)), fontFace:FONT, rowH:P(40), valign:"middle",
+    border:{ type:"solid", pt:0.5, color:C.line }, margin:[0,0.1,0,0.1] });
+}
+function pChart(pptx, sl, s, y, h){
+  sl.addText([{text:s.caption[0], options:{bold:true,color:C.ink2}},{text:s.caption[1]||"", options:{color:C.muted}}], { x:P(56), y:P(y), w:P(900), h:P(22), fontFace:FONT, fontSize:11, margin:0 });
+  const data = s.series.map(x=>({ name:x.name, labels:s.labels, values:x.values }));
+  const colors = s.series.length===1 ? [C.ink] : [C.grey, hx(M.accent)];
+  const types = [{ type:pptx.ChartType.bar, data, options:{ barDir:"col", barGrouping:"clustered", chartColors:colors, barGapWidthPct:60 } }];
+  if(s.ref) types.push({ type:pptx.ChartType.line, data:[{ name:s.ref.label, labels:s.labels, values:s.labels.map(()=>s.ref.value) }], options:{ chartColors:[hx(M.accent)], lineDash:"dash", lineSize:2, lineDataSymbol:"none" } });
+  const opts = { x:P(56), y:P(y+26), w:P(1168), h:P(h-26), showLegend:true, legendPos:"t", legendFontSize:10, legendFontFace:FONT,
+    showValue:true, dataLabelFontSize:9, dataLabelColor:C.ink, dataLabelFormatCode: s.fmt==="%" ? '0"%"' : "#,##0",
+    catAxisLabelFontSize:10, catAxisLabelColor:C.muted, catAxisLabelFontFace:FONT, valAxisHidden:true, valGridLine:{style:"none"}, valAxisMinVal:0 };
+  if(types.length>1) sl.addChart(types, opts);
+  else sl.addChart(types[0].type, data, { ...opts, ...types[0].options });
+}
+function pDarkBase(pptx, sl){
+  sl.background = { color:C.ink };
+  sl.addShape("rect", { x:0, y:0, w:P(14), h:7.5, fill:{color:hx(M.accent)}, line:{color:hx(M.accent), width:0} });
+}
+
+function buildPptx(includeSetup){
+  const pptx = new PptxGenJS();
+  pptx.layout = "LAYOUT_WIDE";
+  pptx.title = `${M.customer} ${M.periodLabel} Business Review`;
+  pptx.company = M.vendor;
+  const spec = deckSpec(), total = spec.filter(s=>!s.setup).length;
+  let num=0;
+  spec.forEach(s=>{
+    if(s.setup && !includeSetup) return;
+    if(!s.setup) num++;
+    const sl = pptx.addSlide();
+    const A = hx(M.accent);
+    switch(s.kind){
+      case "setupSteps": {
+        s = { eyebrow:"Setup · delete before presenting", title:["How to build this QBR ","with Claude"], sub:["About 10 minutes per account.", " The CSM gives Claude an account and a date range. Claude pulls the data, fills the deck and drafts the story."] };
+        pChrome(pptx, sl, s, "Setup", "2");
+        pCards(sl, [
+          {tag:"Step 1", title:"Ask Claude", body:"Paste the prompt below. Swap in the account name exactly as it appears in HubSpot and the start and end dates."},
+          {tag:"Step 2", title:"Claude pulls the data", body:"HubSpot: success-plan goals, owners, health, requests. Snowflake: CRM outcomes (win rate, cycle, pipeline) and program usage. Plus the roadmap."},
+          {tag:"Step 3", title:"Review and fill", body:"Check each number's source. Complete anything marked [CSM to fill] and edit the narrative."},
+          {tag:"Step 4", title:"Present", body:"Open in PowerPoint or Keynote. For Google Slides use File › Import slides. Delete both setup slides first."}
+        ], 4, 172, 250, 16);
+        sl.addShape("rect", { x:P(56), y:P(442), w:P(1168), h:P(190), fill:{color:C.ink}, line:{color:C.ink,width:0} });
+        sl.addText([{text:"PROMPT FOR CLAUDE", options:{bold:true,color:A,fontSize:9,breakLine:true}},{text:QBR.prompt, options:{color:"EDEFF4",fontSize:11.5, fontFace:"Courier New"}}],
+          { x:P(78), y:P(452), w:P(1124), h:P(170), fontFace:FONT, valign:"top", margin:0, paraSpaceAfter:6 });
+        return;
+      }
+      case "setupMap": {
+        pChrome(pptx, sl, { eyebrow:"Setup · delete before presenting", title:["Where every number ","comes from"], sub:["One data block drives the deck.", " Claude fills it from these sources. Metric definitions stay the same for every account."] }, "Setup", "2");
+        pTable(sl, { head:QBR.sourceMap.head, rows:QBR.sourceMap.rows, colW:[.2,.3,.16,.34], align:["l","l","l","l"] }, 172);
+        return;
+      }
+      case "cover": case "close": {
+        pDarkBase(pptx, sl); pMark(pptx, sl, 84, 64, true);
+        const k = s.kind==="cover" ? "BUSINESS REVIEW" : `${M.vendor}  ×  ${M.customer}`.toUpperCase();
+        sl.addText(k, { x:P(84), y:P(212), w:P(900), h:P(24), fontFace:FONT, fontSize:10, bold:true, color:A, charSpacing:2, margin:0 });
+        sl.addText(s.kind==="cover" ? [{text:M.customer+" ", options:{color:C.white}},{text:M.periodLabel, options:{color:A}}] : [{text:"Thank you", options:{color:C.white}}],
+          { x:P(84), y:P(240), w:P(1100), h:P(90), fontFace:FONT, fontSize:52, bold:true, margin:0, valign:"middle" });
+        sl.addText(s.kind==="cover"?M.headline:QBR.close.line, { x:P(84), y:P(346), w:P(1000), h:P(40), fontFace:FONT, fontSize:18, color:"C9D0DE", margin:0 });
+        if(s.kind==="cover") sl.addText(M.periodText, { x:P(84), y:P(426), w:P(330), h:P(42), fontFace:FONT, fontSize:12, bold:true, color:C.white, align:"center", valign:"middle", line:{color:A, width:1.25}, margin:0 });
+        else sl.addText([{text:"Next review: ", options:{bold:true,color:A}},{text:QBR.close.nextReview, options:{color:C.white}}], { x:P(84), y:P(590), w:P(800), h:P(26), fontFace:FONT, fontSize:13, margin:0 });
+        sl.addText(M.preparedBy, { x:P(84), y:P(640), w:P(800), h:P(22), fontFace:FONT, fontSize:10.5, color:"8F9AB0", margin:0 });
+        return;
+      }
+      case "section": {
+        pDarkBase(pptx, sl);
+        sl.addText("SECTION", { x:P(84), y:P(190), w:P(300), h:P(22), fontFace:FONT, fontSize:9, bold:true, color:A, charSpacing:2, margin:0 });
+        sl.addText([{text:s.n, options:{color:A, fontSize:100}},{text:"  / 04", options:{color:"8F9AB0", fontSize:32}}], { x:P(84), y:P(220), w:P(700), h:P(170), fontFace:FONT, bold:true, margin:0, valign:"middle" });
+        sl.addText(s.title, { x:P(84), y:P(404), w:P(1100), h:P(70), fontFace:FONT, fontSize:38, bold:true, color:C.white, margin:0 });
+        sl.addShape("rect", { x:P(84), y:P(488), w:P(56), h:P(5), fill:{color:A}, line:{color:A,width:0} });
+        sl.addText(s.sub, { x:P(84), y:P(506), w:P(1000), h:P(32), fontFace:FONT, fontSize:15, color:"C9D0DE", margin:0 });
+        pMark(pptx, sl, 1224-110, 654, true);
+        return;
+      }
+    }
+    pChrome(pptx, sl, s, num, total);
+    const hasC = !!s.callout, cy = 588;
+    if(s.kind==="agenda") pCards(sl, s.items.map(it=>({tag:it.n, title:it.t, body:it.b})), 2, 176, 460);
+    if(s.kind==="cards") pCards(sl, s.items, s.cols, 176, hasC?390:476, 16);
+    if(s.kind==="kpis") pTiles(sl, s.tiles, 188, 180);
+    if(s.kind==="table") pTable(sl, s, 180);
+    if(s.kind==="chart") pChart(pptx, sl, s, 176, hasC?396:476);
+    if(s.kind==="grid") pCards(sl, s.items, 2, 176, hasC?390:476);
+    if(s.kind==="reflect"){
+      sl.addText("WHAT'S WORKING", { x:P(56), y:P(172), w:P(574), h:P(20), fontFace:FONT, fontSize:10, bold:true, color:"1F7A50", margin:0 });
+      sl.addText("WHAT'S NEXT", { x:P(650), y:P(172), w:P(574), h:P(20), fontFace:FONT, fontSize:10, bold:true, color:A, margin:0 });
+      const items=[]; QBR.reflection.working.forEach((w,i)=>items.push(w, QBR.reflection.next[i]));
+      pCards(sl, items, 2, 200, 448, 16);
+    }
+    if(s.kind==="columns"){
+      const w=(1168-40)/3;
+      s.cols.forEach((c,i)=>{
+        const x=56+i*(w+20);
+        sl.addText([{text:c.head+"  ", options:{bold:true,fontSize:17,color:C.ink}},{text:c.sub, options:{fontSize:11,color:C.muted}}], { x:P(x), y:P(172), w:P(w), h:P(30), fontFace:FONT, margin:0, valign:"bottom" });
+        sl.addShape("rect", { x:P(x), y:P(206), w:P(w), h:P(3), fill:{color:i===0?A:C.ink}, line:{color:i===0?A:C.ink,width:0} });
+      });
+      const items=[]; [0,1].forEach(r=>s.cols.forEach(c=>items.push({title:c.items[r].title, body:c.items[r].body})));
+      pCards(sl, items, 3, 222, 350, 14);
+    }
+    if(s.kind==="team"){
+      QBR.team.forEach((p,i)=>{
+        const x = 640 - 404 + i*428, y=190;
+        sl.addShape("rect", { x:P(x), y:P(y), w:P(380), h:P(330), fill:{color:C.tint}, line:{color:C.tint,width:0} });
+        sl.addText(p.name.startsWith("[")?"?":p.name.split(" ").map(x=>x[0]).join("").slice(0,2), { shape:pptx.ShapeType.ellipse, x:P(x+148), y:P(y+34), w:P(84), h:P(84), fill:{color:C.accentSoft}, line:{color:A,width:1.5}, color:A, bold:true, fontFace:FONT, fontSize:20, align:"center", valign:"middle" });
+        sl.addText([{text:p.name, options:{bold:true,fontSize:17,color:p.name.startsWith("[")?"9A5A00":C.ink,breakLine:true}},{text:p.role, options:{bold:true,fontSize:11,color:A,breakLine:true}},{text:p.body, options:{fontSize:11.5,color:C.ink2}}],
+          { x:P(x+24), y:P(y+140), w:P(332), h:P(170), fontFace:FONT, align:"center", valign:"top", margin:0, paraSpaceAfter:6 });
+      });
+    }
+    pCallout(sl, s.callout, cy);
+  });
+  return pptx;
+}
+
+document.getElementById("btnPptx").addEventListener("click", async ()=>{
+  const btn = document.getElementById("btnPptx");
+  if(typeof PptxGenJS === "undefined"){ say("The PowerPoint library didn't load. Reload the page and try again."); return; }
+  const dl = downloadsP ? await downloadsP : null;
+  if(!dl){
+    if(!window.claude){ try{ await buildPptx(document.getElementById("tgSetup").checked).writeFile({ fileName:`${M.customer} QBR ${M.periodLabel}.pptx` }); say("PowerPoint saved."); }catch(e){ say("Couldn't create the file."); } return; }
+    say("Downloads aren't available in this view. Open the artifact on claude.ai to download."); return;
+  }
+  btn.disabled = true; say("Building PowerPoint…");
+  try{
+    const blob = await buildPptx(document.getElementById("tgSetup").checked).write({ outputType:"blob" });
+    const r = await dl.save({ filename:`${M.customer} QBR ${M.periodLabel}.pptx`, data:blob });
+    say(r.status==="saved" ? "PowerPoint saved." : "PowerPoint sent.");
+  }catch(e){
+    say(e && e.code==="declined" ? "Download cancelled." : "Couldn't create the file" + (e && e.message ? ": "+e.message : "."));
+  }finally{ btn.disabled = false; }
+});
+</script>
+
+</body>
+</html>
