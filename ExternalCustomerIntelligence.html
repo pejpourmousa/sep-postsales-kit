@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>External Customer Intelligence — GTM AI Agent</title>
+<meta name="description" content="Researches a customer’s industry and category for external context — surfacing whitespace and preparing teams for renewals, QBRs and standard engagement moments.">
+<style>
+:root{
+  --blue:#1e3a8a; --blue-2:#2563eb; --pink:#0d9488; --purple:#4f46e5;
+  --ink:#141828; --ink-2:#3d4358; --muted:#6b7187; --line:#e3e6ef; --soft:#f4f6fb;
+  --bg:#eef1f8; --card:#ffffff; --paper:#ffffff; --paper-ink:#1b1f2e;
+  --high:#138a4b; --med:#b7791f; --low:#c53030;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#eef0f7; --ink-2:#c3c8d8; --muted:#9097ad; --line:#2b3145; --soft:#1a1f30;
+    --bg:#0f1320; --card:#161b2b;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#eef0f7; --ink-2:#c3c8d8; --muted:#9097ad; --line:#2b3145; --soft:#1a1f30;
+  --bg:#0f1320; --card:#161b2b;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif}
+a{color:var(--blue-2)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+
+/* top nav */
+.topbar{background:#0a0f24;color:#fff}
+.topbar .wrap{display:flex;align-items:center;gap:18px;min-height:52px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+.brand{font-weight:800;letter-spacing:.14em;font-size:12px;text-transform:uppercase;white-space:nowrap}
+.brand span{color:var(--pink)}
+.nav{display:flex;gap:4px;flex-wrap:wrap}
+.nav a{color:#c9cfe6;text-decoration:none;font-size:13px;padding:6px 10px;border-radius:8px}
+.nav a:hover{background:#1c2340;color:#fff}
+.nav a.on{background:#fff;color:#0a0f24;font-weight:600}
+
+/* hero */
+.hero{background:linear-gradient(120deg,var(--blue) 0%,var(--purple) 55%,var(--pink) 100%);color:#fff;padding:44px 0 36px}
+.eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;opacity:.85}
+.hero h1{font-size:clamp(28px,5vw,44px);line-height:1.1;margin:10px 0 12px;letter-spacing:-.01em}
+.pill{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  padding:4px 10px;border-radius:999px;vertical-align:middle;margin-left:10px;position:relative;top:-4px}
+.pill.beta{background:#ffd166;color:#4a3400}
+.pill.ga{background:#6ee7a8;color:#053a1f}
+.hero .lede{font-size:clamp(16px,2.2vw,19px);max-width:760px;opacity:.96;margin:0}
+
+/* about grid */
+.about{margin-top:-18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 18px 16px;
+  box-shadow:0 6px 20px rgba(10,15,40,.06)}
+.card h3{margin:0 0 8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.card ul{margin:0;padding-left:18px;color:var(--ink-2)}
+.card li{margin:3px 0}
+.card p{margin:0;color:var(--ink-2)}
+
+.flow{margin-top:14px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;counter-reset:s;margin-top:4px}
+.step{background:var(--soft);border-radius:10px;padding:12px 12px 12px 44px;position:relative;color:var(--ink-2);font-size:14px}
+.step:before{counter-increment:s;content:counter(s);position:absolute;left:12px;top:11px;width:22px;height:22px;border-radius:50%;
+  background:var(--blue);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+.step b{display:block;color:var(--ink);font-size:14px}
+.step.gate:before{background:var(--pink)}
+
+/* sample divider */
+.sample-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:40px 0 12px}
+.sample-head h2{margin:0;font-size:22px}
+.sample-head .meta{color:var(--muted);font-size:13px}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--pink);margin-bottom:4px}
+
+/* paper = the rendered agent output */
+.paper{background:var(--paper);color:var(--paper-ink);border-radius:var(--radius);border:1px solid var(--line);
+  box-shadow:0 14px 40px rgba(10,15,40,.10);overflow:hidden}
+.paper .inner{padding:28px clamp(16px,4vw,40px) 32px}
+.paper h2.sec{color:var(--blue);font-size:19px;margin:30px 0 4px}
+.paper h2.sec:first-child{margin-top:0}
+.paper p{margin:8px 0}
+.paper .conf{font-size:12.5px;color:#6b7187;margin-bottom:10px}
+.c-high{color:var(--high);font-weight:700}.c-med{color:var(--med);font-weight:700}.c-low{color:var(--low);font-weight:700}
+.src{font-size:12.5px;color:#6b7187;font-style:italic;margin-top:6px}
+.src a{color:var(--blue-2)}
+.note{background:#fff7e6;border-left:3px solid #f0b429;padding:10px 12px;border-radius:6px;font-size:13.5px;color:#5c4400;margin:10px 0}
+.note.gap{background:#fdecef;border-color:var(--pink);color:#6d1233}
+
+.tbl{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px 0}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th,td{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid #e7e9f0}
+th{background:#f3f5fa;font-weight:700;color:#1b1f2e;border-bottom:2px solid var(--blue)}
+table.blue th{background:var(--blue);color:#fff;border-bottom:0}
+table.kv td:first-child{font-weight:700;width:26%}
+td.na,span.na{color:#8a90a3;font-style:italic}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.footer{color:var(--muted);font-size:12.5px;text-align:center;padding:36px 0 48px}
+@media print{.topbar,.about,.sample-head .meta{display:none}.hero{padding:20px 0}}
+
+.eci-head{background:var(--blue);color:#fff;padding:28px clamp(16px,4vw,40px) 22px;text-align:center}
+.eci-head h1{margin:0 0 6px;font-size:clamp(22px,3.6vw,30px)}
+.eci-head p{margin:2px 0;opacity:.92;font-size:14.5px}
+.eci-sum{background:var(--blue-2);color:#fff;margin:14px clamp(16px,4vw,40px) 0;border-radius:4px;padding:16px 20px}
+.eci-sum ul{margin:0;padding-left:18px}.eci-sum li{margin:4px 0}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="wrap">
+  <div class="brand">GTM <span>·</span> AI Agents</div>
+  <nav class="nav"><a href="external-customer-intelligence.html" class="on">External Customer Intelligence</a><a href="account-360.html">Account 360</a><a href="meeting-follow-up.html">Meeting Follow Up</a><a href="one-minute-company-brief.html">One Minute Company Brief</a></nav>
+</div></header>
+
+<section class="hero"><div class="wrap">
+  <div class="eyebrow">Agent overview</div>
+  <h1>External Customer Intelligence</h1>
+  <p class="lede">Researches a customer’s industry and category for external context — surfacing whitespace and preparing teams for renewals, QBRs and standard engagement moments.</p>
+</div></section>
+
+<main class="wrap">
+  <section class="about"><div class="grid"><div class="card"><h3>What it does</h3><p>Researches the industry and category of a selected customer to provide external context, helping identify whitespace opportunities and prepare for renewal conversations, QBRs, and standard engagement moments.</p></div><div class="card"><h3>Data sources</h3><ul><li>Company filings, results &amp; RNS announcements</li><li>Annual reports &amp; capital markets materials</li><li>Trade, financial &amp; regional press</li><li>Competitive-set scan (job posts, RFPs, vendor mentions)</li></ul></div><div class="card"><h3>Best used for</h3><ul><li>QBR preparation</li><li>Renewal conversations</li><li>Whitespace &amp; expansion discovery</li><li>Standard engagement moments</li></ul></div></div><div class="card flow"><h3>How it works</h3><div class="steps"><div class="step"><b>Pick the customer</b>Choose the account, business unit and purpose (e.g. QBR prep).</div><div class="step"><b>Set the lookback</b>Research is scoped to a time window — typically the last 3 months.</div><div class="step"><b>Research externally</b>Financials, strategy, leadership, brand activity, ESG and competitor signals.</div><div class="step"><b>Rate &amp; cite</b>Every section carries a confidence rating, last-updated date and linked sources.</div><div class="step"><b>Flag gaps</b>Missing data and out-of-window items are called out rather than papered over.</div></div></div></section>
+
+  <div class="sample-head">
+    <div><div class="tag">Example output</div><h2>Northfield Consumer Brands — QBR Prep Brief</h2></div>
+    <div class="meta">UK BU &amp; Group HQ · Prepared 17 Sep 2026</div>
+  </div>
+  <article class="paper"><div class="eci-head"><h1>Northfield Consumer Brands — QBR Prep Brief</h1><p>UK Business Unit &amp; Group (HQ) — Prepared for QBR</p><p>Lookback window: mid-May 2026 – mid-August 2026 &nbsp;|&nbsp; Purpose: QBR prep &nbsp;|&nbsp; Prepared: 17 September 2026</p></div><div class="eci-sum"><ul><li>FY26 results (Aug 6) showed 5.4% revenue growth and a return to dividend growth — management is framing FY26 as proof the renewed group strategy is working.</li><li>New capital allocation policy (net debt/EBITDA target 1.0–1.5x) opens the door to bolt-on M&amp;A and reinvestment once leverage targets are met.</li><li>The West Africa subsidiary saw a CEO/CFO transition effective June 1; two UK-based Non-Exec Directors step down at the Oct 1 AGM.</li><li>UK brand activity is active: PureHand x a holiday operator, Wildroot x a fitness race series, Solace Glow on social commerce, Harbour &amp; Co refresh — all tied to the “brand-building” strategic pillar.</li><li>No activity involving a named competitive-set vendor surfaced in this window.</li></ul></div><div class="inner"><h2 class="sec">1. FY26 Results &amp; Financial Performance</h2><div class="conf">Confidence: <span class="c-high">High</span> &nbsp;|&nbsp; Last updated: 6 Aug 2026</div><div class="tbl"><table class=""><thead><tr><th>Metric</th><th>FY26 Result</th><th>Detail</th></tr></thead><tbody><tr><td>Revenue</td><td>£541.4m (+5.4% reported; +5.8% LFL)</td><td>Growth across all 4 lead markets and top 10 brands</td></tr><tr><td>Adjusted operating profit</td><td>£59.5m (+24.5% ex. divested JV)</td><td>Helped by £8.5m structural cost savings</td></tr><tr><td>Net debt</td><td>£25m (down sharply YoY)</td><td>Gross debt down £174m over 3 years</td></tr><tr><td>Free cash flow</td><td>£54.7m (+~£12m YoY)</td><td>Supported deleveraging</td></tr><tr><td>Dividend</td><td>3.70p total, +2.8% on FY25</td><td>First dividend growth in 4 years; paid 8 Oct 2026</td></tr><tr><td>Adjusted EPS</td><td>7.14p (down slightly)</td><td>Flagged by investors as an earnings-quality concern</td></tr><tr><td>Share price reaction</td><td>-5.5% on results day</td><td>Market focus on earnings quality &amp; marketing spend, not headline revenue</td></tr></tbody></table></div><div class="src">Source: Company final results (RNS); financial news coverage</div><h2 class="sec">2. Renewed Group Strategy (Strategic Review &amp; Capital Markets Event)</h2><div class="conf">Confidence: <span class="c-high">High</span> &nbsp;|&nbsp; Last updated: 11 Feb 2026 (event); referenced in Aug 2026 FY26 report</div><p>Strategic review ran April 2024 – December 2025. Key outcome: Northfield retained its Africa business (judged offers didn’t reflect underlying value) rather than exiting, citing long-term demographic tailwinds (Africa population +900m projected over 25 years; its largest African market +100m alone). The review also included the sale of its 50% stake in a regional joint venture to its JV partner for $70m.</p><p>The renewed Group strategy, set out at the 11 Feb 2026 Capital Markets Event, centers the business on three core categories — Personal, Home, Baby Care — across four lead markets (UK, ANZ, West Africa, Southeast Asia), balanced between developed and emerging economies. Two stated pillars: (1) building winning portfolios of locally-loved brands, and (2) leveraging go-to-market capabilities and manufacturing scale. Target: double-digit total shareholder returns through the cycle.</p><p>New capital allocation policy: adjusted net debt/EBITDA target of 1.0–1.5x; bolt-on M&amp;A to be weighed against direct shareholder returns once that range is reached.</p><p>FY26 is being presented internally as the first proof point: The CEO specifically cited Solace Glow’s return to growth in North America as early validation. The FY26 Annual Report also flags “strengthened New Product Development (NPD) for this year and next” — <b>a direct opening for a research/testing conversation.</b></p><div class="src">Source: Investor news coverage; company RNS; FY26 Annual Report</div><div class="note gap"><b>Gap flagged:</b> No granular category-by-category investment breakdown or specific NPD pipeline detail was found beyond the above. The Capital Markets Event materials on the company’s own site are the primary source for deeper detail.</div><h2 class="sec">3. Leadership &amp; Governance Changes</h2><div class="conf">Confidence: <span class="c-high">High</span> &nbsp;|&nbsp; Last updated: 6 Aug 2026</div><div class="tbl"><table class=""><thead><tr><th>Date</th><th>Change</th><th>Detail</th></tr></thead><tbody><tr><td><span class="num">1 Jun 2026</span></td><td>West Africa subsidiary: CEO transition</td><td>New MD/CEO appointed; predecessor moved to a new Group role</td></tr><tr><td><span class="num">1 Jun 2026</span></td><td>West Africa subsidiary: CFO transition</td><td>Sitting CFO elevated to Executive Director/CFO (CFO since Nov 2024; prior roles at large global CPG and consumer-tech firms)</td></tr><tr><td><span class="num">6 Aug 2026</span></td><td>Board departures announced</td><td>Two Non-Exec Directors to step down at the 1 Oct 2026 AGM after 5 years each</td></tr><tr><td><span class="num">1 Oct 2026</span></td><td>AGM scheduled</td><td>Company HQ; shareholders can submit questions in advance</td></tr></tbody></table></div><div class="note">Note: the West Africa CEO/CFO change sits within the Group but outside the UK business unit — flagged for HQ-level awareness rather than as a direct UK QBR topic.</div><div class="src">Source: Regional business press; company RNS</div><h2 class="sec">4. UK Brand &amp; Campaign Activity</h2><div class="conf">Confidence: <span class="c-med">Medium</span> &nbsp;|&nbsp; Last updated: varies (see detail)</div><div class="tbl"><table class=""><thead><tr><th>Brand</th><th>Activity</th><th>Timing</th></tr></thead><tbody><tr><td>PureHand (handwash)</td><td>Partnership with a UK holiday operator: shopper savings + prize draw for a 5* all-inclusive holiday, across major UK grocers and discounters</td><td>Ran Spring 2026 – 31 Jul 2026 (confirmed dated)</td></tr><tr><td>Wildroot (shower)</td><td>Partnership with a fitness influencer tied to a fitness race series sponsorship</td><td>Referenced in FY26 Annual Report; exact date not specified</td></tr><tr><td>Solace Glow (self-tan)</td><td>Launch on a social-commerce marketplace (UK)</td><td>Referenced as “recent” in FY26 Annual Report (published Aug 2026); exact date not specified</td></tr><tr><td>Harbour &amp; Co (bath &amp; body)</td><td>Brand refresh with a new celebrity brand ambassador</td><td>FY26 highlight; exact launch date not specified</td></tr></tbody></table></div><div class="note">Confidence is Medium because three of four items are drawn from the FY26 Annual Report’s year-in-review language rather than dated press releases — they occurred sometime in FY26 (June 2025–May 2026) but aren’t confirmed to fall within the exact 3-month lookback window.</div><div class="src">Source: Company press release; FY26 Annual Report</div><h2 class="sec">5. Sustainability / Packaging</h2><div class="conf">Confidence: <span class="c-med">Medium</span> &nbsp;|&nbsp; Last updated: 6 May 2026</div><p>Northfield joined a UK industry packaging pact as a founding signatory — a collaboration targeting a 10-year roadmap on packaging design, reuse/refill models, and circular infrastructure. Aligns with existing commitments: 33% reduction in virgin plastic use by 2030, and 100% recyclable/reusable/compostable packaging by 2030.</p><div class="note">Timing note: this falls just outside the strict 3-month window (May 6 vs. a May 17 cutoff) but is close enough, and specific enough to UK operations, to be worth flagging.</div><div class="src">Source: Industry trade press</div><h2 class="sec">6. Competitive Set Check</h2><div class="conf">Confidence: <span class="c-high">High</span> &nbsp;|&nbsp; Last updated: 17 Sep 2026 (search date)</div><p>No public data available in this window connecting Northfield to any of the 17 named competitive-set vendors via job postings, RFPs, or vendor mentions.</p><div class="src">Source: Web search conducted 17 Sep 2026; no qualifying results found.</div><p class="src" style="margin-top:28px;border-top:1px solid #e7e9f0;padding-top:10px">Account Intelligence Brief · Anonymized sample</p></div></article>
+</main>
+
+<footer class="footer wrap">GTM AI Agent examples · September 2026 · Anonymized sample outputs — company, brand and people names are fictional.</footer>
+</body>
+</html>
