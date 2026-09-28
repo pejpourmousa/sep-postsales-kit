@@ -162,6 +162,16 @@
   .delta-good { color: var(--good); }
   .delta-bad { color: var(--critical); }
 
+  .compare-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 22px; align-items: center; }
+  .compare-stat { display: flex; flex-direction: column; gap: 7px; }
+  .compare-label { font-family: var(--font-head); font-size: 12.5px; font-weight: 600; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
+  .compare-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); padding: 2px 7px; border-radius: 999px; }
+  .compare-value { font-family: var(--font-mono); font-size: 36px; font-weight: 600; letter-spacing: -0.01em; }
+  .compare-desc { font-size: 12.5px; color: var(--ink-muted); line-height: 1.5; max-width: 360px; }
+  .compare-pool { font-size: 12px; color: var(--ink-2); }
+  .compare-divider { width: 1px; align-self: stretch; background: var(--panel-border); }
+  @media (max-width: 700px) { .compare-grid { grid-template-columns: 1fr; } .compare-divider { display: none; height: 1px; width: 100%; } }
+
   .toggle-group { display: inline-flex; border: 1px solid var(--panel-border); border-radius: 8px; overflow: hidden; }
   .toggle-group button {
     font-family: var(--font-head);
@@ -248,6 +258,12 @@
   .spark { display: inline-flex; align-items: flex-end; gap: 2px; height: 16px; vertical-align: middle; }
   .spark i { display: inline-block; width: 4px; border-radius: 1px 1px 0 0; background: var(--ink-muted); }
 
+  .book-summary { display: flex; gap: 22px; flex-wrap: wrap; margin-bottom: 12px; padding: 11px 16px; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 10px; }
+  .book-stat { display: flex; flex-direction: column; gap: 2px; }
+  .book-stat .book-label { font-family: var(--font-head); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); }
+  .book-stat .book-value { font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: var(--ink); }
+  .role-tag { font-size: 9.5px; font-weight: 700; color: var(--ink-muted); border: 1px solid var(--panel-border); border-radius: 4px; padding: 1px 4px; margin-left: 6px; letter-spacing: 0.02em; vertical-align: 1px; }
+
   .table-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
   .win-filter { display: flex; gap: 6px; flex-wrap: wrap; }
   .win-filter button {
@@ -311,16 +327,36 @@
   </div>
 
   <section>
-    <div class="kpi-grid">
-      <div class="kpi">
-        <span class="kpi-label">Gross Renewal Rate</span>
-        <span class="kpi-value tabular">86.9%</span>
-        <span class="kpi-delta delta-bad">▼ 1.8 pts vs. prior qtr</span>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Renewal Rate vs. Gross Revenue Retention</h2>
+        <span class="hint">Same dollars lost, two different pools — reps and managers should both see this</span>
       </div>
+      <div class="compare-grid">
+        <div class="compare-stat">
+          <span class="compare-label">Renewal Rate <span class="compare-tag">Reps</span></span>
+          <span class="compare-value tabular" id="renewal-rate-value">—</span>
+          <span class="compare-desc">ARR actually up for renewal this quarter, minus what was lost from that pool. Excludes multi-year contracts not yet due — this is the number a rep's book is judged against.</span>
+          <span class="compare-pool tabular" id="renewal-rate-pool"></span>
+        </div>
+        <div class="compare-divider"></div>
+        <div class="compare-stat">
+          <span class="compare-label">Gross Revenue Retention <span class="compare-tag">Managers</span></span>
+          <span class="compare-value tabular" id="grr-value">—</span>
+          <span class="compare-desc">The entire ARR book, including multi-year contracts not up for renewal, minus what was lost book-wide — the number that reflects overall retention health.</span>
+          <span class="compare-pool tabular" id="grr-pool"></span>
+        </div>
+      </div>
+      <div class="panel-foot"><span id="renewal-compare-foot"></span><span>As of Sep 28, 2026</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
       <div class="kpi">
         <span class="kpi-label">Net Revenue Retention</span>
-        <span class="kpi-value tabular">107.8%</span>
-        <span class="kpi-delta delta-good">▲ 2.1 pts vs. prior qtr</span>
+        <span class="kpi-value tabular" id="nrr-value">—</span>
+        <span class="kpi-delta delta-bad">Existing customers only — excludes new logos</span>
       </div>
       <div class="kpi">
         <span class="kpi-label">Logo Retention</span>
@@ -329,8 +365,8 @@
       </div>
       <div class="kpi">
         <span class="kpi-label">At-Risk ARR</span>
-        <span class="kpi-value tabular">$340K</span>
-        <span class="kpi-delta delta-bad">7.7% of total ARR</span>
+        <span class="kpi-value tabular" id="atrisk-value">—</span>
+        <span class="kpi-delta delta-bad" id="atrisk-delta"></span>
       </div>
     </div>
   </section>
@@ -431,6 +467,7 @@
         <span class="hint" style="margin-left:auto;">Illustrative — generated by asking Claude to analyze this data</span>
       </div>
       <ol class="readout-list">
+        <li><b>Renewal Rate vs. GRR:</b> Renewal Rate (88.4%, measured against the $3.1M actually up for renewal this quarter) is meaningfully below GRR (91.5%, measured against the full $4.2M book). The multi-year base is propping up the headline retention number — reps should be judged against the smaller, harder pool, not GRR.</li>
         <li><b>Segment gap:</b> SMB accounts are churning at 11.6% of segment ARR this quarter vs. 1.7% for Enterprise and 6.7% for Mid-Market — the pattern points to an onboarding or time-to-value gap in smaller accounts, not a product-wide issue.</li>
         <li><b>Biggest single leak:</b> budget/price-driven churn ($68K) plus unrealized ROI ($34K) — together 49% of this quarter's hard-churn dollars — concentrated in Mid-Market and SMB renewals.</li>
         <li><b>Product signal:</b> Core Platform carries the largest absolute hard-churn dollars ($95K), but that's expected since it's on every contract; Integrations Hub's churn is small in dollars but high relative to its own ARR base — worth a closer look at that module's adoption.</li>
@@ -453,6 +490,17 @@
         <option value="Mid-Market">Mid-Market</option>
         <option value="SMB">SMB</option>
       </select>
+      <select id="product-filter" aria-label="Product">
+        <option value="all">All products</option>
+      </select>
+      <select id="role-filter" aria-label="Role">
+        <option value="all">All roles</option>
+        <option value="AM">Account Manager</option>
+        <option value="CSM">Customer Success Manager</option>
+      </select>
+      <select id="rep-filter" aria-label="Rep">
+        <option value="all">All reps</option>
+      </select>
       <div class="win-filter" role="group" aria-label="Renewal window">
         <button data-win="all" aria-pressed="true">All</button>
         <button data-win="≤3 mo" aria-pressed="false">≤3 mo</button>
@@ -460,6 +508,7 @@
         <button data-win="6–12 mo" aria-pressed="false">6–12 mo</button>
       </div>
     </div>
+    <div class="book-summary" id="book-summary"></div>
     <div class="panel" style="padding: 4px 8px; overflow-x:auto;">
       <table>
         <thead>
@@ -522,6 +571,13 @@
       { label: "Hard Churn", value: -210000, type: "hard" },
       { label: "Ending ARR", value: 4405000, type: "total" }
     ],
+    // ARR NOT up for renewal this quarter (multi-year contracts locked in for
+    // future years). Total starting ARR and this quarter's losses come from
+    // the waterfall above, so Renewal Rate and GRR are computed, not hardcoded
+    // — swap this one figure when pointing the dashboard at a real portco.
+    renewalPool: {
+      multiYearLocked: 1115000
+    },
     reasonChart: [
       { category: "Cost / Budget", items: [
         { label: "Budget Pressure", value: 68000 },
@@ -580,15 +636,15 @@
       { label: "New decision-maker not supported", value: 43 }
     ],
     accounts: [
-      { name: "Acme Freight Co.", segment: "Mid-Market", product: "Core Platform", arr: 180000, renewal: "2026-10-30", window: "≤3 mo", health: "critical", trend: [4.4, 3.9, 3.4, 2.8], reason: "Budget cut", owner: "J. Alvarez" },
-      { name: "Boreal Health Systems", segment: "SMB", product: "Analytics Add-on", arr: 95000, renewal: "2026-11-18", window: "≤3 mo", health: "warning", trend: [4.1, 4.0, 3.8, 3.6], reason: "Champion departed", owner: "M. Chen" },
-      { name: "Emberline Manufacturing", segment: "Enterprise", product: "Core Platform", arr: 310000, renewal: "2026-12-08", window: "≤3 mo", health: "good", trend: [4.3, 4.4, 4.5, 4.6], reason: "—", owner: "M. Chen" },
-      { name: "Cascadia Logistics", segment: "Enterprise", product: "Integrations Hub", arr: 260000, renewal: "2027-01-22", window: "3–6 mo", health: "good", trend: [4.0, 4.1, 4.3, 4.4], reason: "—", owner: "J. Alvarez" },
-      { name: "Driftwood Retail Group", segment: "Mid-Market", product: "Core Platform", arr: 140000, renewal: "2027-02-14", window: "3–6 mo", health: "warning", trend: [3.9, 3.7, 3.5, 3.3], reason: "Low adoption", owner: "S. Patel" },
-      { name: "Northgate Financial", segment: "Enterprise", product: "Core Platform", arr: 220000, renewal: "2027-03-05", window: "3–6 mo", health: "critical", trend: [3.5, 3.2, 2.8, 2.5], reason: "Competitor eval", owner: "S. Patel" },
-      { name: "Fernbridge Insurance", segment: "Mid-Market", product: "Analytics Add-on", arr: 175000, renewal: "2027-05-19", window: "6–12 mo", health: "good", trend: [3.9, 4.0, 4.1, 4.2], reason: "—", owner: "J. Alvarez" },
-      { name: "Alderwood Education Group", segment: "SMB", product: "Core Platform", arr: 88000, renewal: "2027-06-30", window: "6–12 mo", health: "warning", trend: [3.8, 3.7, 3.5, 3.4], reason: "Budget review pending", owner: "M. Chen" },
-      { name: "Silverline Utilities", segment: "Mid-Market", product: "Integrations Hub", arr: 205000, renewal: "2027-08-11", window: "6–12 mo", health: "good", trend: [4.2, 4.3, 4.4, 4.5], reason: "—", owner: "S. Patel" }
+      { name: "Acme Freight Co.", segment: "Mid-Market", product: "Core Platform", arr: 180000, renewal: "2026-10-30", window: "≤3 mo", health: "critical", trend: [4.4, 3.9, 3.4, 2.8], reason: "Budget cut", owner: "J. Alvarez", role: "AM" },
+      { name: "Boreal Health Systems", segment: "SMB", product: "Analytics Add-on", arr: 95000, renewal: "2026-11-18", window: "≤3 mo", health: "warning", trend: [4.1, 4.0, 3.8, 3.6], reason: "Champion departed", owner: "M. Chen", role: "CSM" },
+      { name: "Emberline Manufacturing", segment: "Enterprise", product: "Core Platform", arr: 310000, renewal: "2026-12-08", window: "≤3 mo", health: "good", trend: [4.3, 4.4, 4.5, 4.6], reason: "—", owner: "M. Chen", role: "CSM" },
+      { name: "Cascadia Logistics", segment: "Enterprise", product: "Integrations Hub", arr: 260000, renewal: "2027-01-22", window: "3–6 mo", health: "good", trend: [4.0, 4.1, 4.3, 4.4], reason: "—", owner: "J. Alvarez", role: "AM" },
+      { name: "Driftwood Retail Group", segment: "Mid-Market", product: "Core Platform", arr: 140000, renewal: "2027-02-14", window: "3–6 mo", health: "warning", trend: [3.9, 3.7, 3.5, 3.3], reason: "Low adoption", owner: "S. Patel", role: "AM" },
+      { name: "Northgate Financial", segment: "Enterprise", product: "Core Platform", arr: 220000, renewal: "2027-03-05", window: "3–6 mo", health: "critical", trend: [3.5, 3.2, 2.8, 2.5], reason: "Competitor eval", owner: "S. Patel", role: "AM" },
+      { name: "Fernbridge Insurance", segment: "Mid-Market", product: "Analytics Add-on", arr: 175000, renewal: "2027-05-19", window: "6–12 mo", health: "good", trend: [3.9, 4.0, 4.1, 4.2], reason: "—", owner: "J. Alvarez", role: "AM" },
+      { name: "Alderwood Education Group", segment: "SMB", product: "Core Platform", arr: 88000, renewal: "2027-06-30", window: "6–12 mo", health: "warning", trend: [3.8, 3.7, 3.5, 3.4], reason: "Budget review pending", owner: "K. Nguyen", role: "CSM" },
+      { name: "Silverline Utilities", segment: "Mid-Market", product: "Integrations Hub", arr: 205000, renewal: "2027-08-11", window: "6–12 mo", health: "good", trend: [4.2, 4.3, 4.4, 4.5], reason: "—", owner: "S. Patel", role: "AM" }
     ]
   };
 
@@ -680,6 +736,45 @@
     });
 
     svg.appendChild(el("line", { x1: padL, x2: W - padR, y1: padT + plotH, y2: padT + plotH, class: "baseline" }));
+  }
+
+  // ---------- Renewal Rate vs. GRR vs. NRR (derived from the waterfall — not hardcoded) ----------
+  function findWaterfall(pred) {
+    var wf = SAMPLE_DATA.waterfall;
+    for (var i = 0; i < wf.length; i++) if (pred(wf[i])) return wf[i];
+    return null;
+  }
+  function renderRenewalCompare() {
+    var startingARR = findWaterfall(function (d) { return d.label === "Starting ARR"; }).value;
+    var upsell = findWaterfall(function (d) { return d.label === "Upsell"; }).value;
+    var softChurn = -findWaterfall(function (d) { return d.type === "soft"; }).value;
+    var hardChurn = -findWaterfall(function (d) { return d.type === "hard"; }).value;
+    var totalLoss = softChurn + hardChurn;
+    var multiYearLocked = SAMPLE_DATA.renewalPool.multiYearLocked;
+    var arrUpForRenewal = startingARR - multiYearLocked;
+
+    var renewalRate = (arrUpForRenewal - totalLoss) / arrUpForRenewal;
+    var grr = (startingARR - totalLoss) / startingARR;
+    var nrr = (startingARR + upsell - totalLoss) / startingARR;
+
+    document.getElementById("renewal-rate-value").textContent = (renewalRate * 100).toFixed(1) + "%";
+    document.getElementById("renewal-rate-pool").textContent =
+      fmtMoney(arrUpForRenewal) + " up for renewal · " + fmtMoney(totalLoss) + " lost from that pool";
+    document.getElementById("grr-value").textContent = (grr * 100).toFixed(1) + "%";
+    document.getElementById("grr-pool").textContent =
+      fmtMoney(startingARR) + " total book · " + fmtMoney(totalLoss) + " lost book-wide";
+    document.getElementById("renewal-compare-foot").textContent =
+      fmtMoney(arrUpForRenewal) + " up for renewal + " + fmtMoney(multiYearLocked) + " multi-year (not up) = " + fmtMoney(startingARR) + " total starting ARR";
+    document.getElementById("nrr-value").textContent = (nrr * 100).toFixed(1) + "%";
+  }
+
+  function renderAtRisk() {
+    var endingARR = findWaterfall(function (d) { return d.label === "Ending ARR"; }).value;
+    var atRisk = SAMPLE_DATA.accounts
+      .filter(function (a) { return a.health === "critical" || a.health === "warning"; })
+      .reduce(function (sum, a) { return sum + a.arr; }, 0);
+    document.getElementById("atrisk-value").textContent = fmtMoney(atRisk);
+    document.getElementById("atrisk-delta").textContent = ((atRisk / endingARR) * 100).toFixed(1) + "% of ending ARR (critical + warning accounts)";
   }
 
   // ---------- Hard churn by reason (grouped hierarchical) ----------
@@ -920,7 +1015,47 @@
   // ---------- Account table ----------
   var activeWindow = "all";
   var activeSegment = "all";
+  var activeProduct = "all";
+  var activeRole = "all";
+  var activeRep = "all";
   var searchTerm = "";
+
+  function uniqueSorted(values) {
+    var seen = [], out = [];
+    values.forEach(function (v) { if (seen.indexOf(v) === -1) { seen.push(v); out.push(v); } });
+    return out.sort();
+  }
+  function populateProductFilter() {
+    var sel = document.getElementById("product-filter");
+    var products = uniqueSorted(SAMPLE_DATA.accounts.map(function (a) { return a.product; }));
+    sel.innerHTML = '<option value="all">All products</option>' +
+      products.map(function (p) { return '<option value="' + p + '">' + p + '</option>'; }).join("");
+  }
+  function populateRepFilter() {
+    var sel = document.getElementById("rep-filter");
+    var current = sel.value;
+    var reps = uniqueSorted(SAMPLE_DATA.accounts
+      .filter(function (a) { return activeRole === "all" || a.role === activeRole; })
+      .map(function (a) { return a.owner; }));
+    sel.innerHTML = '<option value="all">All reps</option>' +
+      reps.map(function (r) { return '<option value="' + r + '">' + r + '</option>'; }).join("");
+    sel.value = reps.indexOf(current) !== -1 ? current : "all";
+    activeRep = sel.value;
+  }
+  function bookStat(label, value) {
+    return '<div class="book-stat"><span class="book-label">' + label + '</span><span class="book-value tabular">' + value + '</span></div>';
+  }
+  function renderBookSummary(rows) {
+    var totalARR = rows.reduce(function (s, a) { return s + a.arr; }, 0);
+    var atRisk = rows.filter(function (a) { return a.health === "critical" || a.health === "warning"; })
+      .reduce(function (s, a) { return s + a.arr; }, 0);
+    var soon = rows.filter(function (a) { return a.window === "≤3 mo"; }).length;
+    document.getElementById("book-summary").innerHTML =
+      bookStat("Accounts in view", String(rows.length)) +
+      bookStat("ARR in view", fmtMoney(totalARR)) +
+      bookStat("At-risk ARR", fmtMoney(atRisk) + (totalARR ? " (" + ((atRisk / totalARR) * 100).toFixed(0) + "%)" : "")) +
+      bookStat("Renewing ≤3 mo", String(soon));
+  }
   function sparkline(values) {
     var min = Math.min.apply(null, values), max = Math.max.apply(null, values);
     var range = Math.max(max - min, 0.4);
@@ -938,11 +1073,15 @@
     var rows = SAMPLE_DATA.accounts.filter(function (a) {
       var matchesWindow = activeWindow === "all" || a.window === activeWindow;
       var matchesSegment = activeSegment === "all" || a.segment === activeSegment;
+      var matchesProduct = activeProduct === "all" || a.product === activeProduct;
+      var matchesRole = activeRole === "all" || a.role === activeRole;
+      var matchesRep = activeRep === "all" || a.owner === activeRep;
       var q = searchTerm.trim().toLowerCase();
       var matchesSearch = !q || a.name.toLowerCase().indexOf(q) !== -1 || a.segment.toLowerCase().indexOf(q) !== -1;
-      return matchesWindow && matchesSegment && matchesSearch;
+      return matchesWindow && matchesSegment && matchesProduct && matchesRole && matchesRep && matchesSearch;
     });
     rows.sort(function (a, b) { return new Date(a.renewal) - new Date(b.renewal); });
+    renderBookSummary(rows);
 
     rows.forEach(function (a) {
       var tr = document.createElement("tr");
@@ -956,16 +1095,23 @@
         '<td><span class="pill pill-' + a.health + '">' + a.health.charAt(0).toUpperCase() + a.health.slice(1) + '</span></td>' +
         '<td>' + sparkline(a.trend) + '</td>' +
         '<td class="acct-seg">' + a.reason + '</td>' +
-        '<td class="acct-seg">' + a.owner + '</td>';
+        '<td class="acct-seg">' + a.owner + '<span class="role-tag">' + a.role + '</span></td>';
       tbody.appendChild(tr);
     });
 
     var hint = document.getElementById("table-count-hint");
-    hint.textContent = rows.length + " of " + SAMPLE_DATA.accounts.length + " accounts";
+    if (hint) hint.textContent = rows.length + " of " + SAMPLE_DATA.accounts.length + " accounts";
   }
 
   document.getElementById("acct-search").addEventListener("input", function (e) { searchTerm = e.target.value; renderTable(); });
   document.getElementById("segment-filter").addEventListener("change", function (e) { activeSegment = e.target.value; renderTable(); });
+  document.getElementById("product-filter").addEventListener("change", function (e) { activeProduct = e.target.value; renderTable(); });
+  document.getElementById("role-filter").addEventListener("change", function (e) {
+    activeRole = e.target.value;
+    populateRepFilter();
+    renderTable();
+  });
+  document.getElementById("rep-filter").addEventListener("change", function (e) { activeRep = e.target.value; renderTable(); });
   Array.prototype.forEach.call(document.querySelectorAll(".win-filter button"), function (btn) {
     btn.addEventListener("click", function () {
       activeWindow = btn.getAttribute("data-win");
@@ -977,6 +1123,8 @@
   });
 
   function renderAll() {
+    renderRenewalCompare();
+    renderAtRisk();
     renderWaterfall();
     renderReasonChart();
     renderChurnTrend();
@@ -986,6 +1134,8 @@
     renderTriggerTasks();
     renderTable();
   }
+  populateProductFilter();
+  populateRepFilter();
   renderAll();
   window.addEventListener("resize", renderAll);
 })();
