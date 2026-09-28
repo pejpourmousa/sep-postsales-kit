@@ -67,7 +67,8 @@ section{margin-top:28px}
 .sec-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:12px}
 .note{font-size:12px;color:var(--text-3)}
 /* KPI */
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
 .kpi{padding:14px 16px;position:relative;overflow:hidden}
 .kpi .v{font-size:24px;font-weight:700;letter-spacing:-.01em;margin-top:4px}
 .kpi .d{font-size:12px;color:var(--text-2);margin-top:2px}
@@ -78,7 +79,7 @@ section{margin-top:28px}
 .tbl{width:100%;border-collapse:collapse}
 .tbl th{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-3);text-align:right;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
 .tbl td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:right;vertical-align:middle}
-.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl th:first-child,.tbl td:first-child{text-align:left;min-width:120px}
 .tbl tr:last-child td{border-bottom:0}
 .tbl tr.sel td{background:var(--surface-2)}
 .tbl .l{text-align:left}
@@ -189,7 +190,7 @@ ul.movers{list-style:none;margin:0;padding:0}
 
   <!-- Period comparison -->
   <section>
-    <div class="sec-head"><div><h2>Forecast vs. actual — MTD / QTD / YTD</h2><p class="sub">Actual = churn on renewals already closed. Forecast = actual + expected churn on open renewals in the window. Pace bar: solid = actual, hatched = remaining forecast, tick = full-period churn budget.</p></div></div>
+    <div class="sec-head"><div><h2>Forecast vs. actual — MTD / QTD / YTD</h2><p class="sub"><b>Renewal rate</b> = (available-to-renew pool − churn) ÷ available-to-renew pool, excluding multi-year contracts still in term. <b>GRR</b> = (full pool incl. multi-year in term − churn) ÷ full pool. Each shows forecast, with actual (closed renewals only) and budget-implied below. Actual = churn on renewals already closed. Forecast = actual + expected churn on open renewals in the window. Pace bar: solid = actual, hatched = remaining forecast, tick = full-period churn budget.</p></div></div>
     <div class="card scroll"><table class="tbl num" id="periodTbl"></table></div>
   </section>
 
@@ -224,7 +225,7 @@ ul.movers{list-style:none;margin:0;padding:0}
         <p class="cap" id="mixCap">Open renewals in selected period</p>
         <div id="mix"></div>
         <h3 style="margin-top:18px">Forecast churn by cut</h3>
-        <p class="cap">Selected period · actual + open expected</p>
+        <p class="cap">Selected period · forecast churn, renewal rate (RR) and GRR</p>
         <div id="cuts"></div>
       </div>
     </div>
@@ -243,13 +244,19 @@ ul.movers{list-style:none;margin:0;padding:0}
     </div>
   </section>
 
+  <!-- Rep scorecard -->
+  <section>
+    <div class="sec-head"><div><h2>Rep scorecard</h2><p class="sub" id="repCap">Renewal rate and GRR by CSM for the selected period. Click a row to filter the dashboard to that CSM.</p></div></div>
+    <div class="card scroll"><table class="tbl num" id="repTbl"></table></div>
+  </section>
+
   <!-- Accounts -->
   <section id="accounts">
     <div class="sec-head">
       <div><h2>Renewal accounts</h2><p class="sub">Click a row for health components, usage, sponsor coverage, save play and notes.</p></div>
       <div class="acct-tools">
         <div class="seg" id="scopeSeg" role="group" aria-label="Scope">
-          <button data-s="30">Next 30d</button><button data-s="90">Next 90d</button><button data-s="period">In period</button><button data-s="open">All open</button><button data-s="closed">Closed</button>
+          <button data-s="30">Next 30d</button><button data-s="90">Next 90d</button><button data-s="period">In period</button><button data-s="open">All open</button><button data-s="closed">Closed</button><button data-s="my">Multi-year</button>
         </div>
         <select id="fHealth" aria-label="Health"><option value="">All health</option><option>Healthy</option><option>Monitor</option><option>At Risk</option><option>Critical</option></select>
         <input type="search" id="q" placeholder="Search account, CSM, sponsor…" aria-label="Search">
@@ -261,7 +268,7 @@ ul.movers{list-style:none;margin:0;padding:0}
 
   <div class="foot">
     <b>How to use with your own data.</b> Everything renders from one JSON object (<code>meta</code> + <code>accounts[]</code>) embedded in the <code>&lt;script id="renewal-data"&gt;</code> block at the bottom of this file. Replace it, or click <b>Load data</b> to drop in a JSON export from your CRM / CS platform. Use <b>Export JSON</b> to get the schema with sample rows.
-    Monthly churn budgets live in <code>meta.monthlyChurnBudget</code>; "today" is <code>meta.asOf</code>. Budgets are company-level and are not re-cut when filters are applied.
+    Monthly churn budgets live in <code>meta.monthlyChurnBudget</code>; rate targets in <code>meta.renewalRateTarget</code> and <code>meta.grrTarget</code>. Multi-year contracts in term are rows with <code>multiYearInTerm: true</code> (plus <code>contractTermYears</code>, <code>contractEnd</code>), dated on their anniversary in the year: they count toward GRR but not renewal rate. "today" is <code>meta.asOf</code>. Budgets are company-level and are not re-cut when filters are applied.
   </div>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
@@ -271,7 +278,7 @@ ul.movers{list-style:none;margin:0;padding:0}
   "fiscalYearStart": "2026-01-01",
   "asOf": "2026-09-25",
   "company": "Acme Software",
-  "grrTarget": 0.88,
+  "grrTarget": 0.9,
   "monthlyChurnBudget": {
    "2026-01": 160000,
    "2026-02": 150000,
@@ -285,7 +292,8 @@ ul.movers{list-style:none;margin:0;padding:0}
    "2026-10": 520000,
    "2026-11": 960000,
    "2026-12": 690000
-  }
+  },
+  "renewalRateTarget": 0.85
  },
  "accounts": [
   {
@@ -5925,6 +5933,1776 @@ ul.movers{list-style:none;margin:0;padding:0}
    "nextStep": "QBR scheduled",
    "winBack": 0,
    "notes": ""
+  },
+  {
+   "account": "Fjord Bio",
+   "csm": "Finley",
+   "segment": "Mid Market",
+   "product": "Core",
+   "renewalDate": "2026-01-14",
+   "arr": 157000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 77,
+    "trend": -4,
+    "components": {
+     "adoption": 65,
+     "engagement": 90,
+     "support": 64,
+     "sentiment": 90
+    }
+   },
+   "usage": {
+    "licensedSeats": 209,
+    "activeSeats": 150,
+    "utilization": 72,
+    "wauTrend": [
+     16,
+     17,
+     17,
+     17,
+     18,
+     18
+    ],
+    "lastLogin": "2026-09-23"
+   },
+   "sponsor": {
+    "name": "Leo Morgan",
+    "title": "VP Sales",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-08-30"
+   },
+   "champion": {
+    "name": "Victor Morgan",
+    "title": "Solutions Consulting Mgr"
+   },
+   "contacts": 8,
+   "nps": 10,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Adoption check-in",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Jan \u2014 ARR locked through Jan 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2027-01-14"
+  },
+  {
+   "account": "Zephyr Health",
+   "csm": "Jules",
+   "segment": "Growth",
+   "product": "Agent",
+   "renewalDate": "2026-02-12",
+   "arr": 19000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 64,
+    "trend": 0,
+    "components": {
+     "adoption": 67,
+     "engagement": 89,
+     "support": 76,
+     "sentiment": 86
+    }
+   },
+   "usage": {
+    "licensedSeats": 25,
+    "activeSeats": 18,
+    "utilization": 72,
+    "wauTrend": [
+     1013,
+     1013,
+     1071,
+     1146,
+     1177,
+     1211
+    ],
+    "lastLogin": "2026-09-19"
+   },
+   "sponsor": {
+    "name": "Sam Rivera",
+    "title": "VP Sales Enablement",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-09-12"
+   },
+   "champion": {
+    "name": "Victor Lindqvist",
+    "title": "Director, Presales"
+   },
+   "contacts": 9,
+   "nps": 9,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Adoption check-in",
+   "winBack": 0,
+   "notes": "2-year agreement; anniversary Feb \u2014 ARR locked through Feb 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 2,
+   "contractEnd": "2027-02-12"
+  },
+  {
+   "account": "Northstar Bio",
+   "csm": "Drew",
+   "segment": "Enterprise",
+   "product": "Core",
+   "renewalDate": "2026-03-15",
+   "arr": 516000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 85,
+    "trend": 2,
+    "components": {
+     "adoption": 78,
+     "engagement": 65,
+     "support": 84,
+     "sentiment": 80
+    }
+   },
+   "usage": {
+    "licensedSeats": 688,
+    "activeSeats": 482,
+    "utilization": 70,
+    "wauTrend": [
+     10,
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "lastLogin": "2026-09-24"
+   },
+   "sponsor": {
+    "name": "Dana Singh",
+    "title": "VP Sales",
+    "engagement": "Moderate",
+    "lastExecTouch": "2026-09-08"
+   },
+   "champion": {
+    "name": "Elena Lindqvist",
+    "title": "Enablement Program Mgr"
+   },
+   "contacts": 4,
+   "nps": 7,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Adoption check-in",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Mar \u2014 ARR locked through Mar 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2027-03-15"
+  },
+  {
+   "account": "Aurora Capital",
+   "csm": "Finley",
+   "segment": "Enterprise",
+   "product": "Core",
+   "renewalDate": "2026-04-27",
+   "arr": 200000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 93,
+    "trend": -4,
+    "components": {
+     "adoption": 65,
+     "engagement": 90,
+     "support": 64,
+     "sentiment": 90
+    }
+   },
+   "usage": {
+    "licensedSeats": 266,
+    "activeSeats": 192,
+    "utilization": 72,
+    "wauTrend": [
+     16,
+     17,
+     17,
+     17,
+     18,
+     18
+    ],
+    "lastLogin": "2026-09-23"
+   },
+   "sponsor": {
+    "name": "Leo Morgan",
+    "title": "VP Sales",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-08-30"
+   },
+   "champion": {
+    "name": "Victor Morgan",
+    "title": "Solutions Consulting Mgr"
+   },
+   "contacts": 8,
+   "nps": 10,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Expansion discovery",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Apr \u2014 ARR locked through Apr 2028.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2028-04-27"
+  },
+  {
+   "account": "Ember Capital",
+   "csm": "Blake",
+   "segment": "Mid Market",
+   "product": "Agent",
+   "renewalDate": "2026-05-02",
+   "arr": 59000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 66,
+    "trend": 2,
+    "components": {
+     "adoption": 84,
+     "engagement": 85,
+     "support": 78,
+     "sentiment": 91
+    }
+   },
+   "usage": {
+    "licensedSeats": 78,
+    "activeSeats": 69,
+    "utilization": 89,
+    "wauTrend": [
+     123,
+     124,
+     130,
+     132,
+     139,
+     145
+    ],
+    "lastLogin": "2026-09-23"
+   },
+   "sponsor": {
+    "name": "Hannah Chen",
+    "title": "VP Solutions Consulting",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-08-28"
+   },
+   "champion": {
+    "name": "Marcus Lindqvist",
+    "title": "Enablement Program Mgr"
+   },
+   "contacts": 6,
+   "nps": 9,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Adoption check-in",
+   "winBack": 0,
+   "notes": "2-year agreement; anniversary May \u2014 ARR locked through May 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 2,
+   "contractEnd": "2027-05-02"
+  },
+  {
+   "account": "Delta Insurance",
+   "csm": "Blake",
+   "segment": "Growth",
+   "product": "Core",
+   "renewalDate": "2026-06-18",
+   "arr": 44000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 85,
+    "trend": 0,
+    "components": {
+     "adoption": 83,
+     "engagement": 83,
+     "support": 77,
+     "sentiment": 80
+    }
+   },
+   "usage": {
+    "licensedSeats": 58,
+    "activeSeats": 45,
+    "utilization": 77,
+    "wauTrend": [
+     73,
+     75,
+     78,
+     83,
+     88,
+     88
+    ],
+    "lastLogin": "2026-09-25"
+   },
+   "sponsor": {
+    "name": "Julia Ortiz",
+    "title": "VP Marketing",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-09-14"
+   },
+   "champion": {
+    "name": "Grace Novak",
+    "title": "Marketing Ops Lead"
+   },
+   "contacts": 8,
+   "nps": 9,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Expansion discovery",
+   "winBack": 0,
+   "notes": "2-year agreement; anniversary Jun \u2014 ARR locked through Jun 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 2,
+   "contractEnd": "2027-06-18"
+  },
+  {
+   "account": "Orchid Insurance",
+   "csm": "Kai",
+   "segment": "Growth",
+   "product": "Core",
+   "renewalDate": "2026-07-11",
+   "arr": 15000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 93,
+    "trend": -2,
+    "components": {
+     "adoption": 71,
+     "engagement": 74,
+     "support": 77,
+     "sentiment": 73
+    }
+   },
+   "usage": {
+    "licensedSeats": 20,
+    "activeSeats": 14,
+    "utilization": 69,
+    "wauTrend": [
+     229,
+     245,
+     254,
+     253,
+     261,
+     267
+    ],
+    "lastLogin": "2026-09-20"
+   },
+   "sponsor": {
+    "name": "Rosa Morgan",
+    "title": "VP Sales Enablement",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-08-31"
+   },
+   "champion": {
+    "name": "Priya Novak",
+    "title": "Director, Demand Gen"
+   },
+   "contacts": 4,
+   "nps": 9,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Adoption check-in",
+   "winBack": 0,
+   "notes": "2-year agreement; anniversary Jul \u2014 ARR locked through Jul 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 2,
+   "contractEnd": "2027-07-11"
+  },
+  {
+   "account": "Aurora Telecom",
+   "csm": "Finley",
+   "segment": "Mid Market",
+   "product": "Core",
+   "renewalDate": "2026-08-18",
+   "arr": 123000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 72,
+    "trend": 5,
+    "components": {
+     "adoption": 66,
+     "engagement": 74,
+     "support": 67,
+     "sentiment": 72
+    }
+   },
+   "usage": {
+    "licensedSeats": 164,
+    "activeSeats": 120,
+    "utilization": 73,
+    "wauTrend": [
+     298,
+     308,
+     313,
+     323,
+     334,
+     351
+    ],
+    "lastLogin": "2026-09-25"
+   },
+   "sponsor": {
+    "name": "Victor Duarte",
+    "title": "CRO",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-09-19"
+   },
+   "champion": {
+    "name": "Priya Duarte",
+    "title": "Solutions Consulting Mgr"
+   },
+   "contacts": 8,
+   "nps": 10,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Annual business review",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Aug \u2014 ARR locked through Aug 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2027-08-18"
+  },
+  {
+   "account": "Umber Retail",
+   "csm": "Logan",
+   "segment": "Mid Market",
+   "product": "Core",
+   "renewalDate": "2026-09-11",
+   "arr": 81000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 89,
+    "trend": 0,
+    "components": {
+     "adoption": 63,
+     "engagement": 71,
+     "support": 94,
+     "sentiment": 69
+    }
+   },
+   "usage": {
+    "licensedSeats": 108,
+    "activeSeats": 66,
+    "utilization": 61,
+    "wauTrend": [
+     35,
+     35,
+     36,
+     36,
+     38,
+     40
+    ],
+    "lastLogin": "2026-09-19"
+   },
+   "sponsor": {
+    "name": "Jordan Weiss",
+    "title": "VP Marketing",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-08-29"
+   },
+   "champion": {
+    "name": "Julia Morgan",
+    "title": "Solutions Consulting Mgr"
+   },
+   "contacts": 8,
+   "nps": 8,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Annual business review",
+   "winBack": 0,
+   "notes": "2-year agreement; anniversary Sep \u2014 ARR locked through Sep 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 2,
+   "contractEnd": "2027-09-11"
+  },
+  {
+   "account": "Lattice Capital",
+   "csm": "Blake",
+   "segment": "Mid Market",
+   "product": "Agent",
+   "renewalDate": "2026-10-02",
+   "arr": 102000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 93,
+    "trend": 2,
+    "components": {
+     "adoption": 84,
+     "engagement": 85,
+     "support": 78,
+     "sentiment": 91
+    }
+   },
+   "usage": {
+    "licensedSeats": 136,
+    "activeSeats": 121,
+    "utilization": 89,
+    "wauTrend": [
+     123,
+     124,
+     130,
+     132,
+     139,
+     145
+    ],
+    "lastLogin": "2026-09-23"
+   },
+   "sponsor": {
+    "name": "Hannah Chen",
+    "title": "VP Solutions Consulting",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-08-28"
+   },
+   "champion": {
+    "name": "Marcus Lindqvist",
+    "title": "Enablement Program Mgr"
+   },
+   "contacts": 6,
+   "nps": 9,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Expansion discovery",
+   "winBack": 0,
+   "notes": "2-year agreement; anniversary Oct \u2014 ARR locked through Oct 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 2,
+   "contractEnd": "2027-10-02"
+  },
+  {
+   "account": "Quantum Bio",
+   "csm": "Blake",
+   "segment": "Growth",
+   "product": "Agent",
+   "renewalDate": "2026-11-08",
+   "arr": 32000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 92,
+    "trend": 2,
+    "components": {
+     "adoption": 84,
+     "engagement": 85,
+     "support": 78,
+     "sentiment": 91
+    }
+   },
+   "usage": {
+    "licensedSeats": 42,
+    "activeSeats": 37,
+    "utilization": 89,
+    "wauTrend": [
+     123,
+     124,
+     130,
+     132,
+     139,
+     145
+    ],
+    "lastLogin": "2026-09-23"
+   },
+   "sponsor": {
+    "name": "Hannah Chen",
+    "title": "VP Solutions Consulting",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-08-28"
+   },
+   "champion": {
+    "name": "Marcus Lindqvist",
+    "title": "Enablement Program Mgr"
+   },
+   "contacts": 6,
+   "nps": 9,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Expansion discovery",
+   "winBack": 0,
+   "notes": "2-year agreement; anniversary Nov \u2014 ARR locked through Nov 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 2,
+   "contractEnd": "2027-11-08"
+  },
+  {
+   "account": "Bramble Energy",
+   "csm": "Jules",
+   "segment": "Enterprise",
+   "product": "Agent",
+   "renewalDate": "2026-12-28",
+   "arr": 476000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 66,
+    "trend": 0,
+    "components": {
+     "adoption": 67,
+     "engagement": 89,
+     "support": 76,
+     "sentiment": 86
+    }
+   },
+   "usage": {
+    "licensedSeats": 634,
+    "activeSeats": 456,
+    "utilization": 72,
+    "wauTrend": [
+     1013,
+     1013,
+     1071,
+     1146,
+     1177,
+     1211
+    ],
+    "lastLogin": "2026-09-19"
+   },
+   "sponsor": {
+    "name": "Sam Rivera",
+    "title": "VP Sales Enablement",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-09-12"
+   },
+   "champion": {
+    "name": "Victor Lindqvist",
+    "title": "Director, Presales"
+   },
+   "contacts": 9,
+   "nps": 9,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Expansion discovery",
+   "winBack": 0,
+   "notes": "2-year agreement; anniversary Dec \u2014 ARR locked through Dec 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 2,
+   "contractEnd": "2027-12-28"
+  },
+  {
+   "account": "Kinetic Capital",
+   "csm": "Logan",
+   "segment": "Growth",
+   "product": "Agent",
+   "renewalDate": "2026-01-24",
+   "arr": 19000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 75,
+    "trend": -6,
+    "components": {
+     "adoption": 70,
+     "engagement": 79,
+     "support": 67,
+     "sentiment": 73
+    }
+   },
+   "usage": {
+    "licensedSeats": 25,
+    "activeSeats": 18,
+    "utilization": 70,
+    "wauTrend": [
+     66,
+     66,
+     68,
+     68,
+     66,
+     66
+    ],
+    "lastLogin": "2026-09-25"
+   },
+   "sponsor": {
+    "name": "Leo Duarte",
+    "title": "VP Solutions Consulting",
+    "engagement": "Moderate",
+    "lastExecTouch": "2026-09-16"
+   },
+   "champion": {
+    "name": "Priya Shah",
+    "title": "Marketing Ops Lead"
+   },
+   "contacts": 4,
+   "nps": 6,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Annual business review",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Jan \u2014 ARR locked through Jan 2028.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2028-01-24"
+  },
+  {
+   "account": "Lattice Foods",
+   "csm": "Emerson",
+   "segment": "Mid Market",
+   "product": "Core",
+   "renewalDate": "2026-02-14",
+   "arr": 89000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 62,
+    "trend": -4,
+    "components": {
+     "adoption": 69,
+     "engagement": 92,
+     "support": 59,
+     "sentiment": 81
+    }
+   },
+   "usage": {
+    "licensedSeats": 118,
+    "activeSeats": 76,
+    "utilization": 64,
+    "wauTrend": [
+     71,
+     73,
+     73,
+     73,
+     76,
+     81
+    ],
+    "lastLogin": "2026-09-23"
+   },
+   "sponsor": {
+    "name": "Maya Rivera",
+    "title": "SVP Revenue",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-09-10"
+   },
+   "champion": {
+    "name": "Maya Shah",
+    "title": "Director, Demand Gen"
+   },
+   "contacts": 4,
+   "nps": 10,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Annual business review",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Feb \u2014 ARR locked through Feb 2028.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2028-02-14"
+  },
+  {
+   "account": "Mosaic Capital",
+   "csm": "Finley",
+   "segment": "Enterprise",
+   "product": "Core",
+   "renewalDate": "2026-03-01",
+   "arr": 513000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 87,
+    "trend": -4,
+    "components": {
+     "adoption": 65,
+     "engagement": 90,
+     "support": 64,
+     "sentiment": 90
+    }
+   },
+   "usage": {
+    "licensedSeats": 684,
+    "activeSeats": 492,
+    "utilization": 72,
+    "wauTrend": [
+     16,
+     17,
+     17,
+     17,
+     18,
+     18
+    ],
+    "lastLogin": "2026-09-23"
+   },
+   "sponsor": {
+    "name": "Leo Morgan",
+    "title": "VP Sales",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-08-30"
+   },
+   "champion": {
+    "name": "Victor Morgan",
+    "title": "Solutions Consulting Mgr"
+   },
+   "contacts": 8,
+   "nps": 10,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Expansion discovery",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Mar \u2014 ARR locked through Mar 2028.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2028-03-01"
+  },
+  {
+   "account": "Yarrow Capital",
+   "csm": "Logan",
+   "segment": "Enterprise",
+   "product": "Agent",
+   "renewalDate": "2026-04-05",
+   "arr": 276000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 66,
+    "trend": -6,
+    "components": {
+     "adoption": 70,
+     "engagement": 79,
+     "support": 67,
+     "sentiment": 73
+    }
+   },
+   "usage": {
+    "licensedSeats": 368,
+    "activeSeats": 258,
+    "utilization": 70,
+    "wauTrend": [
+     66,
+     66,
+     68,
+     68,
+     66,
+     66
+    ],
+    "lastLogin": "2026-09-25"
+   },
+   "sponsor": {
+    "name": "Leo Duarte",
+    "title": "VP Solutions Consulting",
+    "engagement": "Moderate",
+    "lastExecTouch": "2026-09-16"
+   },
+   "champion": {
+    "name": "Priya Shah",
+    "title": "Marketing Ops Lead"
+   },
+   "contacts": 4,
+   "nps": 6,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Annual business review",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Apr \u2014 ARR locked through Apr 2028.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2028-04-05"
+  },
+  {
+   "account": "Delta Energy",
+   "csm": "Logan",
+   "segment": "Mid Market",
+   "product": "Agent",
+   "renewalDate": "2026-05-10",
+   "arr": 100000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 73,
+    "trend": -6,
+    "components": {
+     "adoption": 70,
+     "engagement": 79,
+     "support": 67,
+     "sentiment": 73
+    }
+   },
+   "usage": {
+    "licensedSeats": 133,
+    "activeSeats": 93,
+    "utilization": 70,
+    "wauTrend": [
+     66,
+     66,
+     68,
+     68,
+     66,
+     66
+    ],
+    "lastLogin": "2026-09-25"
+   },
+   "sponsor": {
+    "name": "Leo Duarte",
+    "title": "VP Solutions Consulting",
+    "engagement": "Moderate",
+    "lastExecTouch": "2026-09-16"
+   },
+   "champion": {
+    "name": "Priya Shah",
+    "title": "Marketing Ops Lead"
+   },
+   "contacts": 4,
+   "nps": 6,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Annual business review",
+   "winBack": 0,
+   "notes": "2-year agreement; anniversary May \u2014 ARR locked through May 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 2,
+   "contractEnd": "2027-05-10"
+  },
+  {
+   "account": "Mosaic Media",
+   "csm": "Finley",
+   "segment": "Mid Market",
+   "product": "Core",
+   "renewalDate": "2026-06-24",
+   "arr": 127000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 86,
+    "trend": -4,
+    "components": {
+     "adoption": 65,
+     "engagement": 90,
+     "support": 64,
+     "sentiment": 90
+    }
+   },
+   "usage": {
+    "licensedSeats": 169,
+    "activeSeats": 122,
+    "utilization": 72,
+    "wauTrend": [
+     16,
+     17,
+     17,
+     17,
+     18,
+     18
+    ],
+    "lastLogin": "2026-09-23"
+   },
+   "sponsor": {
+    "name": "Leo Morgan",
+    "title": "VP Sales",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-08-30"
+   },
+   "champion": {
+    "name": "Victor Morgan",
+    "title": "Solutions Consulting Mgr"
+   },
+   "contacts": 8,
+   "nps": 10,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Annual business review",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Jun \u2014 ARR locked through Jun 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2027-06-24"
+  },
+  {
+   "account": "Orchid Freight",
+   "csm": "Kai",
+   "segment": "Mid Market",
+   "product": "Core",
+   "renewalDate": "2026-07-25",
+   "arr": 82000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 64,
+    "trend": -2,
+    "components": {
+     "adoption": 71,
+     "engagement": 74,
+     "support": 77,
+     "sentiment": 73
+    }
+   },
+   "usage": {
+    "licensedSeats": 109,
+    "activeSeats": 75,
+    "utilization": 69,
+    "wauTrend": [
+     229,
+     245,
+     254,
+     253,
+     261,
+     267
+    ],
+    "lastLogin": "2026-09-20"
+   },
+   "sponsor": {
+    "name": "Rosa Morgan",
+    "title": "VP Sales Enablement",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-08-31"
+   },
+   "champion": {
+    "name": "Priya Novak",
+    "title": "Director, Demand Gen"
+   },
+   "contacts": 4,
+   "nps": 9,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Adoption check-in",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Jul \u2014 ARR locked through Jul 2028.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2028-07-25"
+  },
+  {
+   "account": "Harbor Bio",
+   "csm": "Logan",
+   "segment": "Growth",
+   "product": "Agent",
+   "renewalDate": "2026-08-10",
+   "arr": 31000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 68,
+    "trend": -6,
+    "components": {
+     "adoption": 70,
+     "engagement": 79,
+     "support": 67,
+     "sentiment": 73
+    }
+   },
+   "usage": {
+    "licensedSeats": 41,
+    "activeSeats": 29,
+    "utilization": 70,
+    "wauTrend": [
+     66,
+     66,
+     68,
+     68,
+     66,
+     66
+    ],
+    "lastLogin": "2026-09-25"
+   },
+   "sponsor": {
+    "name": "Leo Duarte",
+    "title": "VP Solutions Consulting",
+    "engagement": "Moderate",
+    "lastExecTouch": "2026-09-16"
+   },
+   "champion": {
+    "name": "Priya Shah",
+    "title": "Marketing Ops Lead"
+   },
+   "contacts": 4,
+   "nps": 6,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Adoption check-in",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Aug \u2014 ARR locked through Aug 2028.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2028-08-10"
+  },
+  {
+   "account": "Redwood Foods",
+   "csm": "Jules",
+   "segment": "Mid Market",
+   "product": "Agent",
+   "renewalDate": "2026-09-17",
+   "arr": 116000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 82,
+    "trend": 0,
+    "components": {
+     "adoption": 67,
+     "engagement": 89,
+     "support": 76,
+     "sentiment": 86
+    }
+   },
+   "usage": {
+    "licensedSeats": 154,
+    "activeSeats": 111,
+    "utilization": 72,
+    "wauTrend": [
+     1013,
+     1013,
+     1071,
+     1146,
+     1177,
+     1211
+    ],
+    "lastLogin": "2026-09-19"
+   },
+   "sponsor": {
+    "name": "Sam Rivera",
+    "title": "VP Sales Enablement",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-09-12"
+   },
+   "champion": {
+    "name": "Victor Lindqvist",
+    "title": "Director, Presales"
+   },
+   "contacts": 9,
+   "nps": 9,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Annual business review",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Sep \u2014 ARR locked through Sep 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2027-09-17"
+  },
+  {
+   "account": "Glacier Retail",
+   "csm": "Finley",
+   "segment": "Mid Market",
+   "product": "Core",
+   "renewalDate": "2026-10-11",
+   "arr": 63000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 90,
+    "trend": 5,
+    "components": {
+     "adoption": 66,
+     "engagement": 74,
+     "support": 67,
+     "sentiment": 72
+    }
+   },
+   "usage": {
+    "licensedSeats": 84,
+    "activeSeats": 61,
+    "utilization": 73,
+    "wauTrend": [
+     298,
+     308,
+     313,
+     323,
+     334,
+     351
+    ],
+    "lastLogin": "2026-09-25"
+   },
+   "sponsor": {
+    "name": "Victor Duarte",
+    "title": "CRO",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-09-19"
+   },
+   "champion": {
+    "name": "Priya Duarte",
+    "title": "Solutions Consulting Mgr"
+   },
+   "contacts": 8,
+   "nps": 10,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Adoption check-in",
+   "winBack": 0,
+   "notes": "2-year agreement; anniversary Oct \u2014 ARR locked through Oct 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 2,
+   "contractEnd": "2027-10-11"
+  },
+  {
+   "account": "Quantum Foods",
+   "csm": "Jules",
+   "segment": "Mid Market",
+   "product": "Agent",
+   "renewalDate": "2026-11-22",
+   "arr": 110000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 66,
+    "trend": 0,
+    "components": {
+     "adoption": 67,
+     "engagement": 89,
+     "support": 76,
+     "sentiment": 86
+    }
+   },
+   "usage": {
+    "licensedSeats": 146,
+    "activeSeats": 105,
+    "utilization": 72,
+    "wauTrend": [
+     1013,
+     1013,
+     1071,
+     1146,
+     1177,
+     1211
+    ],
+    "lastLogin": "2026-09-19"
+   },
+   "sponsor": {
+    "name": "Sam Rivera",
+    "title": "VP Sales Enablement",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-09-12"
+   },
+   "champion": {
+    "name": "Victor Lindqvist",
+    "title": "Director, Presales"
+   },
+   "contacts": 9,
+   "nps": 9,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Expansion discovery",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Nov \u2014 ARR locked through Nov 2028.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2028-11-22"
+  },
+  {
+   "account": "Harbor Health",
+   "csm": "Jules",
+   "segment": "Mid Market",
+   "product": "Agent",
+   "renewalDate": "2026-12-22",
+   "arr": 85000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 89,
+    "trend": 0,
+    "components": {
+     "adoption": 67,
+     "engagement": 89,
+     "support": 76,
+     "sentiment": 86
+    }
+   },
+   "usage": {
+    "licensedSeats": 113,
+    "activeSeats": 81,
+    "utilization": 72,
+    "wauTrend": [
+     1013,
+     1013,
+     1071,
+     1146,
+     1177,
+     1211
+    ],
+    "lastLogin": "2026-09-19"
+   },
+   "sponsor": {
+    "name": "Sam Rivera",
+    "title": "VP Sales Enablement",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-09-12"
+   },
+   "champion": {
+    "name": "Victor Lindqvist",
+    "title": "Director, Presales"
+   },
+   "contacts": 9,
+   "nps": 9,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Adoption check-in",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Dec \u2014 ARR locked through Dec 2028.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2028-12-22"
+  },
+  {
+   "account": "Orchid Media",
+   "csm": "Kai",
+   "segment": "Mid Market",
+   "product": "Core",
+   "renewalDate": "2026-01-13",
+   "arr": 130000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 92,
+    "trend": -2,
+    "components": {
+     "adoption": 71,
+     "engagement": 74,
+     "support": 77,
+     "sentiment": 73
+    }
+   },
+   "usage": {
+    "licensedSeats": 173,
+    "activeSeats": 119,
+    "utilization": 69,
+    "wauTrend": [
+     229,
+     245,
+     254,
+     253,
+     261,
+     267
+    ],
+    "lastLogin": "2026-09-20"
+   },
+   "sponsor": {
+    "name": "Rosa Morgan",
+    "title": "VP Sales Enablement",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-08-31"
+   },
+   "champion": {
+    "name": "Priya Novak",
+    "title": "Director, Demand Gen"
+   },
+   "contacts": 4,
+   "nps": 9,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Annual business review",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Jan \u2014 ARR locked through Jan 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2027-01-13"
+  },
+  {
+   "account": "Fjord Telecom",
+   "csm": "Parker",
+   "segment": "Mid Market",
+   "product": "Core",
+   "renewalDate": "2026-02-23",
+   "arr": 149000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 92,
+    "trend": -8,
+    "components": {
+     "adoption": 59,
+     "engagement": 84,
+     "support": 60,
+     "sentiment": 86
+    }
+   },
+   "usage": {
+    "licensedSeats": 198,
+    "activeSeats": 133,
+    "utilization": 67,
+    "wauTrend": [
+     113,
+     118,
+     118,
+     117,
+     123,
+     125
+    ],
+    "lastLogin": "2026-09-21"
+   },
+   "sponsor": {
+    "name": "Chris Patel",
+    "title": "CMO",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-09-12"
+   },
+   "champion": {
+    "name": "Marcus Duarte",
+    "title": "Sr. Mgr, Sales Enablement"
+   },
+   "contacts": 6,
+   "nps": 9,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Annual business review",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Feb \u2014 ARR locked through Feb 2028.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2028-02-23"
+  },
+  {
+   "account": "Prairie Bio",
+   "csm": "Micah",
+   "segment": "Mid Market",
+   "product": "Core",
+   "renewalDate": "2026-03-20",
+   "arr": 70000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 71,
+    "trend": -8,
+    "components": {
+     "adoption": 72,
+     "engagement": 70,
+     "support": 62,
+     "sentiment": 90
+    }
+   },
+   "usage": {
+    "licensedSeats": 93,
+    "activeSeats": 60,
+    "utilization": 64,
+    "wauTrend": [
+     9,
+     9,
+     9,
+     9,
+     9,
+     9
+    ],
+    "lastLogin": "2026-09-25"
+   },
+   "sponsor": {
+    "name": "Maya Morgan",
+    "title": "CRO",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-09-13"
+   },
+   "champion": {
+    "name": "Sam Morgan",
+    "title": "Director, Presales"
+   },
+   "contacts": 7,
+   "nps": 8,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Expansion discovery",
+   "winBack": 0,
+   "notes": "2-year agreement; anniversary Mar \u2014 ARR locked through Mar 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 2,
+   "contractEnd": "2027-03-20"
+  },
+  {
+   "account": "Cinder Insurance",
+   "csm": "Logan",
+   "segment": "Mid Market",
+   "product": "Agent",
+   "renewalDate": "2026-04-03",
+   "arr": 145000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 89,
+    "trend": -6,
+    "components": {
+     "adoption": 70,
+     "engagement": 79,
+     "support": 67,
+     "sentiment": 73
+    }
+   },
+   "usage": {
+    "licensedSeats": 193,
+    "activeSeats": 135,
+    "utilization": 70,
+    "wauTrend": [
+     66,
+     66,
+     68,
+     68,
+     66,
+     66
+    ],
+    "lastLogin": "2026-09-25"
+   },
+   "sponsor": {
+    "name": "Leo Duarte",
+    "title": "VP Solutions Consulting",
+    "engagement": "Moderate",
+    "lastExecTouch": "2026-09-16"
+   },
+   "champion": {
+    "name": "Priya Shah",
+    "title": "Marketing Ops Lead"
+   },
+   "contacts": 4,
+   "nps": 6,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Annual business review",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Apr \u2014 ARR locked through Apr 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2027-04-03"
+  },
+  {
+   "account": "Vantage Media",
+   "csm": "Micah",
+   "segment": "Growth",
+   "product": "Core",
+   "renewalDate": "2026-05-03",
+   "arr": 23000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 79,
+    "trend": -8,
+    "components": {
+     "adoption": 72,
+     "engagement": 70,
+     "support": 62,
+     "sentiment": 90
+    }
+   },
+   "usage": {
+    "licensedSeats": 30,
+    "activeSeats": 19,
+    "utilization": 64,
+    "wauTrend": [
+     9,
+     9,
+     9,
+     9,
+     9,
+     9
+    ],
+    "lastLogin": "2026-09-25"
+   },
+   "sponsor": {
+    "name": "Maya Morgan",
+    "title": "CRO",
+    "engagement": "Strong",
+    "lastExecTouch": "2026-09-13"
+   },
+   "champion": {
+    "name": "Sam Morgan",
+    "title": "Director, Presales"
+   },
+   "contacts": 7,
+   "nps": 8,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Annual business review",
+   "winBack": 0,
+   "notes": "2-year agreement; anniversary May \u2014 ARR locked through May 2027.",
+   "multiYearInTerm": true,
+   "contractTermYears": 2,
+   "contractEnd": "2027-05-03"
+  },
+  {
+   "account": "Willow Bio",
+   "csm": "Logan",
+   "segment": "Mid Market",
+   "product": "Agent",
+   "renewalDate": "2026-06-13",
+   "arr": 108000,
+   "expectedChurn": 0,
+   "lastWeekExpectedChurn": 0,
+   "forecastCategory": "Multi-year \u00b7 in term",
+   "status": "In term",
+   "outcome": null,
+   "retainedArr": null,
+   "turnaround": 0,
+   "health": {
+    "score": 73,
+    "trend": -6,
+    "components": {
+     "adoption": 70,
+     "engagement": 79,
+     "support": 67,
+     "sentiment": 73
+    }
+   },
+   "usage": {
+    "licensedSeats": 144,
+    "activeSeats": 101,
+    "utilization": 70,
+    "wauTrend": [
+     66,
+     66,
+     68,
+     68,
+     66,
+     66
+    ],
+    "lastLogin": "2026-09-25"
+   },
+   "sponsor": {
+    "name": "Leo Duarte",
+    "title": "VP Solutions Consulting",
+    "engagement": "Moderate",
+    "lastExecTouch": "2026-09-16"
+   },
+   "champion": {
+    "name": "Priya Shah",
+    "title": "Marketing Ops Lead"
+   },
+   "contacts": 4,
+   "nps": 6,
+   "risks": [],
+   "savePlay": "",
+   "nextStep": "Adoption check-in",
+   "winBack": 0,
+   "notes": "3-year agreement; anniversary Jun \u2014 ARR locked through Jun 2028.",
+   "multiYearInTerm": true,
+   "contractTermYears": 3,
+   "contractEnd": "2028-06-13"
   }
  ]
 }</script>
@@ -5959,6 +7737,8 @@ const css = v=>getComputedStyle(document.documentElement).getPropertyValue(v).tr
 const churnOf = a=> a.status==='Closed' ? Math.max(0,a.arr-(a.retainedArr??a.arr)) : (a.expectedChurn||0);
 const actualChurn = a=> a.status==='Closed' ? Math.max(0,a.arr-(a.retainedArr??a.arr)) : 0;
 const openExp = a=> a.status==='Closed' ? 0 : (a.expectedChurn||0);
+const isMY = a=> !!a.multiYearInTerm;
+const isOpen = a=> a.status!=='Closed' && !isMY(a);
 const daysOut = a=> Math.round((pd(a.renewalDate)-asOf())/MS);
 function asOf(){ return pd(DATA.meta.asOf); }
 function fyStart(){ return pd(DATA.meta.fiscalYearStart||(asOf().getUTCFullYear()+'-01-01')); }
@@ -5994,14 +7774,23 @@ function filtered(){
 }
 function inWin(a,w){ const d=pd(a.renewalDate); return d>=w.s && d<w.e; }
 function metrics(w,list){
-  const L=list.filter(a=>inWin(a,w));
-  const m={n:L.length,closed:0,base:0,act:0,open:0,wb:0,turn:0,retained:0,closedBase:0,openBase:0};
-  L.forEach(a=>{ m.base+=a.arr; if(a.status==='Closed'){m.closed++;m.closedBase+=a.arr;m.retained+=(a.retainedArr??a.arr);m.turn+=Math.max(0,(a.retainedArr??a.arr)-a.arr);} else {m.openBase+=a.arr; m.wb+=a.winBack||0;}
+  const L=list.filter(a=>inWin(a,w)), t=asOf();
+  const m={n:0,closed:0,atr:0,my:0,act:0,open:0,wb:0,turn:0,retained:0,closedAtr:0,myPassed:0,myN:0};
+  L.forEach(a=>{
+    if(isMY(a)){ m.my+=a.arr; m.myN++; if(pd(a.renewalDate)<=t) m.myPassed+=a.arr; return; }
+    m.n++; m.atr+=a.arr;
+    if(a.status==='Closed'){ m.closed++; m.closedAtr+=a.arr; m.retained+=(a.retainedArr??a.arr); m.turn+=Math.max(0,(a.retainedArr??a.arr)-a.arr); }
+    else m.wb+=a.winBack||0;
     m.act+=actualChurn(a); m.open+=openExp(a); });
-  m.fc=m.act+m.open; m.tgt=targetBetween(w.s,w.e,false);
-  m.var=m.tgt-m.fc; m.grr=m.base?1-m.fc/m.base:null; m.tgrr=m.base?1-m.tgt/m.base:null; m.grrAct=m.closedBase?1-m.act/m.closedBase:null;
+  m.pool=m.atr+m.my; m.base=m.pool;
+  m.fc=m.act+m.open; m.tgt=targetBetween(w.s,w.e,false); m.var=m.tgt-m.fc;
+  const r=(lost,den)=> den?1-lost/den:null;
+  m.rr=r(m.fc,m.atr); m.rrAct=r(m.act,m.closedAtr); m.rrBud=r(m.tgt,m.atr);
+  m.grr=r(m.fc,m.pool); m.grrAct=r(m.act,m.closedAtr+m.myPassed); m.grrBud=r(m.tgt,m.pool);
   return m;
 }
+const RRT=()=>DATA.meta.renewalRateTarget, GRT=()=>DATA.meta.grrTarget;
+const below=(v,t)=> v!=null&&t!=null&&v<t;
 
 /* ---------- tooltip ---------- */
 const tip=$('#tip');
@@ -6027,7 +7816,7 @@ function initFilters(){
   document.title=(m.company||'')+' Renewal Forecast';
   $('#sampleBadge').style.display = m.sample===false?'none':'';
   const t=asOf();
-  $('#asOfLine').textContent=`As of ${t.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric',timeZone:'UTC'})} · ${DATA.accounts.length} accounts · GRR target ${pct(m.grrTarget)}`;
+  $('#asOfLine').textContent=`As of ${t.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric',timeZone:'UTC'})} · ${DATA.accounts.length} accounts · renewal rate target ${pct(m.renewalRateTarget)} · GRR target ${pct(m.grrTarget)}`;
 }
 
 /* ---------- KPIs ---------- */
@@ -6038,30 +7827,32 @@ function renderKPIs(){
   $('#filterNote').textContent = fl ? 'Filtered view — churn budgets remain company-level.' : '';
   const after=m.fc-m.wb, gapAfter=m.tgt-after;
   const K=[
-    {l:'Churn budget',v:money(m.tgt),d:`implied GRR ${pct(m.tgrr)} · base ${money(m.base,true)}`},
+    {l:'Renewal rate (fcst)',v:pct(m.rr),d:`actual ${pct(m.rrAct)} · budget ${pct(m.rrBud)} · target ${pct(RRT())}`,vc:below(m.rr,RRT())?'neg':'pos',tip:'Available-to-renew pool (excludes multi-year in term) minus churn, ÷ that pool'},
+    {l:'GRR (fcst)',v:pct(m.grr),d:`actual ${pct(m.grrAct)} · budget ${pct(m.grrBud)} · target ${pct(GRT())}`,vc:below(m.grr,GRT())?'neg':'pos',tip:'Full pool incl. multi-year in term, minus churn, ÷ that pool'},
+    {l:'Churn budget',v:money(m.tgt),d:`available to renew ${money(m.atr,true)} · multi-year ${money(m.my,true)}`},
     {l:'Forecast churn',v:money(m.fc),d:`${money(m.act,true)} actual + ${money(m.open,true)} open`,c:'hl'},
     {l:'Delta to budget',v:money(m.var),d:m.var<0?'forecast over churn budget':'forecast under churn budget',c:m.var<0?'bad':'ok',vc:m.var<0?'neg':'pos'},
     {l:'Actual churn to date',v:money(m.act),d:m.tgt?`${Math.round(m.act/m.tgt*100)}% of period churn budget used`:'no churn budget set',vc:m.act>m.tgt?'neg':''},
-    {l:'Forecast GRR',v:pct(m.grr),d:`target ${pct(DATA.meta.grrTarget)} · base ${money(m.base,true)}`,vc:m.grr!=null&&m.grr<DATA.meta.grrTarget?'neg':'pos'},
     {l:'Win-back plan',v:money(m.wb),d:`net gap after win-back ${money(gapAfter,true)}`,c:'ok',vc:'pos'},
     {l:'Renewals closed',v:`${m.closed} / ${m.n}`,d:`${money(m.retained,true)} retained${m.turn?` · ▲ ${money(m.turn,true)} turnaround`:''}`},
   ];
-  $('#kpis').innerHTML=K.map(k=>`<div class="card kpi ${k.c||''}"><div class="eyebrow">${k.l}</div><div class="v num ${k.vc||''}">${k.v}</div><div class="d">${k.d}</div></div>`).join('');
+  $('#kpis').innerHTML=K.map(k=>`<div class="card kpi ${k.c||''}"${k.tip?` title="${esc(k.tip)}"`:''}><div class="eyebrow">${k.l}</div><div class="v num ${k.vc||''}">${k.v}</div><div class="d">${k.d}</div></div>`).join('');
 }
 
 /* ---------- Period table ---------- */
+function rateCell(f,a,b,t){ return `<td><b class="${below(f,t)?'neg':''}">${pct(f)}</b><div class="note" style="white-space:nowrap">act ${pct(a)} · bud ${pct(b)}</div></td>`; }
 function renderPeriodTbl(){
   const W=windows(), L=filtered();
   const rows=['MTD','QTD','YTD','H2','FY'].map(k=>({k,w:W[k],m:metrics(W[k],L)}));
   const max=Math.max(...rows.map(r=>Math.max(r.m.fc,r.m.tgt)))||1;
-  let h=`<thead><tr><th>Period</th><th>Renewal base</th><th>Churn budget</th><th>Actual churn</th><th>Open expected</th><th>Forecast churn</th><th>Δ to budget</th><th>Fcst GRR</th><th>Closed</th><th class="l">Pace</th></tr></thead><tbody>`;
+  let h=`<thead><tr><th>Period</th><th>Avail. to renew</th><th>Multi-yr pool</th><th>Churn budget</th><th>Actual churn</th><th>Open expected</th><th>Forecast churn</th><th>Δ to budget</th><th>Renewal rate</th><th>GRR</th><th>Closed</th><th class="l">Pace</th></tr></thead><tbody>`;
   rows.forEach(({k,w,m})=>{
     const scale=Math.max(m.fc,m.tgt)||1;
     h+=`<tr class="${k===state.period?'sel':''}" data-p="${k}" style="cursor:pointer"><td><b>${w.label}</b><div class="note">${w.long}</div></td>
-      <td>${money(m.base,true)}</td><td>${money(m.tgt,true)}</td>
+      <td>${money(m.atr,true)}</td><td>${money(m.my,true)}</td><td>${money(m.tgt,true)}</td>
       <td class="${m.act>m.tgt?'neg':''}">${money(m.act,true)}</td><td>${money(m.open,true)}</td><td><b>${money(m.fc,true)}</b></td>
       <td class="${m.var<0?'neg':'pos'}"><b>${money(m.var,true)}</b></td>
-      <td class="${m.grr!=null&&m.grr<DATA.meta.grrTarget?'neg':''}">${pct(m.grr)}</td><td>${m.closed}/${m.n}</td>
+      ${rateCell(m.rr,m.rrAct,m.rrBud,RRT())}${rateCell(m.grr,m.grrAct,m.grrBud,GRT())}<td>${m.closed}/${m.n}</td>
       <td class="l"><div class="pace" data-tip="${esc(`<b>${w.label}</b>${tr('Actual',money(m.act))}${tr('Open forecast',money(m.open))}${tr('Churn budget',money(m.tgt))}`)}">
         <div class="fill" style="width:${m.act/scale*100}%"></div><div class="fc" style="left:${m.act/scale*100}%;width:${m.open/scale*100}%"></div><div class="tgt" style="left:calc(${Math.min(100,m.tgt/scale*100)}% - 1px)"></div></div></td></tr>`;
   });
@@ -6074,7 +7865,7 @@ function renderPeriodTbl(){
 function monthSeries(L){
   const fs=fyStart(), T=DATA.meta.monthlyChurnBudget||DATA.meta.monthlyChurnTarget||{}, out=[];
   for(let i=0;i<12;i++){ const s=addMonths(fs,i), e=addMonths(fs,i+1), w={s,e}; const m=metrics(w,L);
-    out.push({lab:MON[s.getUTCMonth()],key:monthKey(s),act:m.act,open:m.open,tgt:T[monthKey(s)]||0,base:m.base,past:e<=asOf(),cur:s<=asOf()&&asOf()<e}); }
+    out.push({lab:MON[s.getUTCMonth()],key:monthKey(s),act:m.act,open:m.open,tgt:T[monthKey(s)]||0,base:m.atr,my:m.my,rr:m.rr,grr:m.grr,past:e<=asOf(),cur:s<=asOf()&&asOf()<e}); }
   return out;
 }
 function niceMax(v){ if(v<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(v))); const n=v/p; return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p; }
@@ -6091,7 +7882,7 @@ function renderMonthly(){
     if(s.tgt>0) g+=`<line x1="${cx-bar/2-5}" x2="${cx+bar/2+5}" y1="${y(s.tgt)}" y2="${y(s.tgt)}" stroke="var(--text)" stroke-width="2" stroke-linecap="round"/>`;
     g+=`<text x="${cx}" y="${H-8}" text-anchor="middle" style="${s.cur?'fill:var(--text);font-weight:700':''}">${s.lab}</text>`;
     const fc=s.act+s.open;
-    g+=`<rect x="${ml+bw*i}" y="${mt}" width="${bw}" height="${ih}" fill="transparent" data-tip="${esc(`<b>${s.lab}</b>${tr('Renewal base',money(s.base))}${tr('Actual churn',money(s.act))}${tr('Open forecast',money(s.open))}${tr('Forecast total',money(fc))}${tr('Churn budget',money(s.tgt))}${tr('Δ to budget',money(s.tgt-fc))}`)}"/>`;
+    g+=`<rect x="${ml+bw*i}" y="${mt}" width="${bw}" height="${ih}" fill="transparent" data-tip="${esc(`<b>${s.lab}</b>${tr('Available to renew',money(s.base))}${tr('Multi-year pool',money(s.my))}${tr('Actual churn',money(s.act))}${tr('Open forecast',money(s.open))}${tr('Forecast total',money(fc))}${tr('Churn budget',money(s.tgt))}${tr('Δ to budget',money(s.tgt-fc))}${tr('Renewal rate (fcst)',pct(s.rr))}${tr('GRR (fcst)',pct(s.grr))}`)}"/>`;
   });
   g+=`<line class="ax" x1="${ml}" x2="${W-mr}" y1="${y(0)}" y2="${y(0)}"/>`;
   $('#monthly').innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Monthly churn actual and forecast versus churn budget">${g}</svg>`;
@@ -6125,7 +7916,7 @@ function renderCumul(){
 
 /* ---------- Runway ---------- */
 function renderRunway(){
-  const L=filtered().filter(a=>a.status!=='Closed'&&daysOut(a)>=-7&&daysOut(a)<=120);
+  const L=filtered().filter(a=>isOpen(a)&&daysOut(a)>=-7&&daysOut(a)<=120);
   const W=640,H=250,ml=70,mr=16,mt=10,mb=28, iw=W-ml-mr, lh=(H-mt-mb)/4;
   const x=d=>ml+(Math.max(0,d)/120)*iw; const maxA=Math.max(...L.map(a=>a.arr),1);
   let g='';
@@ -6144,7 +7935,7 @@ function renderRunway(){
 
 /* ---------- Mix & cuts ---------- */
 function renderMix(){
-  const w=windows()[state.period], L=filtered().filter(a=>a.status!=='Closed'&&inWin(a,w));
+  const w=windows()[state.period], L=filtered().filter(a=>isOpen(a)&&inWin(a,w));
   $('#mixCap').textContent=`Open renewals · ${w.label} (${w.long})`;
   const tot=L.reduce((s,a)=>s+a.arr,0)||1; const by={}; BANDS.forEach(b=>by[b]={arr:0,n:0,ch:0});
   L.forEach(a=>{const b=band(a.health.score); by[b].arr+=a.arr; by[b].n++; by[b].ch+=a.expectedChurn;});
@@ -6154,8 +7945,8 @@ function renderMix(){
   $('#mix').innerHTML=L.length?`<div style="display:flex;gap:2px;height:14px;margin:4px 0 10px">${bar}</div>${leg}`:'<p class="empty">No open renewals in this period.</p>';
   bindTips($('#mix'));
   // cuts
-  const LL=filtered().filter(a=>inWin(a,w)); const cut=k=>{const o={}; LL.forEach(a=>{o[a[k]]=o[a[k]]||{b:0,c:0}; o[a[k]].b+=a.arr; o[a[k]].c+=churnOf(a);}); return o;};
-  const tbl=(title,o)=>`<div class="eyebrow" style="margin:6px 0 2px">${title}</div>`+Object.entries(o).sort((a,b)=>b[1].c-a[1].c).map(([k,v])=>`<div class="kv"><span>${esc(k)}</span><span class="num">${money(v.c,true)} <span class="note">of ${money(v.b,true)} · GRR ${pct(v.b?1-v.c/v.b:null)}</span></span></div>`).join('');
+  const LL=filtered(); const cut=k=>{const o={}; [...new Set(LL.map(a=>a[k]))].forEach(v=>o[v]=metrics(w,LL.filter(a=>a[k]===v))); return o;};
+  const tbl=(title,o)=>`<div class="eyebrow" style="margin:8px 0 2px">${title}</div>`+Object.entries(o).filter(([k,v])=>v.pool>0).sort((a,b)=>b[1].fc-a[1].fc).map(([k,v])=>`<div class="kv"><span>${esc(k)}</span><span class="num">${money(v.fc,true)} <span class="note">· RR <b class="${below(v.rr,RRT())?'neg':''}">${pct(v.rr)}</b> · GRR <b class="${below(v.grr,GRT())?'neg':''}">${pct(v.grr)}</b></span></span></div>`).join('');
   $('#cuts').innerHTML=tbl('By segment',cut('segment'))+tbl('By product',cut('product'));
 }
 
@@ -6166,19 +7957,36 @@ function renderWinback(){
   let h='';
   [qi,qi+1].filter(q=>q<4).forEach(q=>{
     const w={s:addMonths(fs,q*3),e:addMonths(fs,q*3+3)}, m=metrics(w,L);
-    const items=L.filter(a=>inWin(a,w)&&a.status!=='Closed'&&a.winBack>0).sort((a,b)=>b.winBack-a.winBack);
+    const items=L.filter(a=>inWin(a,w)&&isOpen(a)&&a.winBack>0).sort((a,b)=>b.winBack-a.winBack);
     const net=m.tgt-(m.fc-m.wb);
-    h+=`<div class="card wb-q"><div style="display:flex;justify-content:space-between;align-items:baseline"><h3 style="margin:0;font-size:16px">Q${q+1}</h3><span class="note">Churn budget ${money(m.tgt,true)} · Forecast ${money(m.fc,true)}</span></div>
+    h+=`<div class="card wb-q"><div style="display:flex;justify-content:space-between;align-items:baseline"><h3 style="margin:0;font-size:16px">Q${q+1}</h3><span class="note">Budget ${money(m.tgt,true)} · Fcst ${money(m.fc,true)} · RR ${pct(m.rr)} · GRR ${pct(m.grr)}</span></div>
       <div class="hdr"><div><div class="eyebrow">Gap to budget</div><div class="v num ${m.var<0?'neg':'pos'}">${money(m.var)}</div></div><div><div class="eyebrow">Win-back plan</div><div class="v num pos">${money(m.wb)}</div></div><div><div class="eyebrow">Net after win-back</div><div class="v num ${net<0?'neg':'pos'}">${money(net)}</div></div></div>
       <ul class="wb-list">${items.length?items.map(a=>`<li><div><div class="t"><a href="#accounts" data-acct="${esc(a.account)}" style="color:inherit;text-decoration:none">${esc(a.account)}</a> <span class="chip">${esc(a.product)}</span></div><div class="p">${esc(a.savePlay||a.notes)}</div></div><div class="num pos" style="font-weight:700;white-space:nowrap">${money(a.winBack)}</div></li>`).join(''):'<li class="empty">No win-back line items yet.</li>'}</ul></div>`;
   });
   $('#winback').innerHTML=h;
   $('#winback').querySelectorAll('a[data-acct]').forEach(a=>a.onclick=e=>{e.preventDefault();jumpTo(a.dataset.acct);});
   // movers
-  const mv=L.filter(a=>a.status!=='Closed'&&a.lastWeekExpectedChurn!=null&&a.expectedChurn!==a.lastWeekExpectedChurn)
+  const mv=L.filter(a=>isOpen(a)&&a.lastWeekExpectedChurn!=null&&a.expectedChurn!==a.lastWeekExpectedChurn)
     .map(a=>({a,d:a.expectedChurn-a.lastWeekExpectedChurn})).sort((x,y)=>Math.abs(y.d)-Math.abs(x.d)).slice(0,8);
   $('#movers').innerHTML=mv.length?mv.map(({a,d})=>`<li><div><a href="#accounts" data-acct="${esc(a.account)}" style="color:inherit;font-weight:600;text-decoration:none">${esc(a.account)}</a><div class="note">${money(a.lastWeekExpectedChurn,true)} → ${money(a.expectedChurn,true)} · renews ${fmtD(a.renewalDate)}</div></div><div class="num ${d>0?'neg':'pos'}" style="font-weight:700">${d>0?'▲ worse ':'▼ better '}${money(Math.abs(d),true)}</div></li>`).join(''):'<li class="empty">No forecast movement vs. last week.</li>';
   $('#movers').querySelectorAll('a[data-acct]').forEach(a=>a.onclick=e=>{e.preventDefault();jumpTo(a.dataset.acct);});
+}
+
+/* ---------- Rep scorecard ---------- */
+function renderReps(){
+  const w=windows()[state.period], base=DATA.accounts.filter(a=>(!state.seg||a.segment===state.seg)&&(!state.prod||a.product===state.prod));
+  const rows=[...new Set(base.map(a=>a.csm))].map(c=>{ const L=base.filter(a=>a.csm===c); const m=metrics(w,L);
+    m.risk=L.filter(a=>isOpen(a)&&inWin(a,w)&&a.health.score<50).reduce((s,a)=>s+a.arr,0); return {c,m}; }).filter(r=>r.m.pool>0).sort((a,b)=>b.m.fc-a.m.fc);
+  const T=metrics(w,base);
+  let h=`<thead><tr><th>CSM</th><th>Renewals</th><th>Avail. to renew</th><th>Multi-yr pool</th><th>Actual churn</th><th>Forecast churn</th><th>Renewal rate</th><th>GRR</th><th>At-risk ARR</th><th>Win-back</th></tr></thead><tbody>`;
+  const row=(label,m,cls,attr)=>`<tr class="${cls}" ${attr}><td>${label}</td><td>${m.closed}/${m.n}${m.myN?` <span class="note">+${m.myN} MY</span>`:''}</td><td>${money(m.atr,true)}</td><td>${money(m.my,true)}</td>
+    <td class="${m.act?'neg':''}">${money(m.act,true)}</td><td><b>${money(m.fc,true)}</b></td>${rateCell(m.rr,m.rrAct,null,RRT()).replace(' · bud —','')}${rateCell(m.grr,m.grrAct,null,GRT()).replace(' · bud —','')}
+    <td class="${m.risk?'neg':''}">${m.risk!=null?money(m.risk,true):'—'}</td><td class="${m.wb?'pos':''}">${m.wb?money(m.wb,true):'—'}</td></tr>`;
+  rows.forEach(({c,m})=>h+=row(`<b>${esc(c)}</b>`,m,c===state.csm?'sel':'',`data-csm="${esc(c)}" style="cursor:pointer"`));
+  T.risk=null; h+=row('<b>Total</b>',T,'','style="border-top:2px solid var(--border-strong)"');
+  $('#repTbl').innerHTML=h+'</tbody>';
+  $('#repCap').textContent=`${w.label} · ${w.long} — renewal rate and GRR by CSM. Actual = closed renewals only. Click a row to filter the dashboard to that CSM.`;
+  $('#repTbl').querySelectorAll('tr[data-csm]').forEach(r=>r.onclick=()=>{ state.csm = state.csm===r.dataset.csm?'':r.dataset.csm; $('#fCsm').value=state.csm; renderAll(); });
 }
 
 /* ---------- Accounts table ---------- */
@@ -6191,8 +7999,8 @@ function spark(arr,w=64,h=18){
 function scoped(){
   const w=windows()[state.period], q=state.q.toLowerCase();
   return filtered().filter(a=>{
-    const d=daysOut(a), open=a.status!=='Closed';
-    let ok= state.scope==='30'? open&&d<=30 : state.scope==='90'? open&&d<=90 : state.scope==='period'? inWin(a,w) : state.scope==='open'? open : !open&&inWin(a,w);
+    const d=daysOut(a), open=isOpen(a);
+    let ok= state.scope==='30'? open&&d<=30 : state.scope==='90'? open&&d<=90 : state.scope==='period'? inWin(a,w) : state.scope==='open'? open : state.scope==='my'? isMY(a)&&inWin(a,w) : a.status==='Closed'&&inWin(a,w);
     if(ok&&state.health) ok=band(a.health.score)===state.health;
     if(ok&&q) ok=[a.account,a.csm,a.sponsor?.name,a.sponsor?.title,a.notes,a.segment].join(' ').toLowerCase().includes(q);
     return ok;
@@ -6209,14 +8017,14 @@ function renderAccounts(){
   let h='<thead><tr>'+COLS.map(c=>`<th data-sort="${c.k}" class="${c.cls||''} ${state.sort===c.k?'sorted'+(state.asc?' asc':''):''}">${c.l}</th>`).join('')+'</tr></thead><tbody>';
   if(!L.length) h+=`<tr><td colspan="${COLS.length}" class="l empty">No accounts match this scope and filter.</td></tr>`;
   L.forEach(a=>{
-    const d=daysOut(a), closed=a.status==='Closed', ret=closed?(a.retainedArr??a.arr):a.arr-a.expectedChurn, ch=churnOf(a);
+    const d=daysOut(a), my=isMY(a), closed=a.status==='Closed', ret=closed?(a.retainedArr??a.arr):a.arr-a.expectedChurn, ch=churnOf(a);
     const catCls=(closed?(a.outcome||'Closed'):a.forecastCategory||'').replace(/\s/g,'');
     const id='r_'+btoa(unescape(encodeURIComponent(a.account))).replace(/[^a-z0-9]/gi,'');
     h+=`<tr class="row" data-acct="${esc(a.account)}" id="${id}"><td class="l"><div class="name">${esc(a.account)}</div><div class="meta"><span class="chip">${esc(a.product)}</span>${esc(a.segment)}</div></td>
       <td class="l">${esc(a.csm)}</td>
-      <td>${fmtD(a.renewalDate)}<div class="meta">${closed?'closed':d<0?`<span class="neg">${-d}d overdue</span>`:d===0?'today':d+'d'}</div></td>
+      <td>${fmtD(a.renewalDate)}<div class="meta">${my?(d<0?'anniversary passed':'anniversary · '+d+'d'):closed?'closed':d<0?`<span class="neg">${-d}d overdue</span>`:d===0?'today':d+'d'}</div></td>
       <td>${money(a.arr)}</td><td>${money(ret)}</td><td class="${ch>0?'neg':''}">${ch?money(ch):'—'}${!closed&&a.lastWeekExpectedChurn!=null&&a.lastWeekExpectedChurn!==a.expectedChurn?`<div class="meta">${a.expectedChurn>a.lastWeekExpectedChurn?'▲':'▼'} ${money(Math.abs(a.expectedChurn-a.lastWeekExpectedChurn),true)} WoW</div>`:''}</td>
-      <td class="l"><span class="cat ${catCls}">${esc(closed?(a.outcome||'Closed'):a.forecastCategory)}</span>${a.turnaround>0?`<div class="meta pos">▲ Turnaround ${money(a.turnaround,true)}</div>`:''}</td>
+      <td class="l"><span class="cat ${my?'':catCls}">${esc(my?'Multi-year · in term':closed?(a.outcome||'Closed'):a.forecastCategory)}</span>${my&&a.contractEnd?`<div class="meta">${a.contractTermYears}-yr · ends ${fmtD(a.contractEnd)}</div>`:''}${a.turnaround>0?`<div class="meta pos">▲ Turnaround ${money(a.turnaround,true)}</div>`:''}</td>
       <td class="l">${hb(a.health.score)}<div class="meta">${a.health.trend>0?'▲':a.health.trend<0?'▼':'■'} ${a.health.trend>0?'+':''}${a.health.trend} 30d</div></td>
       <td><div class="util"><span>${a.usage.utilization}%</span><div class="bar"><span style="width:${a.usage.utilization}%"></span></div></div><div class="util" style="margin-top:2px">${spark(a.usage.wauTrend)}</div></td>
       <td class="l">${a.sponsor?`<div><span class="eng ${a.sponsor.engagement}" title="${a.sponsor.engagement} engagement"></span>${esc(a.sponsor.name)}</div><div class="meta">${esc(a.sponsor.title)} · ${a.sponsor.engagement}</div>`:'<span class="neg">No sponsor</span>'}</td>
@@ -6224,7 +8032,7 @@ function renderAccounts(){
     if(state.open.has(a.account)) h+=detailRow(a);
   });
   $('#acctTbl').innerHTML=h+'</tbody>';
-  const tot=L.reduce((s,a)=>(s.arr+=a.arr,s.ch+=churnOf(a),s.wb+=a.status!=='Closed'?(a.winBack||0):0,s),{arr:0,ch:0,wb:0});
+  const tot=L.reduce((s,a)=>(s.arr+=a.arr,s.ch+=churnOf(a),s.wb+=isOpen(a)?(a.winBack||0):0,s),{arr:0,ch:0,wb:0});
   $('#acctFoot').innerHTML=`${L.length} accounts · ${money(tot.arr)} ARR · <b>${money(tot.ch)}</b> expected / actual churn exposure · ${money(tot.wb)} win-back plan`;
   $('#acctTbl').querySelectorAll('th[data-sort]').forEach(th=>th.onclick=()=>{ const k=th.dataset.sort; if(state.sort===k) state.asc=!state.asc; else {state.sort=k; state.asc=!['arr','churn','fcRet','util'].includes(k);} renderAccounts(); });
   $('#acctTbl').querySelectorAll('tr.row').forEach(r=>r.onclick=()=>{ const k=r.dataset.acct; state.open.has(k)?state.open.delete(k):state.open.add(k); renderAccounts(); });
@@ -6243,14 +8051,14 @@ function detailRow(a){
       <div class="kv"><span>Last exec touch</span><span class="${touchDays>60?'neg':''}">${s.lastExecTouch?fmtD(s.lastExecTouch)+` (${touchDays}d)`:'—'}</span></div>
       <div class="kv"><span>Champion</span><span>${ch?esc(ch.name):'<span class="neg">None identified</span>'}</span></div>${ch?`<div class="kv"><span></span><span class="note">${esc(ch.title)}</span></div>`:''}
       <div class="kv"><span>Contacts engaged</span><span class="num ${a.contacts<=2?'neg':''}">${a.contacts??'—'}${a.contacts<=2?' · single-threaded':''}</span></div></div>
-    <div><h4>Plan</h4>${a.risks?.length?`<div style="margin-bottom:6px">${a.risks.map(r=>`<span class="risk">${esc(r)}</span>`).join('')}</div>`:''}
+    <div><h4>Plan</h4>${isMY(a)?`<p class="dnote"><b>Contract:</b> ${a.contractTermYears}-year, in term through ${fmtD(a.contractEnd)} — counts toward GRR, not renewal rate</p>`:''}${a.risks?.length?`<div style="margin-bottom:6px">${a.risks.map(r=>`<span class="risk">${esc(r)}</span>`).join('')}</div>`:''}
       ${a.savePlay?`<p class="dnote"><b>Save play:</b> ${esc(a.savePlay)}</p>`:''}${a.winBack?`<p class="dnote"><b>Win-back:</b> <span class="pos">${money(a.winBack)}</span></p>`:''}
       ${a.nextStep?`<p class="dnote"><b>Next step:</b> ${esc(a.nextStep)}</p>`:''}${a.notes?`<p class="dnote" style="color:var(--text-2)">${esc(a.notes)}</p>`:''}</div>
   </div></td></tr>`;
 }
 function jumpTo(name){
   const a=DATA.accounts.find(x=>x.account===name); if(!a) return;
-  state.scope = a.status==='Closed'?'closed':'open'; state.health=''; $('#fHealth').value=''; state.q=''; $('#q').value='';
+  state.scope = isMY(a)?'my':a.status==='Closed'?'closed':'open'; if(isMY(a)){ const W=windows(); state.period=Object.keys(W).find(k=>inWin(a,W[k]))||'FY'; } state.health=''; $('#fHealth').value=''; state.q=''; $('#q').value='';
   state.open.add(name); syncSeg(); renderAccounts();
   const r=[...document.querySelectorAll('#acctTbl tr.row')].find(r=>r.dataset.acct===name); if(r){ r.scrollIntoView({behavior:'smooth',block:'center'}); r.querySelectorAll('td').forEach(td=>{td.style.transition='background .6s';td.style.background='var(--accent-soft)';setTimeout(()=>td.style.background='',1200);}); }
 }
@@ -6262,7 +8070,7 @@ function syncSeg(){
   const W=windows(); $('#periodSeg').querySelector('[data-p="H2"]').textContent=W.H2.label;
 }
 function setPeriod(p){ state.period=p; try{localStorage.setItem('rf-period',p);}catch(e){} renderAll(); }
-function renderAll(){ syncSeg(); renderKPIs(); renderPeriodTbl(); renderMonthly(); renderCumul(); renderRunway(); renderMix(); renderWinback(); renderAccounts(); }
+function renderAll(){ syncSeg(); renderKPIs(); renderPeriodTbl(); renderMonthly(); renderCumul(); renderRunway(); renderMix(); renderWinback(); renderReps(); renderAccounts(); }
 $('#periodSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) setPeriod(b.dataset.p); });
 $('#scopeSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){ state.scope=b.dataset.s; syncSeg(); renderAccounts(); } });
 [['#fSeg','seg'],['#fProd','prod'],['#fCsm','csm']].forEach(([id,k])=>$(id).addEventListener('change',e=>{state[k]=e.target.value;renderAll();}));
