@@ -239,7 +239,7 @@ const S = {
   now: new Date(), source: "Sample data", isSample: true,
   accounts: [], tickets: [], acctById: new Map(),
   tab: "focus",
-  f: { days: 90, product: "All", sev: "All", segment: "All", tier: "All", group: "All", owner: "All" },
+  f: { days: 90, product: "All", sev: "All", segment: "All", tier: "All", group: "All", rep: "All" },
   hw: { ...CONFIG.health }, pw: { ...CONFIG.priority },
   sort: {}
 };
@@ -501,6 +501,8 @@ function scoreAccounts(){
     a.openCount = open.length;
     a.openHigh = open.filter(t=>t.sev==="P1"||t.sev==="P2").length;
     a.openP1 = open.filter(t=>t.sev==="P1").length;
+    a.openBySev = Object.fromEntries(SEVS.map(sv=>[sv, open.filter(t=>t.sev===sv).length]));
+    { const pool = open.length ? open : recent; const c={}; pool.forEach(t=>c[t.assignee]=(c[t.assignee]||0)+1); a.rep = Object.keys(c).sort((x,y)=>c[y]-c[x])[0] || "—"; }
     a.openBreached = open.filter(t=>t.resBreach||t.frtBreach).length;
     a.aged = open.filter(t=>t.ageD>CONFIG.agedDays).length;
     a.escOpen = open.filter(t=>t.escalated).length;
@@ -545,7 +547,6 @@ function acctPass(a){
   const f=S.f;
   if(f.segment!=="All" && a.segment!==f.segment) return false;
   if(f.tier!=="All" && a.tier!==f.tier) return false;
-  if(f.owner!=="All" && a.csm!==f.owner) return false;
   return true;
 }
 function tPass(t){
@@ -553,8 +554,9 @@ function tPass(t){
   if(f.product!=="All" && t.product!==f.product) return false;
   if(f.sev!=="All" && t.sev!==f.sev) return false;
   if(f.group!=="All" && t.group!==f.group) return false;
+  if(f.rep!=="All" && t.assignee!==f.rep) return false;
   if(t.acct && !acctPass(t.acct)) return false;
-  if(!t.acct && (f.segment!=="All"||f.tier!=="All"||f.owner!=="All")) return false;
+  if(!t.acct && (f.segment!=="All"||f.tier!=="All")) return false;
   return true;
 }
 function view(){
@@ -567,7 +569,7 @@ function view(){
     createdPrev: all.filter(t=>t.created.getTime()>=prevFrom && t.created.getTime()<from),
     solved: all.filter(t=>t.solved && t.solved.getTime()>=from),
     solvedPrev: all.filter(t=>t.solved && t.solved.getTime()>=prevFrom && t.solved.getTime()<from),
-    accounts: S.accounts.filter(acctPass)
+    accounts: S.f.rep==="All" ? S.accounts.filter(acctPass) : (()=>{ const ids=new Set(all.filter(t=>t.isOpen||t.created.getTime()>=from).map(t=>t.acct)); return S.accounts.filter(a=>ids.has(a)&&acctPass(a)); })()
   };
 }
 function slaRate(ts){ const k=ts.filter(t=>t.slaKnown); return k.length ? k.filter(t=>t.slaMet).length/k.length : null; }
@@ -782,7 +784,7 @@ function renderFocus(V){
       <div class="rank">${i+1}</div>
       <div style="min-width:0">
         <div class="nm">${esc(a.name)}</div>
-        <div class="meta">${esc(a.segment)} · ${esc(a.tier)} · ${fmtUSD(a.arr)} ARR · CSM ${esc(a.csm)} · ${bandHTML(a)}</div>
+        <div class="meta">${esc(a.segment)} · ${esc(a.tier)} · ${fmtUSD(a.arr)} ARR · Rep ${esc(a.rep)} · ${bandHTML(a)}</div>
         <div>${chips(acctReasons(a).slice(0,5))}</div>
       </div>
       <div class="pri"><div class="n">${a.priority}</div><div class="l">priority</div></div>
@@ -1040,7 +1042,13 @@ function renderHealth(V){
       ${card("Health vs ARR","Each dot is an account · colour = health band · top-left is where the money is at risk",legendHTML(bands.map(b=>({k:b,c:BAND_C[b]}))),"cScatter")}
       ${card("Renewal ARR by month × health","Next 12 months",null,"cRenew")}
     </div>
-    ${sectionTitle("Account health detail","Sort by any column · components shown 0–100")}
+    ${sectionTitle("Support load by health band", `Open tickets are live · created / SLA / CSAT use last ${S.f.days} days · respects product, severity, group and rep filters`)}
+    <div class="card"><div id="tBand"></div></div>
+    <div class="grid g-2" style="margin-top:12px">
+      ${card("Open tickets by health band × severity","Where the severe tickets sit across the book",null,"cBandSev")}
+      ${card("Open tickets per account by band","Average open tickets per account, split by severity",null,"cBandPer")}
+    </div>
+    ${sectionTitle("Account health detail","Health, renewal and support load side by side · sort by any column · components shown 0–100")}
     <div class="card"><div id="tHealth"></div></div>`;
   document.querySelectorAll(".weights input").forEach(inp=>inp.oninput=()=>{
     S[inp.dataset.grp][inp.dataset.k]=+inp.value; $("#w-"+inp.dataset.k).textContent=inp.value;
@@ -1052,15 +1060,45 @@ function renderHealth(V){
     tt:`<div class="tt-h">${esc(a.name)}</div>`+ttRows([{k:"Health",v:`${a.health} · ${a.band}`,c:BAND_C[a.band]},{k:"ARR",v:fmtUSD(a.arr)},{k:"Renews in",v:a.renewDays!=null?a.renewDays+"d":"—"},{k:"Open tickets",v:String(a.openCount)},{k:"Priority",v:String(a.priority)}])}))});
   const M=[...Array(12).keys()].map(i=>{ const s=new Date(S.now.getFullYear(),S.now.getMonth()+i,1); return {s,e:new Date(s.getFullYear(),s.getMonth()+1,1),label:s.toLocaleString("en-US",{month:"short"})+(s.getMonth()===0||i===0?" '"+String(s.getFullYear()).slice(2):"")}; });
   vbar($("#cRenew"), {labels:M.map(m=>m.label), stacked:true, fmt:fmtUSD, series:bands.map(b=>({k:b,c:BAND_C[b],values:M.map(m=>sum(scored.filter(a=>a.band===b&&a.renewal&&a.renewal>=m.s&&a.renewal<m.e).map(a=>a.arr||0)))}))});
+  // per-account support load (filter-aware)
+  const L = new Map(A.map(a=>[a,{P1:0,P2:0,P3:0,P4:0,open:0,breached:0,aged:0,esc:0,created:0,createdTs:[],solvedTs:[]}]));
+  V.open.forEach(t=>{ const x=L.get(t.acct); if(!x) return; x[t.sev]++; x.open++; if(t.frtBreach||t.resBreach) x.breached++; if(t.ageD>CONFIG.agedDays) x.aged++; if(t.escalated) x.esc++; });
+  V.created.forEach(t=>{ const x=L.get(t.acct); if(x){ x.created++; x.createdTs.push(t); } });
+  V.solved.forEach(t=>{ const x=L.get(t.acct); if(x) x.solvedTs.push(t); });
+  A.forEach(a=>{ const x=L.get(a); a.ld=x; a.ldSla=slaRate(x.createdTs); a.ldCsat=csatRate(x.solvedTs); a.ldFrt=median(x.createdTs.map(t=>t.frtH)); });
+  const bandRows = bands.map(b=>{ const as=scored.filter(a=>a.band===b); const ls=as.map(a=>a.ld);
+    const cts=ls.flatMap(x=>x.createdTs), sts=ls.flatMap(x=>x.solvedTs);
+    const r={band:b, n:as.length, arr:sum(as.map(a=>a.arr||0)), withOpen:ls.filter(x=>x.open).length, open:sum(ls.map(x=>x.open)),
+      breached:sum(ls.map(x=>x.breached)), aged:sum(ls.map(x=>x.aged)), esc:sum(ls.map(x=>x.esc)), created:cts.length,
+      perAcct: as.length? cts.length/as.length : null, sla:slaRate(cts), frt:median(cts.map(t=>t.frtH)), csat:csatRate(sts)};
+    SEVS.forEach(sv=>r[sv]=sum(ls.map(x=>x[sv]))); return r; });
+  const hot = (v,lvl) => v ? `<b class="${lvl||""}">${v}</b>` : `<span class="hint">·</span>`;
+  table($("#tBand"), "band", [
+    {k:"band",label:"Health band",sv:r=>bands.indexOf(r.band)*-1,html:r=>stIcon(BAND_LVL[r.band], r.band)},
+    {k:"n",label:"Accounts",num:true,fmt:fmtN},{k:"arr",label:"ARR",num:true,fmt:fmtUSD},
+    {k:"withOpen",label:"Accts w/ open tix",num:true,html:r=>`${r.withOpen} <span class="hint">(${fmtP(r.n?r.withOpen/r.n:null)})</span>`},
+    {k:"open",label:"Open tickets",num:true,html:r=>`<b>${r.open}</b>`},
+    {k:"P1",label:"P1",num:true,html:r=>hot(r.P1,"delta-bad")},{k:"P2",label:"P2",num:true,html:r=>hot(r.P2)},{k:"P3",label:"P3",num:true,html:r=>hot(r.P3)},{k:"P4",label:"P4",num:true,html:r=>hot(r.P4)},
+    {k:"breached",label:"SLA breached",num:true,html:r=>hot(r.breached,"delta-bad")},{k:"aged",label:`Aged >${CONFIG.agedDays}d`,num:true,html:r=>hot(r.aged)},{k:"esc",label:"Escalated",num:true,html:r=>hot(r.esc)},
+    {k:"created",label:`Created ${S.f.days}d`,num:true,fmt:fmtN},{k:"perAcct",label:"Tix / acct",num:true,fmt:v=>v==null?"—":v.toFixed(1)},
+    {k:"sla",label:"SLA %",num:true,fmt:v=>fmtP(v)},{k:"frt",label:"Median FRT",num:true,fmt:fmtH},{k:"csat",label:"CSAT",num:true,fmt:v=>fmtP(v)}
+  ], bandRows, {sort:"band"});
+  vbar($("#cBandSev"), {labels:bands, stacked:true, series:SEVS.map(sv=>({k:sv,c:SEV_C[sv],values:bandRows.map(r=>r[sv])}))});
+  vbar($("#cBandPer"), {labels:bands, stacked:true, fmt:v=>v.toFixed(2), yFmt:v=>v.toFixed(1), series:SEVS.map(sv=>({k:sv,c:SEV_C[sv],values:bandRows.map(r=>r.n?r[sv]/r.n:0)}))});
   const comp = k => ({k:"c_"+k, label:{support:"Support",gong:"Gong",usage:"Usage",spend:"Spend",friction:"Friction"}[k], num:true, sv:a=>a.comp[k], html:a=>a.comp[k]==null?`<span class="hint">n/a</span>`:Math.round(a.comp[k])});
   table($("#tHealth"), "health", [
-    {k:"name",label:"Account"},{k:"segment",label:"Segment"},{k:"tier",label:"Tier"},{k:"csm",label:"CSM"},
-    {k:"arr",label:"ARR",num:true,fmt:fmtUSD},{k:"renewDays",label:"Renews in",num:true,sv:a=>a.renewDays==null?null:-a.renewDays,fmt:v=>v==null?"—":v+"d"},
+    {k:"name",label:"Account",html:a=>`${esc(a.name)}<div class="hint" style="margin:0">${esc(a.segment)} · ${esc(a.tier)} · Rep ${esc(a.rep)}</div>`},
     {k:"health",label:"Health",sv:a=>a.health==null?null:-a.health,html:a=>bandHTML(a)},
     {k:"priority",label:"Priority",num:true,html:a=>scoreBar(a.priority)},
+    {k:"arr",label:"ARR",num:true,fmt:fmtUSD},{k:"renewDays",label:"Renews in",num:true,sv:a=>a.renewDays==null?null:-a.renewDays,fmt:v=>v==null?"—":v+"d"},
+    {k:"l_open",label:"Open tix",num:true,sv:a=>a.ld.open,html:a=>a.ld.open?`<b>${a.ld.open}</b>`:`<span class="hint">0</span>`},
+    ...SEVS.map(sv=>({k:"l_"+sv,label:sv,num:true,sv:a=>a.ld[sv],html:a=>hot(a.ld[sv], sv==="P1"?"delta-bad":"")})),
+    {k:"l_br",label:"Breached",num:true,sv:a=>a.ld.breached,html:a=>hot(a.ld.breached,"delta-bad")},
+    {k:"l_aged",label:`Aged >${CONFIG.agedDays}d`,num:true,sv:a=>a.ld.aged,html:a=>hot(a.ld.aged)},
+    {k:"l_cr",label:`Created ${S.f.days}d`,num:true,sv:a=>a.ld.created,html:a=>String(a.ld.created)},
+    {k:"ldSla",label:"SLA %",num:true,fmt:v=>fmtP(v)},{k:"ldCsat",label:"CSAT",num:true,fmt:v=>fmtP(v)},
     comp("support"),comp("gong"),comp("usage"),comp("spend"),comp("friction"),
     {k:"usage",label:"Usage Δ",num:true,fmt:v=>v==null?"—":signed(v,0)+"%"},{k:"spendChg",label:"Spend Δ YoY",num:true,fmt:v=>v==null?"—":signed(v*100,0)+"%"},
-    {k:"csatPct",label:"CSAT 90d",num:true,fmt:v=>fmtP(v)},{k:"openCount",label:"Open tix",num:true},{k:"openHigh",label:"Open P1/P2",num:true},
     {k:"why",label:"Signals",wrap:true,sv:a=>a.priority,html:a=>chips(acctReasons(a))}
   ], A, {sort:"priority", limit:300});
 }
@@ -1159,12 +1197,12 @@ function renderFilters(){
   const opts = {
     days: [[30,"Last 30 days"],[90,"Last 90 days"],[180,"Last 180 days"],[365,"Last 12 months"]],
     product: uniq(S.tickets.map(t=>t.product)), sev: ["All",...SEVS], segment: uniq(S.accounts.map(a=>a.segment)),
-    tier: uniq(S.accounts.map(a=>a.tier)), group: uniq(S.tickets.map(t=>t.group)), owner: uniq(S.accounts.map(a=>a.csm))
+    tier: uniq(S.accounts.map(a=>a.tier)), group: uniq(S.tickets.map(t=>t.group)), rep: uniq(S.tickets.map(t=>t.assignee))
   };
-  const lbl = {days:"Time",product:"Product",sev:"Severity",segment:"Segment",tier:"Client tier",group:"Support group",owner:"CSM / owner"};
+  const lbl = {days:"Time",product:"Product",sev:"Severity",segment:"Segment",tier:"Client tier",group:"Support group",rep:"Support rep"};
   $("#filters").innerHTML = Object.keys(opts).map(k=>`<label>${lbl[k]}<select data-k="${k}">${opts[k].map(o=>{ const [v,l]=Array.isArray(o)?o:[o,o]; return `<option value="${esc(v)}" ${String(S.f[k])===String(v)?"selected":""}>${esc(l)}</option>`; }).join("")}</select></label>`).join("") + `<button class="reset" id="resetF">Reset</button>`;
   $("#filters").querySelectorAll("select").forEach(s=>s.onchange=()=>{ S.f[s.dataset.k] = s.dataset.k==="days" ? +s.value : s.value; render(); });
-  $("#resetF").onclick=()=>{ S.f={days:90,product:"All",sev:"All",segment:"All",tier:"All",group:"All",owner:"All"}; renderFilters(); render(); };
+  $("#resetF").onclick=()=>{ S.f={days:90,product:"All",sev:"All",segment:"All",tier:"All",group:"All",rep:"All"}; renderFilters(); render(); };
   $("#filters").style.display = S.tab==="setup" ? "none" : "flex";
 }
 function render(){
@@ -1174,7 +1212,7 @@ function render(){
 }
 function applyData(d, source, now, isSample=false){
   S.accounts=d.accounts; S.tickets=d.tickets; S.now=now; S.source=source; S.isSample=isSample; S.sort={};
-  S.f={days:90,product:"All",sev:"All",segment:"All",tier:"All",group:"All",owner:"All"};
+  S.f={days:90,product:"All",sev:"All",segment:"All",tier:"All",group:"All",rep:"All"};
   enrich();
   const b=$("#srcBadge"); b.textContent = isSample ? "Sample data · as of "+fmtD(now) : source; b.className = "badge"+(isSample?"":" live");
   renderFilters(); render();
