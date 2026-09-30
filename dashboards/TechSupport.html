@@ -1,0 +1,1204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Command Center</title>
+<meta name="description" content="Tech Support dashboard for mid-market software companies: product, severity, SLA, backlog, team, ticket priority queue and customer health scores.">
+<style>
+:root{
+  color-scheme: light;
+  --page:#f9f9f7; --surface:#fcfcfb; --surface-2:#f3f2ee; --surface-3:#ebeae5;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#6f6d68; --grid:#e1e0d9; --axis:#c3c2b7;
+  --border:rgba(11,11,11,.10); --border-2:rgba(11,11,11,.18);
+  --accent:#2a78d6; --accent-ink:#1c5cab; --accent-wash:rgba(42,120,214,.10);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
+  --sev1:#104281; --sev2:#256abf; --sev3:#5598e7; --sev4:#86b6ef;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --good-ink:#006300; --bad-ink:#b42323;
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232321; --surface-3:#2c2c2a;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#9a988f; --grid:#2c2c2a; --axis:#383835;
+    --border:rgba(255,255,255,.10); --border-2:rgba(255,255,255,.18);
+    --accent:#3987e5; --accent-ink:#86b6ef; --accent-wash:rgba(57,135,229,.16);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+    --sev1:#cde2fb; --sev2:#86b6ef; --sev3:#3987e5; --sev4:#1c5cab;
+    --good-ink:#0ca30c; --bad-ink:#e66767;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232321; --surface-3:#2c2c2a;
+  --ink:#ffffff; --ink-2:#c3c2b7; --muted:#9a988f; --grid:#2c2c2a; --axis:#383835;
+  --border:rgba(255,255,255,.10); --border-2:rgba(255,255,255,.18);
+  --accent:#3987e5; --accent-ink:#86b6ef; --accent-wash:rgba(57,135,229,.16);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+  --sev1:#cde2fb; --sev2:#86b6ef; --sev3:#3987e5; --sev4:#1c5cab;
+  --good-ink:#0ca30c; --bad-ink:#e66767;
+  --shadow:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent-ink)}
+button,select,input{font:inherit;color:inherit}
+.wrap{max-width:1440px;margin:0 auto;padding:0 20px}
+header.top{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.top-row{display:flex;align-items:center;gap:16px;padding:14px 0 10px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.logo{width:28px;height:28px;border-radius:7px;background:var(--accent);display:grid;place-items:center;flex:none}
+.logo svg{width:16px;height:16px}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:-.01em;white-space:nowrap}
+.brand .sub{font-size:12px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spacer{flex:1}
+.badge{font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid var(--border-2);color:var(--ink-2);white-space:nowrap}
+.badge.live{border-color:var(--good);color:var(--good-ink)}
+.iconbtn{border:1px solid var(--border-2);background:var(--surface);border-radius:8px;height:32px;padding:0 10px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:var(--ink-2)}
+.iconbtn:hover{background:var(--surface-2)}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{border:0;background:none;padding:9px 12px 11px;cursor:pointer;color:var(--ink-2);border-bottom:2px solid transparent;white-space:nowrap;font-weight:500}
+nav.tabs button:hover{color:var(--ink)}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.filters{display:flex;flex-wrap:wrap;gap:10px;padding:14px 0 4px;align-items:flex-end}
+.filters label{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.filters select{height:32px;border:1px solid var(--border-2);border-radius:8px;background:var(--surface);padding:0 28px 0 10px;min-width:120px;text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:var(--ink);appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 15px) 14px,calc(100% - 10px) 14px;background-size:5px 5px;background-repeat:no-repeat}
+.filters .reset{height:32px;border:0;background:none;color:var(--accent-ink);cursor:pointer;padding:0 6px}
+main{padding:10px 0 60px}
+.section-title{display:flex;align-items:baseline;gap:10px;margin:22px 0 10px}
+.section-title h2{font-size:15px;margin:0;font-weight:650}
+.section-title p{margin:0;color:var(--ink-2);font-size:13px}
+.grid{display:grid;gap:12px}
+.g-tiles{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g-21{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.g-12{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+@media (max-width:1000px){.g-3{grid-template-columns:repeat(2,minmax(0,1fr))}.g-21,.g-12{grid-template-columns:1fr}}
+@media (max-width:700px){.g-2,.g-3{grid-template-columns:1fr}.wrap{padding:0 16px}.brand .sub{display:none}#srcBadge{display:none}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);min-width:0}
+.card h3{font-size:13px;margin:0 0 2px;font-weight:600}
+.card .hint{font-size:12px;color:var(--muted);margin:0 0 10px}
+.tile{display:flex;flex-direction:column;gap:2px}
+.tile .lbl{font-size:12px;color:var(--ink-2);font-weight:500}
+.tile .val{font-size:26px;font-weight:650;letter-spacing:-.02em;line-height:1.15;margin-top:2px}
+.tile .foot{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.delta-good{color:var(--good-ink);font-weight:600}
+.delta-bad{color:var(--bad-ink);font-weight:600}
+.bench{display:inline-flex;align-items:center;gap:4px}
+.st{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;white-space:nowrap}
+.st i{width:14px;height:14px;border-radius:50%;display:inline-grid;place-items:center;font-style:normal;font-size:9px;color:#fff;flex:none;line-height:1}
+.st.good i{background:var(--good)} .st.warn i{background:var(--warn);color:#0b0b0b} .st.serious i{background:var(--serious);color:#0b0b0b} .st.crit i{background:var(--crit)}
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;overflow:visible}
+main svg text{fill:var(--muted);font-size:11px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--ink-2);margin:0 0 8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend b{width:10px;height:10px;border-radius:3px;display:inline-block}
+.legend b.ln{height:2px;border-radius:1px;width:14px}
+#tt{position:fixed;pointer-events:none;z-index:100;background:var(--surface);border:1px solid var(--border-2);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 6px 24px rgba(0,0,0,.14);display:none;max-width:300px;color:var(--ink)}
+#tt .tt-h{font-weight:650;margin-bottom:4px}
+#tt .tt-r{display:flex;gap:8px;align-items:center;justify-content:space-between}
+#tt .tt-r span:first-child{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2)}
+#tt .tt-r b{font-variant-numeric:tabular-nums}
+#tt i.sw{width:8px;height:8px;border-radius:2px;display:inline-block}
+.tbl-wrap{overflow:auto;max-height:520px;border-radius:8px}
+table.t{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+table.t th{position:sticky;top:0;background:var(--surface);text-align:left;font-weight:600;font-size:12px;color:var(--ink-2);padding:8px 10px;border-bottom:1px solid var(--border-2);white-space:nowrap;cursor:pointer;user-select:none;z-index:1}
+table.t th.num,table.t td.num{text-align:right}
+table.t th:hover{color:var(--ink)}
+table.t th .ar{color:var(--accent-ink);margin-left:3px}
+table.t td{padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap;font-variant-numeric:tabular-nums}
+table.t tr:hover td{background:var(--surface-2)}
+table.t td.wrap{white-space:normal;min-width:340px}
+.sev{display:inline-block;font-size:11px;font-weight:700;padding:1px 6px;border-radius:5px;border:1px solid var(--border-2)}
+.sev.P1{background:var(--crit);color:#fff;border-color:transparent}
+.sev.P2{background:var(--serious);color:#0b0b0b;border-color:transparent}
+.sev.P3{background:var(--surface-3)}
+.sev.P4{background:transparent;color:var(--ink-2)}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:2px 8px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);margin:2px 4px 2px 0;white-space:nowrap;color:var(--ink)}
+.chip i{width:6px;height:6px;border-radius:50%;display:inline-block;background:var(--muted)}
+.chip.crit i{background:var(--crit)} .chip.warn i{background:var(--warn)} .chip.good i{background:var(--good)} .chip.serious i{background:var(--serious)}
+.score{display:inline-flex;align-items:center;gap:8px;min-width:90px}
+.score .bar{flex:1;height:6px;background:var(--surface-3);border-radius:3px;overflow:hidden;min-width:40px}
+.score .bar span{display:block;height:100%;background:var(--accent);border-radius:3px}
+.score b{font-variant-numeric:tabular-nums;width:24px;text-align:right}
+.acct-list{display:flex;flex-direction:column;gap:8px}
+.acct{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.acct .rank{width:30px;height:30px;border-radius:8px;background:var(--surface-2);display:grid;place-items:center;font-weight:700;font-size:13px}
+.acct .nm{font-weight:600}
+.acct .meta{font-size:12px;color:var(--ink-2)}
+.acct .pri{text-align:right}
+.acct .pri .n{font-size:20px;font-weight:700;line-height:1}
+.acct .pri .l{font-size:11px;color:var(--muted)}
+.comp{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.comp span{font-size:11px;color:var(--ink-2);display:inline-flex;gap:4px;align-items:center}
+.comp span em{font-style:normal;font-weight:650;color:var(--ink);font-variant-numeric:tabular-nums}
+.weights{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px 18px}
+.weights label{display:flex;flex-direction:column;font-size:12px;color:var(--ink-2);gap:2px}
+.weights label div{display:flex;justify-content:space-between}
+.weights input[type=range]{width:100%;accent-color:var(--accent)}
+.note{font-size:12.5px;color:var(--ink-2);background:var(--surface-2);border-radius:8px;padding:10px 12px;border:1px solid var(--border)}
+.prose{max-width:900px}
+.prose h3{font-size:14px;margin:18px 0 6px}
+.prose p,.prose li{color:var(--ink-2);font-size:13.5px}
+.prose code{background:var(--surface-2);padding:1px 5px;border-radius:4px;font-size:12.5px}
+.drop{border:1.5px dashed var(--border-2);border-radius:12px;padding:18px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.btn{height:34px;border-radius:8px;border:1px solid var(--border-2);background:var(--surface);padding:0 14px;cursor:pointer;font-weight:500}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:transparent;color:#fff}
+.btn.primary:hover{filter:brightness(1.05);background:var(--accent)}
+.empty{color:var(--muted);font-size:13px;padding:18px 0;text-align:center}
+.pill-tabs{display:inline-flex;border:1px solid var(--border-2);border-radius:8px;overflow:hidden}
+.pill-tabs button{border:0;background:var(--surface);padding:5px 10px;cursor:pointer;font-size:12px;color:var(--ink-2)}
+.pill-tabs button.on{background:var(--accent-wash);color:var(--accent-ink);font-weight:600}
+.row-head{display:flex;align-items:flex-start;gap:10px;justify-content:space-between;flex-wrap:wrap}
+@media (forced-colors: active){.score .bar span,.legend b{forced-color-adjust:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="top-row">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5V8a5 5 0 0 1 10 0v1.5"/><rect x="2" y="9" width="3" height="4" rx="1"/><rect x="11" y="9" width="3" height="4" rx="1"/></svg></div>
+        <div style="min-width:0">
+          <h1>Support Command Center</h1>
+          <div class="sub">Tech Support KPIs · ticket priority · customer health</div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <span class="badge" id="srcBadge">Sample data</span>
+      <button class="iconbtn" id="themeBtn" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="filters" id="filters"></div>
+  <main id="main"></main>
+</div>
+<div id="tt" role="tooltip"></div>
+
+<script>
+/* =====================================================================
+   Support Command Center — single-file dashboard
+   - Runs on sample data out of the box.
+   - Drop real exports in ./data/tickets.csv and ./data/accounts.csv
+     (GitHub Pages) or upload them on the "Data & Setup" tab.
+   ===================================================================== */
+"use strict";
+
+/* ---------- config: SLA targets, benchmarks, score weights ---------- */
+const CONFIG = {
+  // SLA targets in hours (calendar hours). Edit to match your support policy.
+  sla: {
+    frt: { P1: 1, P2: 4, P3: 8, P4: 24 },
+    res: { P1: 24, P2: 72, P3: 168, P4: 336 }
+  },
+  // Best-in-class benchmarks (Sumeru Consolidated Operating KPIs — Support Tickets memo)
+  bench: {
+    slaPct: 0.95,          // SLA/SLO adherence 95%
+    frtHours: 2,           // avg first response sub 2 hours (excl. P1)
+    staleShare: 0.10,      // open cases with no activity 3+ days < 10%
+    backlogPerLogo: 0.20   // open backlog <= 1/5 of logo count
+  },
+  health: { support: 25, gong: 20, usage: 25, spend: 15, friction: 15 },
+  priority: { risk: 45, renewal: 25, arr: 20, issue: 10 },
+  staleDays: 3,
+  agedDays: 30
+};
+const SEVS = ["P1","P2","P3","P4"];
+const SEV_NAME = { P1:"P1 · Urgent", P2:"P2 · High", P3:"P3 · Normal", P4:"P4 · Low" };
+const OPEN_STATUSES = ["New","Open","Pending","On-hold"];
+const DAY = 864e5, HOUR = 36e5;
+
+/* ---------- utilities ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const sum = a => a.reduce((s,v)=>s+(v||0),0);
+const mean = a => a.length ? sum(a)/a.length : null;
+function median(a){ const b=a.filter(v=>v!=null&&isFinite(v)).sort((x,y)=>x-y); if(!b.length) return null; const m=b.length>>1; return b.length%2?b[m]:(b[m-1]+b[m])/2; }
+const fmtN = v => v==null ? "—" : Math.round(v).toLocaleString("en-US");
+const fmtP = (v,d=0) => v==null||!isFinite(v) ? "—" : (v*100).toFixed(d)+"%";
+function fmtH(h){ if(h==null||!isFinite(h)) return "—"; if(h<1) return Math.round(h*60)+"m"; if(h<48) return h.toFixed(1)+"h"; return (h/24).toFixed(1)+"d"; }
+function fmtUSD(v){ if(v==null||!isFinite(v)) return "—"; const a=Math.abs(v); const s=v<0?"-":""; if(a>=1e6) return s+"$"+(a/1e6).toFixed(a>=1e7?0:1)+"M"; if(a>=1e3) return s+"$"+Math.round(a/1e3)+"k"; return s+"$"+Math.round(a); }
+const fmtD = d => d ? d.toISOString().slice(0,10) : "—";
+const signed = (v,d=0) => (v>0?"+":"")+v.toFixed(d);
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+/* ---------- state ---------- */
+const S = {
+  now: new Date(), source: "Sample data", isSample: true,
+  accounts: [], tickets: [], acctById: new Map(),
+  tab: "focus",
+  f: { days: 90, product: "All", sev: "All", segment: "All", tier: "All", group: "All", owner: "All" },
+  hw: { ...CONFIG.health }, pw: { ...CONFIG.priority },
+  sort: {}
+};
+try { const saved = JSON.parse(localStorage.getItem("scc-weights")||"null"); if(saved){ Object.assign(S.hw, saved.hw||{}); Object.assign(S.pw, saved.pw||{}); } } catch(e){}
+
+/* =====================================================================
+   SAMPLE DATA GENERATOR (fictional companies, deterministic)
+   ===================================================================== */
+function genSample(){
+  const r = mulberry32(20260930);
+  const nrm = () => { let u=0,v=0; while(!u)u=r(); while(!v)v=r(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); };
+  const N = (m,s) => m + s*nrm();
+  const pick = (arr, w) => { if(!w) return arr[Math.floor(r()*arr.length)]; const t=sum(w)*r(); let c=0; for(let i=0;i<arr.length;i++){ c+=w[i]; if(t<=c) return arr[i]; } return arr[arr.length-1]; };
+  const now = new Date("2026-09-30T14:00:00");
+  const products = ["Core Platform","Analytics","Integrations & API","Mobile App","Payments","Admin & Security"];
+  const prodW = [0.32,0.18,0.17,0.11,0.13,0.09];
+  const pre = ["Acme","Brightline","Cobalt","Delta Ridge","Evergreen","Fulcrum","Granite","Harbor","Ironclad","Juniper","Keystone","Lumen","Meridian","Northwind","Orchid","Pinnacle","Quarry","Redwood","Summit","Tidewater","Union","Vantage","Willow","Xenon","Yardline","Zephyr","Atlas","Beacon","Cascade","Driftwood","Ember","Falcon","Glacier","Horizon","Indigo","Jetstream","Kestrel","Lighthouse","Maple","Nimbus","Oakridge","Pioneer","Riverbend","Sterling","Trailhead","Upland","Vertex","Wavecrest"];
+  const suf = ["Logistics","Health","Bank","Foods","Energy","Insurance","Retail","Manufacturing","Schools","Legal","Media","Travel","Labs","Capital","Telecom","Credit Union","Group","Systems","Partners","Hotels"];
+  const csms = { "Enterprise":["Dana Price","Omar Haddad"], "Mid-Market":["Priya Raman","Ben Carter","Lucia Ferri","Omar Haddad"], "SMB":["Jules Martin"] };
+  const agents = { "L1 Support":["A. Patel","J. Moreno","S. Chen","M. Okafor","E. Walsh"], "L2 Support":["L. Novak","R. Silva","T. Nguyen"], "L3 / Engineering":["K. Duarte","H. Berg"] };
+  const agentF = {}; Object.values(agents).flat().forEach(a => agentF[a] = clamp(N(1,0.22),0.65,1.6));
+  const names = new Set(); const accounts = [];
+  while(accounts.length < 240){
+    const nm = pick(pre)+" "+pick(suf); if(names.has(nm)) continue; names.add(nm);
+    const h = clamp(N(0.62,0.2),0.05,0.98);
+    const x = r(); const segment = x<0.18?"Enterprise":x<0.86?"Mid-Market":"SMB";
+    const arr = Math.round((segment==="Enterprise" ? 250e3*Math.exp(r()*1.5) : segment==="Mid-Market" ? 40e3*Math.exp(r()*1.8) : 12e3*Math.exp(r()*1.2))/500)*500;
+    const tier = segment==="Enterprise"?"Tier 1":segment==="SMB"?"Tier 4":(r()<0.5?"Tier 2":"Tier 3");
+    const chg = clamp(N((h-0.55)*0.5,0.14),-0.4,0.6);
+    const owned = ["Core Platform"]; products.slice(1).forEach(p=>{ if(r()<(segment==="Enterprise"?0.6:0.35)) owned.push(p); });
+    accounts.push({
+      id: "A"+String(1000+accounts.length), name: nm, segment, tier, arr,
+      arrPrior: Math.round(arr/(1+chg)/500)*500,
+      renewal: new Date(now.getTime() + (1+Math.floor(r()*365))*DAY),
+      csm: pick(csms[segment]),
+      usage: Math.round(clamp(N((h-0.55)*60,12),-60,50)*10)/10,
+      gong: r()<0.08 ? null : Math.round(clamp(N(h*100,14),0,100)),
+      products: owned, _h: h, _w: Math.sqrt(arr/50e3)*(1.7-h)
+    });
+  }
+  const aw = accounts.map(a=>a._w);
+  const medFRT = {P1:0.4,P2:1.3,P3:2.6,P4:7}, medRES = {P1:10,P2:32,P3:70,P4:120};
+  const tickets = []; let id = 150000;
+  const hourW = [1,.8,.4,.4,.7,.9,.7,.4,2,6.5,7,8.5,7.5,6.8,6.7,10,8.3,8.3,5.8,3.8,5.3,2.2,2.7,2.6];
+  const total = 3600;
+  while(tickets.length < total){
+    let created = new Date(now.getTime() - r()*400*DAY);
+    const dow = created.getDay(); if((dow===0||dow===6) && r()>0.08) continue;
+    created.setHours(pick([...Array(24).keys()],hourW), Math.floor(r()*60), 0, 0);
+    if(created > now) continue;
+    const a = pick(accounts, aw);
+    const pw = a.products.map(p => prodW[products.indexOf(p)]);
+    const product = pick(a.products, pw);
+    let si = SEVS.indexOf(pick(SEVS,[0.05,0.17,0.5,0.28]));
+    if(si>0 && r()<(1-a._h)*0.12) si--;
+    const sev = SEVS[si];
+    const type = pick(["Incident","Question","Problem","Task","Bug"],[45,25,10,8,12]);
+    const channel = pick(["Web","Email","API","Chat"],[60,25,8,7]);
+    const group = sev==="P1" ? (r()<0.45?"L3 / Engineering":"L2 Support") : pick(["L1 Support","L2 Support","L3 / Engineering"],[65,30,5]);
+    const assignee = pick(agents[group]);
+    const af = agentF[assignee];
+    const frtH = Math.exp(N(Math.log(medFRT[sev]*af),0.9));
+    let resH = Math.max(frtH+0.3, Math.exp(N(Math.log(medRES[sev]*af*(1.45-a._h*0.7)),1.0)));
+    if(r()<0.09) resH *= 5;
+    const firstReply = new Date(created.getTime()+frtH*HOUR);
+    const solved = new Date(created.getTime()+resH*HOUR);
+    const t = { id: String(id++), accountId: a.id, accountName: a.name, product, sev, type, channel, group, assignee, created,
+      firstReply: firstReply<=now ? firstReply : null, solved: solved<=now ? solved : null };
+    if(t.solved){
+      t.status = (now-t.solved) < 4*DAY ? "Solved" : "Closed";
+      t.updated = t.solved;
+      const breach = resH > CONFIG.sla.res[sev] || frtH > CONFIG.sla.frt[sev];
+      t.csat = r()<0.32 ? (r() < clamp(0.5+0.45*a._h-(breach?0.18:0),0.05,0.98) ? "good" : "bad") : null;
+      t.reopened = r()<0.08;
+      t.replies = r()<0.3 ? 1 : 2+Math.floor(r()*7);
+    } else {
+      t.status = !t.firstReply ? "New" : pick(["Open","Pending","On-hold"],[35,35,30]);
+      const age = now - created;
+      const lag = r()<0.3 ? r()*Math.min(age,25*DAY) : r()*Math.min(age,2*DAY);
+      t.updated = new Date(now.getTime()-lag);
+      t.csat = null; t.reopened = r()<0.05; t.replies = t.firstReply ? 1+Math.floor(r()*6) : 0;
+    }
+    t.sentiment = Math.round(clamp(N((a._h-0.5)*1.2-(si<2?0.2:0),0.35),-1,1)*100)/100;
+    t.escalated = r() < (sev==="P1"?0.55:sev==="P2"?0.28:type==="Bug"?0.5:0.05);
+    tickets.push(t);
+  }
+  // a few live fires so the queue has P1/P2 work in it
+  const weak = accounts.filter(a=>a._h<0.45).sort((a,b)=>b.arr-a.arr).slice(0,6);
+  weak.forEach((a,i)=>{
+    const sev = i<3 ? "P1" : "P2"; const created = new Date(now.getTime()-(2+r()*(i<3?20:60))*HOUR);
+    const group = sev==="P1"?"L3 / Engineering":"L2 Support"; const firstReply = r()<0.7 ? new Date(created.getTime()+0.3*HOUR) : null;
+    tickets.push({ id:String(id++), accountId:a.id, accountName:a.name, product:a.products[Math.floor(r()*a.products.length)], sev, type:"Incident", channel:"Web", group,
+      assignee:pick(agents[group]), created, firstReply, solved:null, status: firstReply?"Open":"New", updated:new Date(now.getTime()-r()*6*HOUR),
+      csat:null, reopened:false, replies:firstReply?1:0, sentiment:-0.4-r()*0.4, escalated: sev==="P1" });
+  });
+  accounts.forEach(a=>{ delete a._h; delete a._w; });
+  return { now, accounts, tickets };
+}
+
+/* =====================================================================
+   CSV IMPORT (tickets + accounts) with header aliases
+   ===================================================================== */
+function parseCSV(text){
+  const rows=[]; let row=[], f="", q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if(c==='"') q=true;
+    else if(c===','){ row.push(f); f=""; }
+    else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n') i++; row.push(f); rows.push(row); row=[]; f=""; }
+    else f+=c;
+  }
+  if(f!==""||row.length){ row.push(f); rows.push(row); }
+  const head = (rows.shift()||[]).map(h=>h.trim());
+  return rows.filter(r=>r.some(v=>v.trim()!=="")).map(r=>Object.fromEntries(head.map((h,i)=>[h,(r[i]??"").trim()])));
+}
+const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g,"");
+const T_ALIASES = {
+  id:["ticketid","id","issuekey","key","casenumber","ticketnumber"],
+  accountId:["accountid","organizationid","orgid","companyid","customerid"],
+  accountName:["accountname","organization","organizationname","ticketorganizationname","requesterorganizationname","company","companyname","account","customer"],
+  product:["product","producttype","component","components","productarea","brand","ticketbrand"],
+  sev:["severity","priority","ticketpriority","sev"],
+  status:["status","ticketstatus","state","pipelinestage"],
+  type:["type","tickettype","issuetype","casetype"],
+  channel:["channel","ticketchannel","via","source","origin"],
+  group:["group","ticketgroup","supportgroup","team","queue"],
+  assignee:["assignee","assigneename","owner","agent","caseowner"],
+  created:["createdat","created","ticketcreateddate","createddate","opened","openedat"],
+  firstReply:["firstreplyat","firstresponseat","firstrespondedat","firstagentreplydate","firstreplied"],
+  solved:["solvedat","resolvedat","resolved","closedat","closed","ticketsolveddate","resolutiondate"],
+  updated:["updatedat","updated","ticketupdateddate","lastupdated","lastactivity","lastmodifieddate"],
+  csat:["csat","satisfaction","satisfactionrating","ticketsatisfactionrating"],
+  sentiment:["sentiment","ticketsentiment","aisentiment"],
+  escalated:["escalated","escalatedtoengineering","jiralinked","jirapresent","haslinkedissue"],
+  reopened:["reopened","reopens"],
+  replies:["replies","agentreplies","publicreplies"],
+  frtHours:["firstreplytimehrs","firstreplytimehours","firstreplytime"],
+  resHours:["fullresolutiontimehrs","fullresolutiontimehours","fullresolutiontime"]
+};
+const A_ALIASES = {
+  id:["accountid","id","organizationid","orgid","companyid","customerid"],
+  name:["accountname","name","organization","organizationname","company","companyname","customer"],
+  segment:["segment","customersegment","size"],
+  tier:["tier","clienttier","customertier","supporttier"],
+  arr:["arr","currentarr","spend","annualrecurringrevenue","mrrx12"],
+  arrPrior:["arrprioryear","priorarr","arrlastyear","arr12mago"],
+  renewal:["renewaldate","renewal","contractend","contractenddate","nextrenewal"],
+  csm:["csm","owner","accountowner","customersuccessmanager","am"],
+  usage:["usagetrendpct","usagetrend","usagechange","usage90dchange","wauchange"],
+  gong:["gongsentiment","gong","callsentiment","conversationsentiment"]
+};
+function mapRow(obj, aliases){
+  const idx = {}; for(const k of Object.keys(obj)) idx[norm(k)] = obj[k];
+  const out = {}; for(const [k,al] of Object.entries(aliases)){ for(const a of al){ if(idx[a]!==undefined && idx[a]!==""){ out[k]=idx[a]; break; } } }
+  return out;
+}
+function toDate(v){ if(!v) return null; const d = new Date(v.length<=10 ? v+"T00:00:00" : v); return isNaN(d) ? null : d; }
+function toNum(v){ if(v==null||v==="") return null; const n = parseFloat(String(v).replace(/[$,%\s]/g,"")); return isFinite(n)?n:null; }
+const toBool = v => /^(1|true|yes|y|x)$/i.test(String(v||"").trim());
+function normSev(v){
+  const s = String(v||"").toLowerCase();
+  if(/p1|sev ?1|^1$|urgent|critical|blocker|highest/.test(s)) return "P1";
+  if(/p2|sev ?2|^2$|high|major/.test(s)) return "P2";
+  if(/p4|sev ?4|^4$|low|minor|trivial|lowest/.test(s)) return "P4";
+  return "P3";
+}
+function normStatus(v){
+  const s = String(v||"").toLowerCase();
+  if(/hold|waiting on (eng|product|3rd|third)|blocked/.test(s)) return "On-hold";
+  if(/pending|waiting on customer|awaiting/.test(s)) return "Pending";
+  if(/closed|done|cancel/.test(s)) return "Closed";
+  if(/solved|resolved/.test(s)) return "Solved";
+  if(/^new|untriaged|unassigned/.test(s)) return "New";
+  return "Open";
+}
+function normCsat(v){ const s=String(v||"").toLowerCase(); if(!s||/unoffered|offered|none|null/.test(s)&&!/good|bad/.test(s)) return null; if(/good|satisf|positive|^[45]$|^(4|5)\.?/.test(s)&&!/dissatisf|unsatisf/.test(s)) return "good"; if(/bad|dissatisf|unsatisf|negative|^[123]$/.test(s)) return "bad"; return null; }
+
+function loadFromRows(tRows, aRows){
+  const accounts = []; const byName = new Map(); const byId = new Map();
+  (aRows||[]).forEach((row,i)=>{
+    const m = mapRow(row, A_ALIASES);
+    const a = { id: m.id || m.name || ("A"+i), name: m.name || m.id || ("Account "+i),
+      segment: m.segment || "Mid-Market", tier: m.tier ? (/^\d$/.test(m.tier)?"Tier "+m.tier:m.tier) : "—",
+      arr: toNum(m.arr), arrPrior: toNum(m.arrPrior), renewal: toDate(m.renewal), csm: m.csm || "Unassigned",
+      usage: toNum(m.usage), gong: toNum(m.gong), products: [] };
+    accounts.push(a); byId.set(String(a.id), a); byName.set(norm(a.name), a);
+  });
+  const tickets = [];
+  tRows.forEach((row,i)=>{
+    const m = mapRow(row, T_ALIASES);
+    const created = toDate(m.created); if(!created) return;
+    let acct = (m.accountId && byId.get(String(m.accountId))) || (m.accountName && byName.get(norm(m.accountName)));
+    if(!acct){
+      const nm = m.accountName || m.accountId || "Unknown";
+      acct = { id: m.accountId || nm, name: nm, segment:"—", tier:"—", arr:null, arrPrior:null, renewal:null, csm:"Unassigned", usage:null, gong:null, products:[] };
+      accounts.push(acct); byId.set(String(acct.id), acct); byName.set(norm(nm), acct);
+    }
+    const status = normStatus(m.status);
+    let firstReply = toDate(m.firstReply), solved = toDate(m.solved);
+    if(!firstReply && toNum(m.frtHours)!=null) firstReply = new Date(created.getTime()+toNum(m.frtHours)*HOUR);
+    if(!solved && toNum(m.resHours)!=null && (status==="Solved"||status==="Closed")) solved = new Date(created.getTime()+toNum(m.resHours)*HOUR);
+    if(status!=="Solved" && status!=="Closed") solved = null;
+    const sent = toNum(m.sentiment);
+    tickets.push({ id: m.id || String(i+1), accountId: acct.id, accountName: acct.name, product: m.product || "Unspecified",
+      sev: normSev(m.sev), status, type: m.type || "—", channel: m.channel || "—", group: m.group || "Support", assignee: m.assignee || "Unassigned",
+      created, firstReply, solved: solved, updated: toDate(m.updated) || solved || firstReply || created,
+      csat: normCsat(m.csat), sentiment: sent==null?null:(Math.abs(sent)>1? clamp(sent/50-1,-1,1) : sent),
+      escalated: toBool(m.escalated), reopened: toBool(m.reopened) || (toNum(m.reopened)||0)>0, replies: toNum(m.replies) });
+  });
+  return { accounts, tickets };
+}
+
+/* =====================================================================
+   DERIVED METRICS: SLA per ticket, health + priority per account
+   ===================================================================== */
+function enrich(){
+  const now = S.now.getTime();
+  S.acctById = new Map(S.accounts.map(a=>[String(a.id),a]));
+  for(const t of S.tickets){
+    t.isOpen = OPEN_STATUSES.includes(t.status);
+    t.acct = S.acctById.get(String(t.accountId));
+    if(t.acct && !t.acct.products.includes(t.product)) t.acct.products.push(t.product);
+    const frtT = CONFIG.sla.frt[t.sev], resT = CONFIG.sla.res[t.sev];
+    t.frtH = t.firstReply ? (t.firstReply - t.created)/HOUR : null;
+    t.resH = t.solved ? (t.solved - t.created)/HOUR : null;
+    t.ageH = ((t.solved ? t.solved.getTime() : now) - t.created)/HOUR;
+    t.frtBreach = t.firstReply ? t.frtH > frtT : (now - t.created)/HOUR > frtT;
+    t.resBreach = t.ageH > resT;
+    t.slaMet = !(t.frtBreach || t.resBreach);
+    t.slaKnown = !t.isOpen || t.frtBreach || t.resBreach;          // outcome determinable
+    t.resLeftH = resT - t.ageH;
+    t.frtLeftH = t.firstReply ? null : frtT - (now - t.created)/HOUR;
+    t.nextBreachH = t.isOpen ? Math.min(t.resLeftH, t.frtLeftH ?? Infinity) : null;
+    t.staleD = t.isOpen ? (now - (t.updated||t.created).getTime())/DAY : 0;
+    t.ageD = t.isOpen ? (now - t.created)/DAY : 0;
+    t.oneTouch = !t.isOpen && t.replies === 1;
+  }
+  scoreAccounts();
+}
+
+function renewalUrgency(days){ if(days==null) return null; if(days<0) return 60; if(days<=30) return 100; if(days<=60) return 85; if(days<=90) return 70; if(days<=180) return 40; return 15; }
+
+function scoreAccounts(){
+  const now = S.now.getTime(), w90 = now - 90*DAY;
+  const byAcct = new Map(S.accounts.map(a=>[a, []]));
+  for(const t of S.tickets) if(t.acct) byAcct.get(t.acct).push(t);
+  const arrs = S.accounts.map(a=>a.arr).filter(v=>v!=null).sort((a,b)=>a-b);
+  const pct = v => { if(v==null||!arrs.length) return null; let lo=0,hi=arrs.length; while(lo<hi){const m=(lo+hi)>>1; if(arrs[m]<v) lo=m+1; else hi=m;} return 100*lo/Math.max(1,arrs.length-1); };
+  for(const a of S.accounts){
+    const ts = byAcct.get(a) || [];
+    const recent = ts.filter(t=>t.created.getTime()>=w90);
+    const open = ts.filter(t=>t.isOpen);
+    const rated = recent.filter(t=>t.csat);
+    a.csatN = rated.length; a.csatPct = rated.length ? rated.filter(t=>t.csat==="good").length/rated.length : null;
+    const sents = recent.map(t=>t.sentiment).filter(v=>v!=null);
+    a.sentAvg = sents.length ? mean(sents) : null;
+    a.tickets90 = recent.length;
+    a.openCount = open.length;
+    a.openHigh = open.filter(t=>t.sev==="P1"||t.sev==="P2").length;
+    a.openP1 = open.filter(t=>t.sev==="P1").length;
+    a.openBreached = open.filter(t=>t.resBreach||t.frtBreach).length;
+    a.aged = open.filter(t=>t.ageD>CONFIG.agedDays).length;
+    a.escOpen = open.filter(t=>t.escalated).length;
+    a.renewDays = a.renewal ? Math.round((a.renewal.getTime()-now)/DAY) : null;
+    a.spendChg = (a.arr!=null && a.arrPrior) ? a.arr/a.arrPrior - 1 : null;
+    // components 0–100 (null = no data → excluded from weighting)
+    const c = {};
+    c.support = (a.csatPct==null && a.sentAvg==null) ? null :
+      (a.csatPct!=null && a.sentAvg!=null) ? 0.6*a.csatPct*100 + 0.4*(a.sentAvg+1)*50 :
+      a.csatPct!=null ? a.csatPct*100 : (a.sentAvg+1)*50;
+    c.gong = a.gong;
+    c.usage = a.usage==null ? null : clamp((a.usage+40)/60*100,0,100);        // -40% → 0, +20% → 100
+    c.spend = a.spendChg==null ? null : clamp((a.spendChg+0.3)/0.6*100,0,100); // -30% → 0, +30% → 100
+    c.friction = clamp(100 - (a.openP1*25 + (a.openHigh-a.openP1)*12 + a.openBreached*10 + a.aged*8 + a.escOpen*6), 0, 100);
+    a.comp = c;
+    let tw=0, tv=0; for(const k of Object.keys(S.hw)){ if(c[k]!=null && S.hw[k]>0){ tw+=S.hw[k]; tv+=S.hw[k]*c[k]; } }
+    a.health = tw ? Math.round(tv/tw) : null;
+    a.band = a.health==null ? "n/a" : a.health>=75 ? "Healthy" : a.health>=50 ? "Monitor" : a.health>=30 ? "At risk" : "Critical";
+    a.arrPct = pct(a.arr);
+    a.urg = renewalUrgency(a.renewDays);
+    a.issue = a.openP1>0 || open.some(t=>t.sev==="P2"&&t.resBreach) ? 100 : a.openHigh>0 ? 60 : a.openBreached>0 ? 40 : 0;
+    const p = { risk: a.health==null?null:100-a.health, renewal: a.urg, arr: a.arrPct, issue: a.issue };
+    let pw=0, pv=0; for(const k of Object.keys(S.pw)){ if(p[k]!=null && S.pw[k]>0){ pw+=S.pw[k]; pv+=S.pw[k]*p[k]; } }
+    a.priority = pw ? Math.round(pv/pw) : 0;
+  }
+  for(const t of S.tickets) if(t.isOpen) scoreTicket(t);
+}
+
+function scoreTicket(t){
+  const sevPts = {P1:40,P2:28,P3:14,P4:5}[t.sev];
+  let sla = 0;
+  if(t.frtBreach || t.resBreach) sla = 30;
+  else if(t.nextBreachH!=null){ const tgt = t.frtLeftH!=null ? CONFIG.sla.frt[t.sev] : CONFIG.sla.res[t.sev]; const frac = t.nextBreachH/tgt; sla = frac<0.25?22:frac<0.5?12:0; }
+  const acct = (t.acct?.priority ?? 40) * 0.25;
+  const stale = t.staleD >= CONFIG.staleDays ? 8 : 0;
+  const neg = t.sentiment!=null && t.sentiment < -0.3 ? 5 : 0;
+  t.score = Math.round(clamp((sevPts+sla+acct+stale+neg)/108*100, 0, 100));
+}
+
+/* ---------- filters ---------- */
+function acctPass(a){
+  const f=S.f;
+  if(f.segment!=="All" && a.segment!==f.segment) return false;
+  if(f.tier!=="All" && a.tier!==f.tier) return false;
+  if(f.owner!=="All" && a.csm!==f.owner) return false;
+  return true;
+}
+function tPass(t){
+  const f=S.f;
+  if(f.product!=="All" && t.product!==f.product) return false;
+  if(f.sev!=="All" && t.sev!==f.sev) return false;
+  if(f.group!=="All" && t.group!==f.group) return false;
+  if(t.acct && !acctPass(t.acct)) return false;
+  if(!t.acct && (f.segment!=="All"||f.tier!=="All"||f.owner!=="All")) return false;
+  return true;
+}
+function view(){
+  const now=S.now.getTime(), from = now - S.f.days*DAY, prevFrom = from - S.f.days*DAY;
+  const all = S.tickets.filter(tPass);
+  return {
+    all, from, prevFrom,
+    open: all.filter(t=>t.isOpen),
+    created: all.filter(t=>t.created.getTime()>=from),
+    createdPrev: all.filter(t=>t.created.getTime()>=prevFrom && t.created.getTime()<from),
+    solved: all.filter(t=>t.solved && t.solved.getTime()>=from),
+    solvedPrev: all.filter(t=>t.solved && t.solved.getTime()>=prevFrom && t.solved.getTime()<from),
+    accounts: S.accounts.filter(acctPass)
+  };
+}
+function slaRate(ts){ const k=ts.filter(t=>t.slaKnown); return k.length ? k.filter(t=>t.slaMet).length/k.length : null; }
+function frtRate(ts){ const k=ts.filter(t=>t.firstReply||t.frtBreach); return k.length ? k.filter(t=>!t.frtBreach).length/k.length : null; }
+function resRate(ts){ const k=ts.filter(t=>!t.isOpen||t.resBreach); return k.length ? k.filter(t=>!t.resBreach).length/k.length : null; }
+function csatRate(ts){ const k=ts.filter(t=>t.csat); return k.length ? k.filter(t=>t.csat==="good").length/k.length : null; }
+function months(n=12){ const out=[]; const d=new Date(S.now.getFullYear(), S.now.getMonth(), 1); for(let i=n-1;i>=0;i--){ const s=new Date(d.getFullYear(), d.getMonth()-i, 1); const e=new Date(s.getFullYear(), s.getMonth()+1, 1); out.push({s,e,label:s.toLocaleString("en-US",{month:"short"})+(s.getMonth()===0||i===n-1?" '"+String(s.getFullYear()).slice(2):"")}); } return out; }
+
+/* =====================================================================
+   CHARTS (hand-rolled SVG, hover tooltips)
+   ===================================================================== */
+const TT = $("#tt");
+function ttRows(rows){ return rows.map(r=>`<div class="tt-r"><span>${r.c?`<i class="sw" style="background:${r.c}"></i>`:""}${esc(r.k)}</span><b>${esc(r.v)}</b></div>`).join(""); }
+document.addEventListener("mousemove", e=>{
+  const el = e.target.closest?.("[data-tt]");
+  if(!el){ TT.style.display="none"; document.querySelectorAll(".xhair").forEach(x=>x.style.display="none"); return; }
+  TT.innerHTML = decodeURIComponent(el.getAttribute("data-tt"));
+  TT.style.display="block";
+  const w=TT.offsetWidth, h=TT.offsetHeight; let x=e.clientX+14, y=e.clientY+14;
+  if(x+w>innerWidth-8) x=e.clientX-w-14; if(y+h>innerHeight-8) y=e.clientY-h-14;
+  TT.style.left=x+"px"; TT.style.top=y+"px";
+  const cx = el.getAttribute("data-cx");
+  if(cx!=null){ const svg=el.ownerSVGElement; const xh=svg&&svg.querySelector(".xhair"); if(xh){ xh.setAttribute("x1",cx); xh.setAttribute("x2",cx); xh.style.display="block"; } }
+});
+const tta = html => `data-tt="${encodeURIComponent(html)}"`;
+function nice125(x){ const p=Math.pow(10,Math.floor(Math.log10(x))); const n=x/p; return (n<=1?1:n<=2?2:n<=5?5:10)*p; }
+function niceScale(max){ if(!max||max<=0) return {top:1,step:0.25}; const step=nice125(max/4); return {top:Math.ceil(max/step-1e-9)*step, step}; }
+function niceMax(v){ if(!v||v<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(v))); const n=v/p; return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p; }
+function topRoundPath(x,y,w,h,r){ if(h<=0) return ""; r=Math.min(r,w/2,h); return `M${x},${y+h}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h}Z`; }
+function rightRoundPath(x,y,w,h,r){ if(w<=0) return ""; r=Math.min(r,h/2,w); return `M${x},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h-r}Q${x+w},${y+h} ${x+w-r},${y+h}H${x}Z`; }
+function legendHTML(items, line=false){ return `<div class="legend">${items.map(i=>`<span><b class="${line?"ln":""}" style="background:${i.c}"></b>${esc(i.k)}</span>`).join("")}</div>`; }
+
+function vbar(el, {labels, series, stacked=false, h=230, fmt=fmtN, legend=true, yFmt}){
+  if(!el) return;
+  const tot = labels.map((_,i)=>stacked ? sum(series.map(s=>Math.max(0,s.values[i]||0))) : Math.max(...series.map(s=>s.values[i]||0)));
+  const sc = niceScale(Math.max(...tot,0)), max = sc.top;
+  const W = Math.max(260, el.clientWidth||600), m={t:10,r:6,b:26,l:Math.max(34, String((yFmt||fmt)(max)).length*7+12)}, iw=W-m.l-m.r, ih=h-m.t-m.b, n=labels.length; const y = v => m.t + ih - (v/max)*ih;
+  const bw = iw/n, gw = Math.min(bw*0.72, stacked?44:22*series.length+8);
+  let g = "";
+  for(let k=0;k<=Math.round(max/sc.step);k++){ const v=sc.step*k, yy=y(v); g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${yy}" y2="${yy}" stroke="var(--${k?"grid":"axis"})" stroke-width="1"/><text x="${m.l-6}" y="${yy+4}" text-anchor="end">${(yFmt||fmt)(v)}</text>`; }
+  const every = Math.ceil(n / Math.max(1, Math.floor(iw/52)));
+  let bars="", hits="";
+  labels.forEach((lab,i)=>{
+    const cx = m.l + bw*i + bw/2, x0 = cx - gw/2;
+    if(stacked){
+      let acc=0;
+      series.forEach(s=>{ const v=Math.max(0,s.values[i]||0); if(!v) return; const y1=y(acc+v), y0=y(acc); const top = acc+v===tot[i];
+        const hh = Math.max(0,y0-y1-(acc>0?2:0));
+        bars += top ? `<path d="${topRoundPath(x0,y1,gw,hh,4)}" fill="${s.c}"/>` : `<rect x="${x0}" y="${y1}" width="${gw}" height="${hh}" fill="${s.c}"/>`;
+        acc+=v; });
+    } else {
+      const sw = (gw - 2*(series.length-1))/series.length;
+      series.forEach((s,j)=>{ const v=s.values[i]||0; const yy=y(Math.max(0,v)); bars += `<path d="${topRoundPath(x0+j*(sw+2),yy,sw,m.t+ih-yy,4)}" fill="${s.c}"/>`; });
+    }
+    const mc=Math.max(3,Math.floor(bw*every/6.6)); const lt=lab.length>mc?lab.slice(0,mc-1)+"…":lab;
+    if(i%every===0) g += `<text x="${cx}" y="${h-8}" text-anchor="middle">${esc(lt)}</text>`;
+    const rows = series.map(s=>({k:s.k,v:fmt(s.values[i]||0),c:s.c}));
+    if(stacked && series.length>1) rows.push({k:"Total",v:fmt(tot[i])});
+    hits += `<rect x="${m.l+bw*i}" y="${m.t}" width="${bw}" height="${ih}" fill="transparent" ${tta(`<div class="tt-h">${esc(lab)}</div>`+ttRows(rows))}/>`;
+  });
+  el.innerHTML = (legend && series.length>1 ? legendHTML(series) : "") + `<svg viewBox="0 0 ${W} ${h}" height="${h}" role="img">${g}${bars}${hits}</svg>`;
+}
+
+function hbar(el, {rows, fmt=fmtN, color="var(--s1)", labelW=150, rowH=26, max:mx}){
+  if(!el) return;
+  if(!rows.length){ el.innerHTML=`<div class="empty">No data for current filters</div>`; return; }
+  const W=Math.max(240, el.clientWidth||400), h=rows.length*rowH+4, m={l:labelW,r:56};
+  const max = mx || niceMax(Math.max(...rows.map(r=>r.v),0)); const iw=W-m.l-m.r;
+  let s="";
+  rows.forEach((r,i)=>{ const y=i*rowH+4, bh=rowH-10, w=Math.max(0,(r.v/max)*iw);
+    s+=`<text x="${m.l-8}" y="${y+bh/2+4}" text-anchor="end" style="fill:var(--ink-2)">${esc(r.k.length>20?r.k.slice(0,19)+"…":r.k)}</text>`;
+    s+=`<rect x="${m.l}" y="${y}" width="${iw}" height="${bh}" fill="var(--surface-2)" rx="3"/>`;
+    s+=`<path d="${rightRoundPath(m.l,y,w,bh,4)}" fill="${r.c||color}"/>`;
+    s+=`<text x="${m.l+w+6}" y="${y+bh/2+4}" style="fill:var(--ink);font-variant-numeric:tabular-nums">${esc(fmt(r.v))}</text>`;
+    s+=`<rect x="0" y="${y-4}" width="${W}" height="${rowH}" fill="transparent" ${tta(`<div class="tt-h">${esc(r.k)}</div>`+ttRows([{k:r.lbl||"Value",v:fmt(r.v),c:r.c||color}].concat(r.extra||[])))}/>`;
+  });
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${h}" height="${h}" role="img">${s}</svg>`;
+}
+
+function line(el, {labels, series, h=220, fmt=fmtN, yMin=0, yMax, legend=true, target}){
+  if(!el) return;
+  const W=Math.max(260, el.clientWidth||600), m={t:12,r:10,b:26,l:44}, iw=W-m.l-m.r, ih=h-m.t-m.b, n=labels.length;
+  const vals = series.flatMap(s=>s.values).filter(v=>v!=null);
+  let lo = yMin!=null ? yMin : Math.min(...vals), sc = niceScale(Math.max(...vals, target??-Infinity)), hi = yMax!=null ? yMax : sc.top, step = yMax!=null ? (hi-lo)/4 : sc.step;
+  if(yMin==null){ sc=niceScale(Math.max(...vals.map(Math.abs))); lo=-sc.top; hi=sc.top; step=sc.step; }
+  if(hi<=lo) hi=lo+1;
+  const x = i => m.l + (n===1? iw/2 : iw*i/(n-1)), y = v => m.t + ih - (v-lo)/(hi-lo)*ih;
+  let g="";
+  for(let k=0;k<=Math.round((hi-lo)/step);k++){ const v=lo+step*k, yy=y(v); g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${yy}" y2="${yy}" stroke="var(--${k?"grid":"axis"})"/><text x="${m.l-6}" y="${yy+4}" text-anchor="end">${fmt(v)}</text>`; }
+  if(lo<0 && hi>0) g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--axis)"/>`;
+  if(target!=null) g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(target)}" y2="${y(target)}" stroke="var(--ink-2)" stroke-dasharray="4 4"/><text x="${W-m.r}" y="${y(target)-5}" text-anchor="end" style="fill:var(--ink-2)">Target ${fmt(target)}</text>`;
+  const every = Math.ceil(n / Math.max(1, Math.floor(iw/52)));
+  labels.forEach((l,i)=>{ if(i%every===0||i===n-1) g+=`<text x="${x(i)}" y="${h-8}" text-anchor="${i===n-1&&n>2?"end":i===0&&n>2?"start":"middle"}">${esc(l)}</text>`; });
+  let paths="";
+  series.forEach(s=>{ let d="", pen=false; s.values.forEach((v,i)=>{ if(v==null){pen=false;return;} d+=(pen?"L":"M")+x(i)+","+y(v); pen=true; });
+    paths+=`<path d="${d}" fill="none" stroke="${s.c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    const li = s.values.length-1; if(s.values[li]!=null) paths+=`<circle cx="${x(li)}" cy="${y(s.values[li])}" r="4" fill="${s.c}" stroke="var(--surface)" stroke-width="2"/>`; });
+  let hits = `<line class="xhair" x1="0" x2="0" y1="${m.t}" y2="${m.t+ih}" stroke="var(--axis)" style="display:none"/>`;
+  const cw = n>1 ? iw/(n-1) : iw;
+  labels.forEach((l,i)=>{ hits+=`<rect x="${x(i)-cw/2}" y="${m.t}" width="${cw}" height="${ih}" fill="transparent" data-cx="${x(i)}" ${tta(`<div class="tt-h">${esc(l)}</div>`+ttRows(series.map(s=>({k:s.k,v:s.values[i]==null?"—":fmt(s.values[i]),c:s.c}))))}/>`; });
+  el.innerHTML = (legend && series.length>1 ? legendHTML(series,true) : "") + `<svg viewBox="0 0 ${W} ${h}" height="${h}" role="img">${g}${paths}${hits}</svg>`;
+}
+
+function scatter(el, {pts, h=300}){
+  if(!el) return;
+  const W=Math.max(260, el.clientWidth||600), m={t:12,r:12,b:34,l:52}, iw=W-m.l-m.r, ih=h-m.t-m.b;
+  const ys = pts.map(p=>p.y).filter(v=>v>0); if(!ys.length){ el.innerHTML=`<div class="empty">Needs ARR on accounts</div>`; return; }
+  const lo = Math.pow(10,Math.floor(Math.log10(Math.min(...ys)))), hi = Math.pow(10,Math.ceil(Math.log10(Math.max(...ys))));
+  const x = v => m.l + v/100*iw, y = v => m.t + ih - (Math.log10(v)-Math.log10(lo))/(Math.log10(hi)-Math.log10(lo))*ih;
+  let g="";
+  for(let e=Math.log10(lo); e<=Math.log10(hi); e++){ const yy=y(Math.pow(10,e)); g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${yy}" y2="${yy}" stroke="var(--grid)"/><text x="${m.l-6}" y="${yy+4}" text-anchor="end">${fmtUSD(Math.pow(10,e))}</text>`; }
+  [0,30,50,75,100].forEach(v=>{ g+=`<line x1="${x(v)}" x2="${x(v)}" y1="${m.t}" y2="${m.t+ih}" stroke="var(--${v===0?"axis":"grid"})" ${v===50?'stroke-dasharray="3 3"':''}/><text x="${x(v)}" y="${h-16}" text-anchor="middle">${v}</text>`; });
+  g+=`<text x="${m.l+iw/2}" y="${h-2}" text-anchor="middle" style="fill:var(--ink-2)">Health score →</text>`;
+  g+=`<text x="${m.l+6}" y="${m.t+12}" style="fill:var(--ink-2);font-weight:600">High ARR · low health = act first</text>`;
+  let dots="";
+  pts.filter(p=>p.y>0).sort((a,b)=>b.y-a.y).forEach(p=>{ dots+=`<circle cx="${x(p.x)}" cy="${y(p.y)}" r="${p.r||5}" fill="${p.c}" stroke="var(--surface)" stroke-width="2" ${tta(p.tt)}/>`; });
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${h}" height="${h}" role="img">${g}${dots}</svg>`;
+}
+
+/* ---------- tables ---------- */
+function table(el, key, cols, rows, {sort, desc=true, limit=500}={}){
+  if(!el) return;
+  const st = S.sort[key] || (S.sort[key] = {k:sort||cols[0].k, desc});
+  const col = cols.find(c=>c.k===st.k) || cols[0];
+  const val = r => col.sv ? col.sv(r) : r[col.k];
+  const sorted = rows.slice().sort((a,b)=>{ const va=val(a), vb=val(b); if(va==null&&vb==null) return 0; if(va==null) return 1; if(vb==null) return -1; return (va>vb?1:va<vb?-1:0)*(st.desc?-1:1); }).slice(0,limit);
+  if(!rows.length){ el.innerHTML=`<div class="empty">Nothing here for the current filters</div>`; return; }
+  el.innerHTML = `<div class="tbl-wrap"><table class="t"><thead><tr>${cols.map(c=>`<th class="${c.num?"num":""}" data-k="${c.k}" title="Sort">${esc(c.label)}${c.k===st.k?`<span class="ar">${st.desc?"↓":"↑"}</span>`:""}</th>`).join("")}</tr></thead><tbody>${
+    sorted.map(r=>`<tr>${cols.map(c=>`<td class="${c.num?"num":""} ${c.wrap?"wrap":""}">${c.html?c.html(r):esc(c.fmt?c.fmt(r[c.k],r):r[c.k])}</td>`).join("")}</tr>`).join("")
+  }</tbody></table></div>${rows.length>limit?`<div class="hint" style="margin-top:6px">Showing top ${limit} of ${rows.length.toLocaleString()}</div>`:""}`;
+  el.querySelectorAll("th").forEach(th=>th.onclick=()=>{ const k=th.dataset.k; if(st.k===k) st.desc=!st.desc; else { st.k=k; st.desc=true; } table(el,key,cols,rows,{limit}); });
+}
+
+/* ---------- small components ---------- */
+function stIcon(level,label){ const ic={good:"✓",warn:"!",serious:"!",crit:"✕"}[level]; return `<span class="st ${level}"><i>${ic}</i>${esc(label)}</span>`; }
+function deltaHTML(cur, prev, goodUp=true, fmt=v=>signed(v*100,0)+"%", mode="rel"){
+  if(cur==null||prev==null||!isFinite(cur)||!isFinite(prev)||(mode==="rel"&&!prev)) return "";
+  const d = mode==="rel" ? cur/prev-1 : cur-prev; if(Math.abs(d)<0.005) return `<span>flat vs prior</span>`;
+  const good = goodUp ? d>0 : d<0;
+  return `<span class="${good?"delta-good":"delta-bad"}">${d>0?"▲":"▼"} ${mode==="rel"?fmt(d):fmt(d)}</span><span>vs prior ${S.f.days}d</span>`;
+}
+function tile({lbl, val, foot="", bench}){ return `<div class="card tile"><div class="lbl">${esc(lbl)}</div><div class="val">${val}</div>${foot?`<div class="foot">${foot}</div>`:""}${bench?`<div class="foot">${bench}</div>`:""}</div>`; }
+function benchHTML(ok, text){ return ok==null ? "" : `<span title="Sumeru best-in-class benchmark">${stIcon(ok?"good":"warn", (ok?"Meets":"Misses")+" target "+text)}</span>`; }
+function sevChip(s){ return `<span class="sev ${s}">${s}</span>`; }
+function scoreBar(v, color){ return v==null ? "—" : `<span class="score"><span class="bar"><span style="width:${v}%;background:${color||"var(--accent)"}"></span></span><b>${v}</b></span>`; }
+const BAND_LVL = { "Healthy":"good", "Monitor":"warn", "At risk":"serious", "Critical":"crit", "n/a":"" };
+const BAND_C = { "Healthy":"var(--good)", "Monitor":"var(--warn)", "At risk":"var(--serious)", "Critical":"var(--crit)", "n/a":"var(--axis)" };
+function bandHTML(a){ return a.band==="n/a" ? `<span class="hint">n/a</span>` : stIcon(BAND_LVL[a.band], `${a.health} · ${a.band}`); }
+function card(title, hint, body, id, extra=""){ return `<div class="card" ${extra}><div class="row-head"><div><h3>${esc(title)}</h3>${hint?`<p class="hint">${hint}</p>`:""}</div>${body||""}</div><div ${id?`id="${id}"`:""}></div></div>`; }
+function sectionTitle(t, p){ return `<div class="section-title"><h2>${esc(t)}</h2>${p?`<p>${p}</p>`:""}</div>`; }
+const SEV_C = { P1:"var(--sev1)", P2:"var(--sev2)", P3:"var(--sev3)", P4:"var(--sev4)" };
+const STATUS_C = { "New":"var(--s1)", "Open":"var(--s2)", "Pending":"var(--s3)", "On-hold":"var(--s4)" };
+
+function acctReasons(a){
+  const r=[];
+  if(a.renewDays!=null && a.renewDays<=90 && a.renewDays>=0) r.push([a.renewDays<=30?"crit":"warn", `Renews in ${a.renewDays}d`]);
+  if(a.openP1) r.push(["crit", `${a.openP1} open P1`]);
+  else if(a.openHigh) r.push(["serious", `${a.openHigh} open P2`]);
+  if(a.openBreached) r.push(["crit", `${a.openBreached} SLA breach${a.openBreached>1?"es":""}`]);
+  if(a.usage!=null && a.usage<=-10) r.push([a.usage<=-25?"crit":"warn", `Usage ${a.usage.toFixed(0)}%`]);
+  if(a.gong!=null && a.gong<45) r.push([a.gong<30?"crit":"warn", `Gong sentiment ${Math.round(a.gong)}`]);
+  if(a.csatPct!=null && a.csatN>=3 && a.csatPct<0.6) r.push(["warn", `CSAT ${fmtP(a.csatPct)}`]);
+  if(a.spendChg!=null && a.spendChg<-0.05) r.push(["warn", `Spend ${signed(a.spendChg*100,0)}% YoY`]);
+  if(a.aged) r.push(["warn", `${a.aged} aged >${CONFIG.agedDays}d`]);
+  if(a.arrPct!=null && a.arrPct>=85) r.push(["", `Top-15% ARR`]);
+  return r;
+}
+function ticketReasons(t){
+  const r=[];
+  if(t.frtBreach && !t.firstReply) r.push(["crit","No first reply · SLA breached"]);
+  else if(t.resBreach) r.push(["crit",`Resolution SLA breached ${fmtH(-t.resLeftH)} ago`]);
+  else if(t.nextBreachH!=null && t.nextBreachH<24) r.push(["serious",`Breach in ${fmtH(t.nextBreachH)}`]);
+  if(t.acct?.health!=null && t.acct.health<50) r.push([t.acct.health<30?"crit":"serious",`Acct health ${t.acct.health}`]);
+  if(t.acct?.renewDays!=null && t.acct.renewDays>=0 && t.acct.renewDays<=90) r.push(["warn",`Renews ${t.acct.renewDays}d`]);
+  if(t.staleD>=CONFIG.staleDays) r.push(["warn",`No update ${Math.floor(t.staleD)}d`]);
+  if(t.sentiment!=null && t.sentiment<-0.3) r.push(["warn","Negative sentiment"]);
+  if(t.escalated) r.push(["","Escalated to Eng"]);
+  return r;
+}
+const chips = r => r.map(([l,t])=>`<span class="chip ${l}"><i></i>${esc(t)}</span>`).join("");
+
+/* =====================================================================
+   TABS
+   ===================================================================== */
+const TABS = [
+  ["focus","Rep Focus"],["overview","Overview"],["product","By Product"],["sla","SLA & Severity"],
+  ["backlog","Backlog & Aging"],["team","Team & Workload"],["health","Customer Health"],["setup","Data & Setup"]
+];
+
+function renderFocus(V){
+  const accts = V.accounts.slice().sort((a,b)=>b.priority-a.priority);
+  const openQ = V.open.slice().sort((a,b)=>b.score-a.score);
+  const renew90 = V.accounts.filter(a=>a.renewDays!=null&&a.renewDays>=0&&a.renewDays<=90);
+  const renewRisk = renew90.filter(a=>a.health!=null&&a.health<50);
+  const breached = V.open.filter(t=>t.frtBreach||t.resBreach);
+  const soon = V.open.filter(t=>!(t.frtBreach||t.resBreach) && t.nextBreachH!=null && t.nextBreachH<24);
+  const crit = V.accounts.filter(a=>a.band==="Critical"||a.band==="At risk");
+  $("#main").innerHTML = `
+    <div class="note" style="margin-top:6px">Where reps should spend time today. <b>Account priority</b> blends risk (100 − health), renewal timing, ARR and live P1/P2 or SLA issues. <b>Ticket priority</b> adds severity, SLA time left, staleness and sentiment on top of the account's priority. Tune the weights on the Customer Health tab.</div>
+    <div class="grid g-tiles" style="margin-top:12px">
+      ${tile({lbl:"ARR renewing ≤90d at risk", val:fmtUSD(sum(renewRisk.map(a=>a.arr))), foot:`${renewRisk.length} of ${renew90.length} renewing accounts have health <50`})}
+      ${tile({lbl:"At-risk + critical accounts", val:fmtN(crit.length), foot:`${fmtUSD(sum(crit.map(a=>a.arr)))} ARR · ${fmtP(crit.length/Math.max(1,V.accounts.filter(a=>a.health!=null).length))} of scored`})}
+      ${tile({lbl:"Open P1 / P2", val:`${V.open.filter(t=>t.sev==="P1").length} / ${V.open.filter(t=>t.sev==="P2").length}`, foot:`${V.open.filter(t=>(t.sev==="P1"||t.sev==="P2")&&t.escalated).length} escalated to Engineering`})}
+      ${tile({lbl:"SLA breached (open)", val:fmtN(breached.length), foot:`${soon.length} more breach within 24h`})}
+    </div>
+    <div class="grid g-12" style="margin-top:12px">
+      <div class="card"><div class="row-head"><div><h3>Accounts to prioritize</h3><p class="hint">Top 12 by account priority · click Customer Health for the full list</p></div></div><div class="acct-list" id="acctList"></div></div>
+      <div class="card"><div class="row-head"><div><h3>Ticket work queue</h3><p class="hint">Open tickets ranked by priority score (0–100) · sort any column</p></div></div><div id="queue"></div></div>
+    </div>`;
+  $("#acctList").innerHTML = accts.slice(0,12).map((a,i)=>`
+    <div class="acct">
+      <div class="rank">${i+1}</div>
+      <div style="min-width:0">
+        <div class="nm">${esc(a.name)}</div>
+        <div class="meta">${esc(a.segment)} · ${esc(a.tier)} · ${fmtUSD(a.arr)} ARR · CSM ${esc(a.csm)} · ${bandHTML(a)}</div>
+        <div>${chips(acctReasons(a).slice(0,5))}</div>
+      </div>
+      <div class="pri"><div class="n">${a.priority}</div><div class="l">priority</div></div>
+    </div>`).join("") || `<div class="empty">No accounts for current filters</div>`;
+  table($("#queue"), "queue", [
+    {k:"score",label:"Score",num:true,html:t=>scoreBar(t.score, t.score>=70?"var(--crit)":t.score>=50?"var(--serious)":"var(--accent)")},
+    {k:"id",label:"Ticket"},
+    {k:"sev",label:"Sev",html:t=>sevChip(t.sev)},
+    {k:"accountName",label:"Account",html:t=>`${esc(t.accountName)}<div class="hint" style="margin:0">${t.acct?.health!=null?"Health "+t.acct.health+" · ":""}${fmtUSD(t.acct?.arr)}</div>`},
+    {k:"product",label:"Product"},
+    {k:"status",label:"Status"},
+    {k:"assignee",label:"Assignee"},
+    {k:"nextBreachH",label:"SLA left",num:true,html:t=>t.frtBreach||t.resBreach?`<span class="delta-bad">Breached</span>`:fmtH(t.nextBreachH)},
+    {k:"reasons",label:"Why it's ranked",wrap:true,sv:t=>t.score,html:t=>chips(ticketReasons(t))}
+  ], openQ, {sort:"score", limit:150});
+}
+
+function renderOverview(V){
+  const logos = V.accounts.length;
+  const frtNonP1 = median(V.created.filter(t=>t.sev!=="P1").map(t=>t.frtH));
+  const frtNonP1Avg = mean(V.created.filter(t=>t.sev!=="P1"&&t.frtH!=null).map(t=>t.frtH));
+  const sla = slaRate(V.created), slaP = slaRate(V.createdPrev);
+  const stale = V.open.filter(t=>t.staleD>=CONFIG.staleDays).length/Math.max(1,V.open.length);
+  const oneTouch = V.solved.filter(t=>t.replies!=null).length ? V.solved.filter(t=>t.oneTouch).length/V.solved.filter(t=>t.replies!=null).length : null;
+  const reopen = V.solved.length ? V.solved.filter(t=>t.reopened).length/V.solved.length : null;
+  const csat = csatRate(V.solved), csatP = csatRate(V.solvedPrev);
+  const res = median(V.solved.map(t=>t.resH)), resP = median(V.solvedPrev.map(t=>t.resH));
+  const bpl = logos ? V.open.length/logos : null;
+  $("#main").innerHTML = `
+    ${sectionTitle("Last "+S.f.days+" days", "Flow metrics use tickets created / solved in the window; backlog is live")}
+    <div class="grid g-tiles">
+      ${tile({lbl:"Created tickets", val:fmtN(V.created.length), foot:deltaHTML(V.created.length, V.createdPrev.length, false)})}
+      ${tile({lbl:"Solved tickets", val:fmtN(V.solved.length), foot:deltaHTML(V.solved.length, V.solvedPrev.length, true)})}
+      ${tile({lbl:"Open backlog", val:fmtN(V.open.length), foot:`${fmtP(bpl,0)} of logo count (${fmtN(logos)} logos)`, bench:benchHTML(bpl!=null?bpl<=CONFIG.bench.backlogPerLogo:null,"≤20%")})}
+      ${tile({lbl:"SLA achievement", val:fmtP(sla,1), foot:deltaHTML(sla, slaP, true, v=>signed(v*100,1)+" pts","abs"), bench:benchHTML(sla!=null?sla>=CONFIG.bench.slaPct:null,"95%")})}
+      ${tile({lbl:"First reply (excl. P1)", val:fmtH(frtNonP1Avg), foot:`Average · median ${fmtH(frtNonP1)}`, bench:benchHTML(frtNonP1Avg!=null?frtNonP1Avg<CONFIG.bench.frtHours:null,"<2h")})}
+      ${tile({lbl:"Median resolution", val:fmtH(res), foot:deltaHTML(res, resP, false)})}
+      ${tile({lbl:"CSAT (good %)", val:fmtP(csat), foot:deltaHTML(csat, csatP, true, v=>signed(v*100,1)+" pts","abs")})}
+      ${tile({lbl:"Stale (no update "+CONFIG.staleDays+"d+)", val:fmtP(stale), foot:`${V.open.filter(t=>t.staleD>=CONFIG.staleDays).length} open tickets`, bench:benchHTML(V.open.length?stale<CONFIG.bench.staleShare:null,"<10%")})}
+      ${tile({lbl:"One-touch resolution", val:fmtP(oneTouch,1), foot:"Solved with a single agent reply"})}
+      ${tile({lbl:"Reopen rate", val:fmtP(reopen,1), foot:"Of solved tickets"})}
+    </div>
+    ${sectionTitle("Trends · last 12 months")}
+    <div class="grid g-2">
+      ${card("Tickets created vs solved","Monthly volume",null,"cOvCS")}
+      ${card("Net backlog change","Solved − created per month · above zero means the backlog shrank",null,"cOvNet")}
+    </div>
+    ${sectionTitle("Open backlog mix")}
+    <div class="grid g-3">
+      ${card("By severity","",null,"cOvSev")}
+      ${card("By status","",null,"cOvSt")}
+      ${card("By client tier","",null,"cOvTier")}
+    </div>`;
+  const M = months(12);
+  const cr = M.map(m=>V.all.filter(t=>t.created>=m.s&&t.created<m.e).length);
+  const so = M.map(m=>V.all.filter(t=>t.solved&&t.solved>=m.s&&t.solved<m.e).length);
+  vbar($("#cOvCS"), {labels:M.map(m=>m.label), series:[{k:"Created",c:"var(--s1)",values:cr},{k:"Solved",c:"var(--s2)",values:so}]});
+  line($("#cOvNet"), {labels:M.map(m=>m.label), series:[{k:"Solved − created",c:"var(--s1)",values:so.map((v,i)=>v-cr[i])}], yMin:null, fmt:v=>signed(Math.round(v),0)});
+  hbar($("#cOvSev"), {rows:SEVS.map(s=>({k:SEV_NAME[s],v:V.open.filter(t=>t.sev===s).length,c:SEV_C[s]})), labelW:96});
+  hbar($("#cOvSt"), {rows:OPEN_STATUSES.map(s=>({k:s,v:V.open.filter(t=>t.status===s).length,c:STATUS_C[s]})), labelW:80});
+  const tiers = [...new Set(V.open.map(t=>t.acct?.tier||"—"))].sort();
+  hbar($("#cOvTier"), {rows:tiers.map(s=>({k:s,v:V.open.filter(t=>(t.acct?.tier||"—")===s).length})), labelW:80});
+}
+
+function renderProduct(V){
+  const prods = [...new Set(V.all.map(t=>t.product))].sort();
+  const rows = prods.map(p=>{
+    const c=V.created.filter(t=>t.product===p), s=V.solved.filter(t=>t.product===p), o=V.open.filter(t=>t.product===p);
+    const arr = sum(V.accounts.filter(a=>a.products.includes(p)).map(a=>a.arr||0));
+    return { product:p, created:c.length, solved:s.length, open:o.length,
+      nNew:o.filter(t=>t.status==="New").length, nOpen:o.filter(t=>t.status==="Open").length, nPend:o.filter(t=>t.status==="Pending").length, nHold:o.filter(t=>t.status==="On-hold").length,
+      high:o.filter(t=>t.sev==="P1"||t.sev==="P2").length, sla:slaRate(c), frt:median(c.map(t=>t.frtH)), res:median(s.map(t=>t.resH)),
+      csat:csatRate(s), esc:c.length?c.filter(t=>t.escalated).length/c.length:null, reopen:s.length?s.filter(t=>t.reopened).length/s.length:null,
+      per100k: arr ? c.length/(arr/1e5)*(365/S.f.days) : null };
+  });
+  $("#main").innerHTML = `
+    ${sectionTitle("Product type stats", `Last ${S.f.days} days · open counts are live`)}
+    <div class="card"><div id="tProd"></div></div>
+    <div class="grid g-2" style="margin-top:12px">
+      ${card("Open backlog by product & severity","",null,"cProdSev")}
+      ${card("SLA achievement by product",`Tickets created in last ${S.f.days} days · dashed line = 95% best-in-class`,null,"cProdSla")}
+    </div>
+    <div class="grid g-2" style="margin-top:12px">
+      ${card("Created tickets by product · 12 months","Top 5 products by volume",null,"cProdTrend")}
+      ${card("Ticket intensity","Annualised tickets per $100k of ARR on accounts that own the product — high values flag quality or UX debt",null,"cProdInt")}
+    </div>`;
+  table($("#tProd"), "prod", [
+    {k:"product",label:"Product"},
+    {k:"created",label:"Created",num:true,fmt:fmtN},{k:"solved",label:"Solved",num:true,fmt:fmtN},
+    {k:"open",label:"Open total",num:true,fmt:fmtN},{k:"nNew",label:"New",num:true},{k:"nOpen",label:"Open",num:true},{k:"nPend",label:"Pending",num:true},{k:"nHold",label:"On-hold",num:true},
+    {k:"high",label:"Open P1/P2",num:true},
+    {k:"sla",label:"SLA %",num:true,html:r=>r.sla==null?"—":`<span class="${r.sla>=CONFIG.bench.slaPct?"delta-good":r.sla<0.7?"delta-bad":""}">${fmtP(r.sla,1)}</span>`},
+    {k:"frt",label:"Median FRT",num:true,fmt:fmtH},{k:"res",label:"Median resolution",num:true,fmt:fmtH},
+    {k:"csat",label:"CSAT",num:true,fmt:v=>fmtP(v)},{k:"esc",label:"Escalated %",num:true,fmt:v=>fmtP(v)},{k:"reopen",label:"Reopen %",num:true,fmt:v=>fmtP(v)}
+  ], rows, {sort:"open"});
+  const byOpen = rows.slice().sort((a,b)=>b.open-a.open);
+  vbar($("#cProdSev"), {labels:byOpen.map(r=>r.product.length>12?r.product.slice(0,11)+"…":r.product), stacked:true,
+    series:SEVS.map(s=>({k:s,c:SEV_C[s],values:byOpen.map(r=>V.open.filter(t=>t.product===r.product&&t.sev===s).length)}))});
+  const slaEl=$("#cProdSla");
+  hbar(slaEl, {rows:rows.filter(r=>r.sla!=null).sort((a,b)=>a.sla-b.sla).map(r=>({k:r.product,v:r.sla,lbl:"SLA achieved",c:r.sla<0.7?"var(--s8)":"var(--s1)"})), fmt:v=>fmtP(v,1), max:1});
+  if(slaEl.querySelector("svg")){ const svg=slaEl.querySelector("svg"); const W=+svg.getAttribute("viewBox").split(" ")[2], hh=+svg.getAttribute("height"); const x=150+(W-150-56)*0.95; svg.insertAdjacentHTML("beforeend",`<line x1="${x}" x2="${x}" y1="0" y2="${hh}" stroke="var(--ink-2)" stroke-dasharray="4 3"/>`); }
+  const M=months(12); const top=rows.slice().sort((a,b)=>b.created-a.created).slice(0,5);
+  line($("#cProdTrend"), {labels:M.map(m=>m.label), series:top.map((r,i)=>({k:r.product,c:`var(--s${i+1})`,values:M.map(m=>V.all.filter(t=>t.product===r.product&&t.created>=m.s&&t.created<m.e).length)}))});
+  hbar($("#cProdInt"), {rows:rows.filter(r=>r.per100k!=null).sort((a,b)=>b.per100k-a.per100k).map(r=>({k:r.product,v:r.per100k,lbl:"Tickets per $100k ARR"})), fmt:v=>v.toFixed(1)});
+}
+
+function renderSLA(V){
+  const bySev = SEVS.map(s=>{ const c=V.created.filter(t=>t.sev===s), sv=V.solved.filter(t=>t.sev===s);
+    return { sev:s, n:c.length, frtT:CONFIG.sla.frt[s], resT:CONFIG.sla.res[s], frtMed:median(c.map(t=>t.frtH)), frtAtt:frtRate(c), resMed:median(sv.map(t=>t.resH)), resAtt:resRate(c), sla:slaRate(c), open:V.open.filter(t=>t.sev===s).length, breachedOpen:V.open.filter(t=>t.sev===s&&(t.frtBreach||t.resBreach)).length }; });
+  const risk = V.open.filter(t=>t.frtBreach||t.resBreach||(t.nextBreachH!=null&&t.nextBreachH<48));
+  $("#main").innerHTML = `
+    <div class="grid g-tiles" style="margin-top:12px">
+      ${tile({lbl:"SLA achievement (all)", val:fmtP(slaRate(V.created),1), bench:benchHTML(slaRate(V.created)!=null?slaRate(V.created)>=CONFIG.bench.slaPct:null,"95%")})}
+      ${tile({lbl:"First reply SLA met", val:fmtP(frtRate(V.created),1)})}
+      ${tile({lbl:"Resolution SLA met", val:fmtP(resRate(V.created),1)})}
+      ${tile({lbl:"Open & breached", val:fmtN(V.open.filter(t=>t.frtBreach||t.resBreach).length), foot:"Needs recovery plan"})}
+      ${tile({lbl:"Breaching in next 24h", val:fmtN(V.open.filter(t=>!(t.frtBreach||t.resBreach)&&t.nextBreachH!=null&&t.nextBreachH<24).length), foot:"Work these first"})}
+    </div>
+    ${sectionTitle("SLA policy performance by severity", `Tickets created in last ${S.f.days} days · targets set in CONFIG.sla`)}
+    <div class="card"><div id="tSev"></div></div>
+    <div class="grid g-2" style="margin-top:12px">
+      ${card("SLA achievement by month","By severity · dashed = 95% target",null,"cSlaTrend")}
+      ${card("Median first reply time by month","Urgent/High vs Normal/Low",null,"cFrtTrend")}
+    </div>
+    ${sectionTitle("Breach watchlist", "Open tickets breached or breaching within 48h — most overdue first · click a header to re-sort")}
+    <div class="card"><div id="tRisk"></div></div>`;
+  table($("#tSev"), "sev", [
+    {k:"sev",label:"Severity",html:r=>`${sevChip(r.sev)} <span class="hint">${esc(SEV_NAME[r.sev].split("· ")[1])}</span>`,sv:r=>-SEVS.indexOf(r.sev)},
+    {k:"n",label:"Created",num:true,fmt:fmtN},
+    {k:"frtT",label:"FRT target",num:true,fmt:fmtH},{k:"frtMed",label:"Median FRT",num:true,fmt:fmtH},{k:"frtAtt",label:"FRT met",num:true,fmt:v=>fmtP(v,1)},
+    {k:"resT",label:"Resolution target",num:true,fmt:fmtH},{k:"resMed",label:"Median resolution",num:true,fmt:fmtH},{k:"resAtt",label:"Resolution met",num:true,fmt:v=>fmtP(v,1)},
+    {k:"sla",label:"Overall SLA",num:true,html:r=>r.sla==null?"—":`<span class="${r.sla>=CONFIG.bench.slaPct?"delta-good":r.sla<0.7?"delta-bad":""}">${fmtP(r.sla,1)}</span>`},
+    {k:"open",label:"Open",num:true},{k:"breachedOpen",label:"Open breached",num:true}
+  ], bySev, {sort:"sev"});
+  const M=months(12);
+  line($("#cSlaTrend"), {labels:M.map(m=>m.label), yMin:0, yMax:1, target:CONFIG.bench.slaPct, fmt:v=>fmtP(v),
+    series:SEVS.map((s,i)=>({k:s,c:`var(--s${i+1})`,values:M.map(m=>slaRate(V.all.filter(t=>t.sev===s&&t.created>=m.s&&t.created<m.e)))}))});
+  line($("#cFrtTrend"), {labels:M.map(m=>m.label), fmt:fmtH,
+    series:[{k:"P1/P2",c:"var(--s1)",values:M.map(m=>median(V.all.filter(t=>(t.sev==="P1"||t.sev==="P2")&&t.created>=m.s&&t.created<m.e).map(t=>t.frtH)))},
+            {k:"P3/P4",c:"var(--s2)",values:M.map(m=>median(V.all.filter(t=>(t.sev==="P3"||t.sev==="P4")&&t.created>=m.s&&t.created<m.e).map(t=>t.frtH)))}]});
+  table($("#tRisk"), "risk", [
+    {k:"nextBreachH",label:"Time to breach",num:true,html:t=>t.frtBreach||t.resBreach?`<span class="delta-bad">Breached ${fmtH(-t.nextBreachH)} ago</span>`:`<b>${fmtH(t.nextBreachH)}</b>`},
+    {k:"id",label:"Ticket"},{k:"sev",label:"Sev",html:t=>sevChip(t.sev)},
+    {k:"metric",label:"SLA metric",sv:t=>t.frtLeftH!=null?0:1,html:t=>t.frtLeftH!=null||(!t.firstReply)?"First reply":"Resolution"},
+    {k:"accountName",label:"Account"},{k:"health",label:"Acct health",num:true,sv:t=>t.acct?.health,html:t=>t.acct?bandHTML(t.acct):"—"},
+    {k:"product",label:"Product"},{k:"status",label:"Status"},{k:"assignee",label:"Assignee"},{k:"group",label:"Group"}
+  ], risk, {sort:"nextBreachH", desc:false});
+}
+
+function renderBacklog(V){
+  const buckets = [["0–7d",0,7],["8–14d",7,14],["15–30d",14,30],["31–60d",30,60],["61–90d",60,90],["90d+",90,1e9]];
+  const stale = V.open.filter(t=>t.staleD>=CONFIG.staleDays);
+  $("#main").innerHTML = `
+    <div class="grid g-tiles" style="margin-top:12px">
+      ${tile({lbl:"Open backlog", val:fmtN(V.open.length)})}
+      ${tile({lbl:"Open > "+CONFIG.agedDays+" days", val:fmtN(V.open.filter(t=>t.ageD>CONFIG.agedDays).length), foot:fmtP(V.open.filter(t=>t.ageD>CONFIG.agedDays).length/Math.max(1,V.open.length))+" of backlog"})}
+      ${tile({lbl:"No activity "+CONFIG.staleDays+"d+", val:fmtN(stale.length), foot:fmtP(stale.length/Math.max(1,V.open.length))+" of backlog", bench:benchHTML(V.open.length?stale.length/V.open.length<CONFIG.bench.staleShare:null,"<10%")})}
+      ${tile({lbl:"On-hold", val:fmtN(V.open.filter(t=>t.status==="On-hold").length), foot:"Waiting on product / 3rd party"})}
+      ${tile({lbl:"Escalated to Engineering", val:fmtN(V.open.filter(t=>t.escalated).length), foot:"Open with linked Jira / eng issue"})}
+      ${tile({lbl:"Median open age", val:fmtH(median(V.open.map(t=>t.ageD*24)))})}
+    </div>
+    <div class="grid g-2" style="margin-top:12px">
+      ${card("Backlog aging by severity","Open tickets by age since created",null,"cAge")}
+      ${card("Backlog at month-end · 12 months","Open tickets on the last day of each month",null,"cBackTrend")}
+    </div>
+    <div class="grid g-2" style="margin-top:12px">
+      ${card("Aging by assignee","Open tickets by age bucket — who is carrying the old ones",null,"tAgeAssignee")}
+      ${card("Stale tickets","Open with no update in "+CONFIG.staleDays+"+ days",null,"tStale")}
+    </div>`;
+  const inB = (t,b)=>t.ageD>=b[1]&&t.ageD<b[2];
+  vbar($("#cAge"), {labels:buckets.map(b=>b[0]), stacked:true, series:SEVS.map(s=>({k:s,c:SEV_C[s],values:buckets.map(b=>V.open.filter(t=>t.sev===s&&inB(t,b)).length)}))});
+  const M=months(12);
+  const eom = M.map(m=>{ const e = Math.min(m.e.getTime(), S.now.getTime()); return V.all.filter(t=>t.created.getTime()<e && (!t.solved || t.solved.getTime()>=e)).length; });
+  line($("#cBackTrend"), {labels:M.map(m=>m.label), series:[{k:"Open backlog",c:"var(--s1)",values:eom}], yMin:0});
+  const assignees = [...new Set(V.open.map(t=>t.assignee))];
+  const rows = assignees.map(a=>{ const o=V.open.filter(t=>t.assignee===a); const r={assignee:a,total:o.length}; buckets.forEach((b,i)=>r["b"+i]=o.filter(t=>inB(t,b)).length); r.oldest=Math.max(...o.map(t=>t.ageD)); return r; });
+  table($("#tAgeAssignee"), "ageA", [{k:"assignee",label:"Assignee"},{k:"total",label:"Open",num:true}].concat(buckets.map((b,i)=>({k:"b"+i,label:b[0],num:true,html:r=>r["b"+i]?`<b>${r["b"+i]}</b>`:`<span class="hint">·</span>`}))).concat([{k:"oldest",label:"Oldest",num:true,fmt:v=>fmtH(v*24)}]), rows, {sort:"total"});
+  table($("#tStale"), "stale", [
+    {k:"staleD",label:"Idle",num:true,fmt:v=>Math.floor(v)+"d"},{k:"id",label:"Ticket"},{k:"sev",label:"Sev",html:t=>sevChip(t.sev)},
+    {k:"accountName",label:"Account"},{k:"status",label:"Status"},{k:"assignee",label:"Assignee"},{k:"ageD",label:"Age",num:true,fmt:v=>Math.floor(v)+"d"}
+  ], stale, {sort:"staleD"});
+}
+
+function renderTeam(V){
+  const agents = [...new Set(V.all.map(t=>t.assignee))];
+  const rows = agents.map(a=>{ const o=V.open.filter(t=>t.assignee===a), s=V.solved.filter(t=>t.assignee===a), c=V.created.filter(t=>t.assignee===a);
+    const grp = (o[0]||s[0]||c[0]||V.all.find(t=>t.assignee===a))?.group||"—";
+    const rs = s.filter(t=>t.replies!=null);
+    return { assignee:a, group:grp, open:o.length, nNewOpen:o.filter(t=>t.status==="New"||t.status==="Open").length, nPend:o.filter(t=>t.status==="Pending").length, nHold:o.filter(t=>t.status==="On-hold").length,
+      solved:s.length, frt:median(c.map(t=>t.frtH)), res:median(s.map(t=>t.resH)), sla:slaRate(c), csat:csatRate(s), oneTouch: rs.length?rs.filter(t=>t.oneTouch).length/rs.length:null,
+      reopen:s.length?s.filter(t=>t.reopened).length/s.length:null, high:o.filter(t=>t.sev==="P1"||t.sev==="P2").length };
+  }).filter(r=>r.open||r.solved||r.frt!=null);
+  const groups = [...new Set(rows.map(r=>r.group))].sort();
+  const monthsInWin = S.f.days/30.4;
+  $("#main").innerHTML = `
+    ${sectionTitle("Assignee activity", `Solved / FRT / SLA use last ${S.f.days} days · open is live`)}
+    <div class="card"><div id="tAgents"></div></div>
+    <div class="grid g-3" style="margin-top:12px">
+      ${card("Support groups","",null,"tGroups")}
+      ${card("Solved per agent","Last "+S.f.days+" days",null,"cSolved")}
+      ${card("Open load per agent","Stacked by status",null,"cLoad")}
+    </div>
+    <div class="grid g-2" style="margin-top:12px">
+      ${card("Tickets created by hour of day","Share of tickets created in window · use for shift coverage",null,"cHour")}
+      ${card("Average tickets created by day of week","",null,"cDow")}
+    </div>
+    <div class="note" style="margin-top:12px">Avg tickets closed per rep per month: <b>${rows.length?(sum(rows.map(r=>r.solved))/rows.length/monthsInWin).toFixed(1):"—"}</b> (Sumeru reporting pack KPI).</div>`;
+  table($("#tAgents"), "agents", [
+    {k:"assignee",label:"Assignee"},{k:"group",label:"Group"},
+    {k:"open",label:"Open",num:true},{k:"high",label:"Open P1/P2",num:true},{k:"nNewOpen",label:"New/Open",num:true},{k:"nPend",label:"Pending",num:true},{k:"nHold",label:"On-hold",num:true},
+    {k:"solved",label:"Solved",num:true},{k:"frt",label:"Median FRT",num:true,fmt:fmtH},{k:"res",label:"Median resolution",num:true,fmt:fmtH},
+    {k:"sla",label:"SLA %",num:true,fmt:v=>fmtP(v,1)},{k:"csat",label:"CSAT",num:true,fmt:v=>fmtP(v)},{k:"oneTouch",label:"One-touch",num:true,fmt:v=>fmtP(v)},{k:"reopen",label:"Reopen",num:true,fmt:v=>fmtP(v)}
+  ], rows, {sort:"solved"});
+  const gRows = groups.map(g=>{ const o=V.open.filter(t=>t.group===g), c=V.created.filter(t=>t.group===g), s=V.solved.filter(t=>t.group===g); return {group:g, open:o.length, solved:s.length, sla:slaRate(c), age:median(o.map(t=>t.ageD))}; });
+  table($("#tGroups"), "groups", [{k:"group",label:"Group"},{k:"open",label:"Open",num:true},{k:"solved",label:"Solved",num:true},{k:"sla",label:"SLA",num:true,fmt:v=>fmtP(v)},{k:"age",label:"Med. age",num:true,fmt:v=>v==null?"—":v.toFixed(1)+"d"}], gRows, {sort:"open"});
+  hbar($("#cSolved"), {rows:rows.slice().sort((a,b)=>b.solved-a.solved).slice(0,12).map(r=>({k:r.assignee,v:r.solved,lbl:"Solved"})), labelW:90});
+  const byLoad = rows.slice().sort((a,b)=>b.open-a.open).slice(0,12);
+  vbar($("#cLoad"), {labels:byLoad.map(r=>r.assignee.split(" ").slice(-1)[0]), stacked:true, series:[
+    {k:"New/Open",c:"var(--s1)",values:byLoad.map(r=>r.nNewOpen)},{k:"Pending",c:"var(--s3)",values:byLoad.map(r=>r.nPend)},{k:"On-hold",c:"var(--s4)",values:byLoad.map(r=>r.nHold)}]});
+  const hours=[...Array(24).keys()]; const cn=V.created.length||1;
+  vbar($("#cHour"), {labels:hours.map(String), series:[{k:"Share of tickets",c:"var(--s1)",values:hours.map(h=>V.created.filter(t=>t.created.getHours()===h).length/cn)}], fmt:v=>fmtP(v,1), yFmt:v=>fmtP(v,0)});
+  const dn=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"], weeks=S.f.days/7;
+  vbar($("#cDow"), {labels:dn, series:[{k:"Avg tickets / day",c:"var(--s1)",values:dn.map((_,i)=>V.created.filter(t=>(t.created.getDay()+6)%7===i).length/weeks)}], fmt:v=>v.toFixed(1)});
+}
+
+function renderHealth(V){
+  const A = V.accounts;
+  const scored = A.filter(a=>a.health!=null);
+  const bands = ["Critical","At risk","Monitor","Healthy"];
+  const W = (obj, key, label, hint) => `<label><div><span>${esc(label)}</span><b id="w-${key}">${obj[key]}</b></div><input type="range" min="0" max="50" step="5" value="${obj[key]}" data-grp="${obj===S.hw?"hw":"pw"}" data-k="${key}"><span class="hint" style="margin:0">${hint}</span></label>`;
+  $("#main").innerHTML = `
+    <div class="grid g-tiles" style="margin-top:12px">
+      ${bands.slice().reverse().map(b=>{ const xs=scored.filter(a=>a.band===b); return tile({lbl:b, val:fmtN(xs.length), foot:`${fmtUSD(sum(xs.map(a=>a.arr||0)))} ARR`, bench:stIcon(BAND_LVL[b], b==="Healthy"?"75–100":b==="Monitor"?"50–74":b==="At risk"?"30–49":"0–29")}); }).join("")}
+      ${tile({lbl:"ARR-weighted health", val: scored.length?Math.round(sum(scored.map(a=>(a.arr||0)*a.health))/Math.max(1,sum(scored.map(a=>a.arr||0)))):"—", foot:"Across scored accounts"})}
+    </div>
+    <div class="grid g-2" style="margin-top:12px">
+      <div class="card"><h3>Health score weights</h3><p class="hint">Each signal is normalised 0–100; missing signals are dropped and the rest re-weighted.</p>
+        <div class="weights">
+          ${W(S.hw,"support","Support sentiment","CSAT + ticket sentiment, last 90d")}
+          ${W(S.hw,"gong","Gong sentiment","Call / conversation sentiment 0–100")}
+          ${W(S.hw,"usage","Usage trend","90-day active usage change (−40%→0, +20%→100)")}
+          ${W(S.hw,"spend","Spend trend","ARR vs prior year (−30%→0, +30%→100)")}
+          ${W(S.hw,"friction","Support friction","Open P1/P2, breaches, aged & escalated tickets")}
+        </div></div>
+      <div class="card"><h3>Account priority weights</h3><p class="hint">Drives the Rep Focus ranking. Renewal timing is urgency, not health — a healthy account renewing in 30 days still needs a touch.</p>
+        <div class="weights">
+          ${W(S.pw,"risk","Risk (100 − health)","Lower health → higher priority")}
+          ${W(S.pw,"renewal","Renewal timing","≤30d 100 · ≤60d 85 · ≤90d 70 · ≤180d 40")}
+          ${W(S.pw,"arr","Spend (ARR rank)","Percentile of ARR across book")}
+          ${W(S.pw,"issue","Live issue","Open P1 or breached P2 = 100")}
+        </div>
+        <div style="margin-top:10px"><button class="btn" id="resetW">Reset to defaults</button></div></div>
+    </div>
+    <div class="grid g-2" style="margin-top:12px">
+      ${card("Health vs ARR","Each dot is an account · colour = health band · top-left is where the money is at risk",legendHTML(bands.map(b=>({k:b,c:BAND_C[b]}))),"cScatter")}
+      ${card("Renewal ARR by month × health","Next 12 months",null,"cRenew")}
+    </div>
+    ${sectionTitle("Account health detail","Sort by any column · components shown 0–100")}
+    <div class="card"><div id="tHealth"></div></div>`;
+  document.querySelectorAll(".weights input").forEach(inp=>inp.oninput=()=>{
+    S[inp.dataset.grp][inp.dataset.k]=+inp.value; $("#w-"+inp.dataset.k).textContent=inp.value;
+    try{ localStorage.setItem("scc-weights", JSON.stringify({hw:S.hw,pw:S.pw})); }catch(e){}
+    clearTimeout(renderHealth._t); renderHealth._t=setTimeout(()=>{ scoreAccounts(); const y=scrollY; render(); scrollTo(0,y); }, 150);
+  });
+  $("#resetW").onclick=()=>{ S.hw={...CONFIG.health}; S.pw={...CONFIG.priority}; try{localStorage.removeItem("scc-weights");}catch(e){} scoreAccounts(); render(); };
+  scatter($("#cScatter"), {pts:scored.map(a=>({x:a.health,y:a.arr||0,c:BAND_C[a.band],r:4+Math.min(4,a.openCount),
+    tt:`<div class="tt-h">${esc(a.name)}</div>`+ttRows([{k:"Health",v:`${a.health} · ${a.band}`,c:BAND_C[a.band]},{k:"ARR",v:fmtUSD(a.arr)},{k:"Renews in",v:a.renewDays!=null?a.renewDays+"d":"—"},{k:"Open tickets",v:String(a.openCount)},{k:"Priority",v:String(a.priority)}])}))});
+  const M=[...Array(12).keys()].map(i=>{ const s=new Date(S.now.getFullYear(),S.now.getMonth()+i,1); return {s,e:new Date(s.getFullYear(),s.getMonth()+1,1),label:s.toLocaleString("en-US",{month:"short"})+(s.getMonth()===0||i===0?" '"+String(s.getFullYear()).slice(2):"")}; });
+  vbar($("#cRenew"), {labels:M.map(m=>m.label), stacked:true, fmt:fmtUSD, series:bands.map(b=>({k:b,c:BAND_C[b],values:M.map(m=>sum(scored.filter(a=>a.band===b&&a.renewal&&a.renewal>=m.s&&a.renewal<m.e).map(a=>a.arr||0)))}))});
+  const comp = k => ({k:"c_"+k, label:{support:"Support",gong:"Gong",usage:"Usage",spend:"Spend",friction:"Friction"}[k], num:true, sv:a=>a.comp[k], html:a=>a.comp[k]==null?`<span class="hint">n/a</span>`:Math.round(a.comp[k])});
+  table($("#tHealth"), "health", [
+    {k:"name",label:"Account"},{k:"segment",label:"Segment"},{k:"tier",label:"Tier"},{k:"csm",label:"CSM"},
+    {k:"arr",label:"ARR",num:true,fmt:fmtUSD},{k:"renewDays",label:"Renews in",num:true,sv:a=>a.renewDays==null?null:-a.renewDays,fmt:v=>v==null?"—":v+"d"},
+    {k:"health",label:"Health",sv:a=>a.health==null?null:-a.health,html:a=>bandHTML(a)},
+    {k:"priority",label:"Priority",num:true,html:a=>scoreBar(a.priority)},
+    comp("support"),comp("gong"),comp("usage"),comp("spend"),comp("friction"),
+    {k:"usage",label:"Usage Δ",num:true,fmt:v=>v==null?"—":signed(v,0)+"%"},{k:"spendChg",label:"Spend Δ YoY",num:true,fmt:v=>v==null?"—":signed(v*100,0)+"%"},
+    {k:"csatPct",label:"CSAT 90d",num:true,fmt:v=>fmtP(v)},{k:"openCount",label:"Open tix",num:true},{k:"openHigh",label:"Open P1/P2",num:true},
+    {k:"why",label:"Signals",wrap:true,sv:a=>a.priority,html:a=>chips(acctReasons(a))}
+  ], A, {sort:"priority", limit:300});
+}
+
+function renderSetup(){
+  const fm = [
+    ["ticket_id","Ticket ID","Ticket ID","Issue key","Case Number","Ticket ID"],
+    ["account_name / account_id","Organization","Company","Organization (JSM)","Account Name / Id","Associated company"],
+    ["product","Custom field / Brand","Product","Component","Product (custom)","Custom property"],
+    ["severity","Priority (Urgent–Low)","Priority","Priority","Priority","Priority"],
+    ["status","Status","Status","Status","Status","Pipeline stage"],
+    ["group / assignee","Group / Assignee","Group / Agent","Team / Assignee","Queue / Owner","Team / Owner"],
+    ["created_at","Created","Created time","Created","Date/Time Opened","Create date"],
+    ["first_reply_at","First reply time (metric)","First responded at","Time to first response (SLA)","First Response milestone","First agent reply date"],
+    ["solved_at","Solved","Resolved time","Resolved","Date/Time Closed","Close date"],
+    ["updated_at","Updated","Last updated time","Updated","Last Modified","Last activity date"],
+    ["csat","Satisfaction rating","Survey result","Satisfaction","Survey (custom)","CSAT response"],
+    ["sentiment","Intelligent triage sentiment","Freddy sentiment","— / AI add-on","Einstein sentiment","— / AI add-on"],
+    ["escalated","Linked Jira present","Linked Jira","Linked issue","Linked Jira / Escalation","Custom property"]
+  ];
+  $("#main").innerHTML = `
+  <div class="prose">
+    ${sectionTitle("Load your data")}
+    <div class="drop">
+      <div><b>Tickets CSV</b> <span class="hint">(required)</span><br><input type="file" id="fT" accept=".csv"></div>
+      <div><b>Accounts CSV</b> <span class="hint">(optional — ARR, renewal, usage, Gong)</span><br><input type="file" id="fA" accept=".csv"></div>
+      <button class="btn primary" id="loadBtn">Load files</button>
+      <button class="btn" id="sampleBtn">Back to sample data</button>
+    </div>
+    <p id="loadMsg" class="hint" style="margin-top:8px"></p>
+    <p>Files load in your browser only — nothing is uploaded anywhere. For a hosted version, commit exports to <code>data/tickets.csv</code> and <code>data/accounts.csv</code> next to <code>index.html</code>; the page picks them up automatically on GitHub Pages.</p>
+    <p><button class="btn" id="dlT">Download tickets template</button> <button class="btn" id="dlA">Download accounts template</button> <span class="hint">(pre-filled with the sample data)</span></p>
+
+    ${sectionTitle("Tickets — field mapping from common support tools")}
+    <p>Headers are matched loosely (case, spaces and punctuation ignored), so most native exports work with light renaming. Severity accepts P1–P4, Sev1–4, or Urgent/High/Normal/Low.</p>
+    <div class="card"><div class="tbl-wrap"><table class="t"><thead><tr><th>Canonical column</th><th>Zendesk</th><th>Freshdesk</th><th>Jira Service Mgmt</th><th>Salesforce Service Cloud</th><th>HubSpot Service Hub</th></tr></thead>
+      <tbody>${fm.map(r=>`<tr>${r.map((c,i)=>`<td>${i?esc(c):`<code>${esc(c)}</code>`}</td>`).join("")}</tr>`).join("")}</tbody></table></div></div>
+
+    ${sectionTitle("Accounts — where the health signals come from")}
+    <div class="card"><div class="tbl-wrap"><table class="t"><thead><tr><th>Column</th><th>Typical source</th><th>Notes</th></tr></thead><tbody>
+      <tr><td><code>account_id, account_name, segment, tier, csm</code></td><td>CRM (Salesforce / HubSpot)</td><td>Join key must match the ticket tool's organization.</td></tr>
+      <tr><td><code>arr, arr_prior_year</code></td><td>CRM / billing (Stripe, Chargebee, NetSuite)</td><td>Spend level ranks priority; YoY change feeds health.</td></tr>
+      <tr><td><code>renewal_date</code></td><td>CRM opportunity / contract</td><td>Drives renewal urgency in the priority score.</td></tr>
+      <tr><td><code>usage_trend_pct</code></td><td>Product analytics (Pendo, Amplitude, Mixpanel) or warehouse</td><td>% change in active users or key actions, last 90d vs prior 90d.</td></tr>
+      <tr><td><code>gong_sentiment</code></td><td>Gong (API or CRM sync)</td><td>Any 0–100 account-level call sentiment / engagement measure.</td></tr>
+    </tbody></table></div></div>
+
+    ${sectionTitle("How the scores work")}
+    <h3>Customer health (0–100)</h3>
+    <ul>
+      <li><b>Support sentiment</b> — 60% CSAT good-rate + 40% average ticket sentiment, last 90 days.</li>
+      <li><b>Gong sentiment</b> — as supplied (0–100).</li>
+      <li><b>Usage trend</b> — −40% or worse = 0, +20% or better = 100.</li>
+      <li><b>Spend trend</b> — ARR vs prior year, −30% = 0, +30% = 100.</li>
+      <li><b>Support friction</b> — starts at 100; minus 25 per open P1, 12 per open P2, 10 per breached ticket, 8 per ticket aged &gt;30d, 6 per escalation.</li>
+    </ul>
+    <p>Bands: 75+ Healthy · 50–74 Monitor · 30–49 At risk · &lt;30 Critical. Defaults are a starting point — calibrate against last year's churned vs. renewed accounts before relying on them.</p>
+    <h3>Account priority (0–100)</h3>
+    <p>Weighted blend of risk (100 − health), renewal urgency, ARR percentile and live issues. Default weights 45 / 25 / 20 / 10.</p>
+    <h3>Ticket priority (0–100)</h3>
+    <p>Severity (P1 40 · P2 28 · P3 14 · P4 5) + SLA risk (breached 30 · &lt;25% of target left 22 · &lt;50% left 12) + 25% of account priority + 8 if idle ${CONFIG.staleDays}+ days + 5 if sentiment is negative, scaled to 100.</p>
+    <h3>SLA targets (calendar hours)</h3>
+    <p>${SEVS.map(s=>`${s}: first reply ${fmtH(CONFIG.sla.frt[s])}, resolution ${fmtH(CONFIG.sla.res[s])}`).join(" · ")}. Edit <code>CONFIG.sla</code> at the top of the script to match your contracts. Business-hours calendars aren't modelled; if your tool exports SLA status per ticket, that's more accurate.</p>
+    <h3>Benchmarks (Sumeru reporting pack)</h3>
+    <p>SLA/SLO adherence 95% · first response under 2 hours except P1 · open cases with no activity 3+ days under 10% · open backlog at or below 1/5 of logo count.</p>
+  </div>`;
+  const readFile = f => new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsText(f); });
+  $("#loadBtn").onclick = async ()=>{
+    const ft=$("#fT").files[0], fa=$("#fA").files[0];
+    if(!ft){ $("#loadMsg").textContent="Choose a tickets CSV first."; return; }
+    try{
+      const tRows=parseCSV(await readFile(ft)); const aRows=fa?parseCSV(await readFile(fa)):[];
+      applyData(loadFromRows(tRows,aRows), ft.name+(fa?" + "+fa.name:""), new Date());
+      $("#loadMsg").textContent=`Loaded ${S.tickets.length.toLocaleString()} tickets and ${S.accounts.length.toLocaleString()} accounts.`;
+    }catch(e){ $("#loadMsg").textContent="Could not read file: "+e.message; }
+  };
+  $("#sampleBtn").onclick = ()=>{ const s=genSample(); applyData(s,"Sample data",s.now,true); };
+  $("#dlT").onclick = ()=>download("tickets.csv", toCSV(["ticket_id","account_id","account_name","product","severity","status","type","channel","group","assignee","created_at","first_reply_at","solved_at","updated_at","csat","sentiment","escalated","reopened","replies"],
+    S.tickets.map(t=>[t.id,t.accountId,t.accountName,t.product,t.sev,t.status,t.type,t.channel,t.group,t.assignee,iso(t.created),iso(t.firstReply),iso(t.solved),iso(t.updated),t.csat||"",t.sentiment??"",t.escalated,t.reopened,t.replies??""])));
+  $("#dlA").onclick = ()=>download("accounts.csv", toCSV(["account_id","account_name","segment","tier","arr","arr_prior_year","renewal_date","csm","usage_trend_pct","gong_sentiment"],
+    S.accounts.map(a=>[a.id,a.name,a.segment,a.tier,a.arr??"",a.arrPrior??"",a.renewal?fmtD(a.renewal):"",a.csm,a.usage??"",a.gong??""])));
+}
+const iso = d => d ? d.toISOString().replace(".000","") : "";
+function toCSV(head, rows){ const q=v=>{ const s=String(v??""); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }; return [head.join(",")].concat(rows.map(r=>r.map(q).join(","))).join("\n"); }
+function download(name, text){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type:"text/csv"})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500); }
+
+/* =====================================================================
+   SHELL: tabs, filters, render loop, boot
+   ===================================================================== */
+function renderTabs(){
+  $("#tabs").innerHTML = TABS.map(([k,l])=>`<button role="tab" aria-selected="${S.tab===k}" data-k="${k}">${l}</button>`).join("");
+  $("#tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{ S.tab=b.dataset.k; try{history.replaceState(null,"","#"+S.tab);}catch(e){} renderTabs(); render(); });
+}
+function renderFilters(){
+  const uniq = (arr) => ["All", ...[...new Set(arr.filter(v=>v&&v!=="—"))].sort()];
+  const opts = {
+    days: [[30,"Last 30 days"],[90,"Last 90 days"],[180,"Last 180 days"],[365,"Last 12 months"]],
+    product: uniq(S.tickets.map(t=>t.product)), sev: ["All",...SEVS], segment: uniq(S.accounts.map(a=>a.segment)),
+    tier: uniq(S.accounts.map(a=>a.tier)), group: uniq(S.tickets.map(t=>t.group)), owner: uniq(S.accounts.map(a=>a.csm))
+  };
+  const lbl = {days:"Time",product:"Product",sev:"Severity",segment:"Segment",tier:"Client tier",group:"Support group",owner:"CSM / owner"};
+  $("#filters").innerHTML = Object.keys(opts).map(k=>`<label>${lbl[k]}<select data-k="${k}">${opts[k].map(o=>{ const [v,l]=Array.isArray(o)?o:[o,o]; return `<option value="${esc(v)}" ${String(S.f[k])===String(v)?"selected":""}>${esc(l)}</option>`; }).join("")}</select></label>`).join("") + `<button class="reset" id="resetF">Reset</button>`;
+  $("#filters").querySelectorAll("select").forEach(s=>s.onchange=()=>{ S.f[s.dataset.k] = s.dataset.k==="days" ? +s.value : s.value; render(); });
+  $("#resetF").onclick=()=>{ S.f={days:90,product:"All",sev:"All",segment:"All",tier:"All",group:"All",owner:"All"}; renderFilters(); render(); };
+  $("#filters").style.display = S.tab==="setup" ? "none" : "flex";
+}
+function render(){
+  $("#filters").style.display = S.tab==="setup" ? "none" : "flex";
+  const V = view();
+  ({focus:renderFocus, overview:renderOverview, product:renderProduct, sla:renderSLA, backlog:renderBacklog, team:renderTeam, health:renderHealth, setup:renderSetup})[S.tab](V);
+}
+function applyData(d, source, now, isSample=false){
+  S.accounts=d.accounts; S.tickets=d.tickets; S.now=now; S.source=source; S.isSample=isSample; S.sort={};
+  S.f={days:90,product:"All",sev:"All",segment:"All",tier:"All",group:"All",owner:"All"};
+  enrich();
+  const b=$("#srcBadge"); b.textContent = isSample ? "Sample data · as of "+fmtD(now) : source; b.className = "badge"+(isSample?"":" live");
+  renderFilters(); render();
+}
+let rT; addEventListener("resize", ()=>{ clearTimeout(rT); rT=setTimeout(()=>{ if(S.tab!=="setup") render(); }, 200); });
+$("#themeBtn").onclick = ()=>{ const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==="dark" : matchMedia("(prefers-color-scheme: dark)").matches; r.dataset.theme = dark?"light":"dark"; try{localStorage.setItem("scc-theme",r.dataset.theme);}catch(e){} };
+try{ const th=localStorage.getItem("scc-theme"); if(th) document.documentElement.dataset.theme=th; }catch(e){}
+
+(async function boot(){
+  const h = location.hash.slice(1); if(TABS.some(t=>t[0]===h)) S.tab=h;
+  renderTabs();
+  // Try repo-hosted exports first (works on GitHub Pages / any web server), else sample data.
+  if(location.protocol.startsWith("http")){
+    try{
+      const rt = await fetch("data/tickets.csv", {cache:"no-store"});
+      if(rt.ok){
+        const tRows = parseCSV(await rt.text()); let aRows=[];
+        try{ const ra=await fetch("data/accounts.csv",{cache:"no-store"}); if(ra.ok) aRows=parseCSV(await ra.text()); }catch(e){}
+        if(tRows.length){ applyData(loadFromRows(tRows,aRows), "data/tickets.csv", new Date()); return; }
+      }
+    }catch(e){}
+  }
+  const s = genSample(); applyData(s, "Sample data", s.now, true);
+})();
+</script>
+</body>
+</html>
