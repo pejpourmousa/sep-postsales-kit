@@ -1,0 +1,767 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PS Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky filter rail + tabbed views; summary tiles first, detail below. Cool slate neutrals, deep teal accent. */
+:root{
+  --bg:#f3f5f6; --surface:#ffffff; --surface-2:#eef1f3; --ink:#10171d; --ink-2:#48525c; --muted:#7a848e;
+  --line:#e0e4e8; --line-2:#cbd2d8; --accent:#0e6b6b; --accent-ink:#ffffff; --accent-soft:#dcefee;
+  --good:#0ca30c; --good-ink:#006300; --warn:#fab219; --warn-ink:#8a5a00; --serious:#ec835a; --crit:#d03b3b; --crit-ink:#b42a2a;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7;
+  --seq0:#eef4fc; --seq1:#cde2fb; --seq2:#9ec5f4; --seq3:#5598e7; --seq4:#256abf; --seq5:#104281;
+  --shadow:0 1px 2px rgba(16,23,29,.06),0 2px 8px rgba(16,23,29,.04);
+  --f-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c1013; --surface:#151a1e; --surface-2:#1c2228; --ink:#eef2f5; --ink-2:#b5bec7; --muted:#86909a;
+  --line:#262d33; --line-2:#343c44; --accent:#3ab3ae; --accent-ink:#06201f; --accent-soft:#12302f;
+  --good-ink:#2fc22f; --warn-ink:#fab219; --crit-ink:#ef6a6a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#1f9a1f; --s7:#9085e9;
+  --seq0:#18222e; --seq1:#16304f; --seq2:#184f95; --seq3:#256abf; --seq4:#5598e7; --seq5:#9ec5f4;
+  --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1013; --surface:#151a1e; --surface-2:#1c2228; --ink:#eef2f5; --ink-2:#b5bec7; --muted:#86909a;
+  --line:#262d33; --line-2:#343c44; --accent:#3ab3ae; --accent-ink:#06201f; --accent-soft:#12302f;
+  --good-ink:#2fc22f; --warn-ink:#fab219; --crit-ink:#ef6a6a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#1f9a1f; --s7:#9085e9;
+  --seq0:#18222e; --seq1:#16304f; --seq2:#184f95; --seq3:#256abf; --seq4:#5598e7; --seq5:#9ec5f4;
+  --shadow:none; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45}
+.wrap{max-width:1440px;margin:0 auto;padding-inline:20px;padding-block:16px 48px}
+h1,h2,h3{margin:0;text-wrap:balance}
+button,select{font:inherit;color:inherit}
+.num,td.n,.mono{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono)}
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:26px;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--ink-2);max-width:70ch;margin-top:4px}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-2);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--ink-2);white-space:nowrap}
+.chip.sample{border-color:var(--warn);color:var(--warn-ink)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+/* filter bar */
+.filters{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding-block:10px;margin-top:12px;border-bottom:1px solid var(--line)}
+.frow{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.flabel{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-right:4px}
+.seg{display:inline-flex;flex-wrap:wrap;background:var(--surface-2);border-radius:8px;padding:2px;gap:2px}
+.seg button{border:0;background:transparent;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--ink-2);white-space:nowrap}
+.seg button:hover{background:var(--surface)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:var(--shadow);outline:1px solid var(--line-2)}
+.seg .sep{width:1px;background:var(--line-2);margin:4px 2px}
+select{background:var(--surface);border:1px solid var(--line-2);border-radius:7px;padding:5px 8px;font-size:13px;cursor:pointer}
+button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tabs{display:flex;gap:2px;margin-top:10px;overflow-x:auto;scrollbar-width:none}
+.tabs button{border:0;background:none;padding:8px 12px;border-bottom:2px solid transparent;cursor:pointer;font-weight:500;color:var(--ink-2);white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.tabs button .tn{font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-right:6px}
+/* sections */
+.view{display:grid;gap:14px;margin-top:16px}
+.vhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:10px}
+.vhead h2{font-size:19px;font-weight:650}
+.vhead p{margin:2px 0 0;color:var(--ink-2);max-width:80ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.panel h3{font-size:14px;font-weight:650}
+.panel .ph{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.panel .ph small{color:var(--muted);font-size:12px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g-side{grid-template-columns:280px minmax(0,1fr)}
+.g-2-1{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+@media (max-width:1000px){.g2,.g3,.g-side,.g-2-1{grid-template-columns:minmax(0,1fr)}}
+/* KPI tiles */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 13px;min-width:0}
+.kpi .k{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;gap:6px;align-items:center}
+.kpi .v{font-size:25px;font-weight:650;letter-spacing:-.01em;margin-top:2px;line-height:1.15}
+.kpi .d{font-size:12px;color:var(--ink-2);margin-top:2px}
+.up{color:var(--good-ink)} .down{color:var(--crit-ink)} .warnt{color:var(--warn-ink)}
+.kpi.flag-r{box-shadow:inset 3px 0 0 var(--crit)} .kpi.flag-a{box-shadow:inset 3px 0 0 var(--warn)} .kpi.flag-g{box-shadow:inset 3px 0 0 var(--good)}
+/* pills */
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
+.pill.G{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good-ink)}
+.pill.A{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn-ink)}
+.pill.R{background:color-mix(in srgb,var(--crit) 15%,transparent);color:var(--crit-ink)}
+.pill.X{background:var(--surface-2);color:var(--ink-2)}
+.pill .ic{font-size:10px}
+.tag{font-size:11px;color:var(--ink-2);background:var(--surface-2);border-radius:4px;padding:1px 6px;white-space:nowrap}
+/* tables */
+.tw{overflow-x:auto;margin-inline:-4px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:7px 8px;border-bottom:1px solid var(--line-2);white-space:nowrap;background:var(--surface)}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
+tfoot td{font-weight:650;border-top:1px solid var(--line-2);border-bottom:0}
+.bar{height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.bar.over i{background:var(--crit)}
+.chart{position:relative;height:280px}
+.chart.sm{height:220px}.chart.lg{height:320px}
+/* portfolio side */
+.donut{position:relative;height:170px}
+.donut .c{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none}
+.donut .c b{font-size:28px;display:block;line-height:1}
+.donut .c span{font-size:11px;color:var(--muted)}
+.ragbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.ragbtns button{border:1px solid var(--line-2);background:var(--surface);border-radius:8px;padding:6px 4px;cursor:pointer;text-align:center}
+.ragbtns button b{display:block;font-size:18px}
+.ragbtns button span{font-size:11px;color:var(--ink-2)}
+.ragbtns button[aria-pressed="true"]{outline:2px solid var(--accent)}
+.side-sec{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.side-sec h4{margin:0 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.att{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.att li{display:flex;justify-content:space-between;gap:8px;font-size:13px;cursor:pointer;padding:4px 6px;border-radius:6px}
+.att li:hover{background:var(--surface-2)}
+.aging{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}
+.aging div{background:var(--surface-2);border-radius:8px;padding:6px}
+.aging b{display:block;font-size:18px}
+.aging span{font-size:11px;color:var(--ink-2)}
+/* gantt */
+.gantt{min-width:780px}
+.grow{display:grid;grid-template-columns:230px 1fr;align-items:center;border-bottom:1px solid var(--line);min-height:30px;cursor:pointer}
+.grow:hover{background:var(--surface-2)}
+.grow .gl{display:flex;gap:7px;align-items:center;padding:4px 8px 4px 2px;font-size:12.5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.grow .gl span{overflow:hidden;text-overflow:ellipsis}
+.gtrack{position:relative;height:30px}
+.gbar{position:absolute;top:8px;height:14px;border-radius:4px;overflow:hidden}
+.gbar i{position:absolute;inset:0 auto 0 0;display:block}
+.gbase{position:absolute;top:5px;width:2px;height:20px;background:var(--ink-2);opacity:.55}
+.gend{position:absolute;top:7px;font-size:11px;color:var(--ink-2);white-space:nowrap;padding-left:6px}
+.ghead{display:grid;grid-template-columns:230px 1fr;position:sticky;top:0;background:var(--surface);z-index:2;border-bottom:1px solid var(--line-2)}
+.gmonths{position:relative;height:26px}
+.gmonths span{position:absolute;top:6px;font-size:11px;color:var(--muted);transform:translateX(-50%);white-space:nowrap}
+.gtoday{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed var(--accent);z-index:1;pointer-events:none}
+.gtoday b{position:absolute;top:-2px;left:4px;font-size:10px;color:var(--accent);white-space:nowrap}
+.gbody{position:relative;max-height:560px;overflow-y:auto}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:10px;border-radius:3px;display:inline-block}
+/* cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
+.pcard{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface);cursor:pointer;display:grid;gap:8px;text-align:left}
+.pcard:hover{border-color:var(--line-2);background:var(--surface-2)}
+.pcard .t{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.pcard .t b{font-size:14px}
+.pcard .row{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-2);gap:8px}
+.pcard p{margin:0;font-size:12.5px;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(8,12,16,.35);z-index:40}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--surface);z-index:41;border-left:1px solid var(--line-2);overflow-y:auto;padding:calc(18px + env(safe-area-inset-top,0px)) 20px calc(24px + env(safe-area-inset-bottom,0px))}
+.drawer .x{position:absolute;right:14px;top:calc(14px + env(safe-area-inset-top,0px));border:1px solid var(--line-2);background:var(--surface);border-radius:7px;padding:3px 10px;cursor:pointer}
+.drawer h2{font-size:20px;padding-right:60px}
+.dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;margin:12px 0}
+.dl div{border-bottom:1px solid var(--line);padding-bottom:6px}
+.dl dt{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.dl dd{margin:0;font-weight:600}
+.factors{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
+.factors div{background:var(--surface-2);border-radius:8px;padding:6px 8px;font-size:12px}
+.factors b{display:block;margin-top:2px}
+.upd{border-left:2px solid var(--line-2);padding:2px 0 8px 12px;margin-left:4px}
+.upd .dt{font-size:12px;color:var(--muted)}
+.upd p{margin:3px 0;font-size:13px}
+.upd p b{font-weight:600}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600}
+.btn.ghost{background:transparent;color:var(--accent)}
+/* heatmap */
+.heat td.h{text-align:center;font-size:12px;font-variant-numeric:tabular-nums;border:2px solid var(--surface);border-radius:4px;padding:8px 4px}
+.note{font-size:12px;color:var(--muted)}
+.callout{background:var(--accent-soft);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--ink)}
+.defs td:first-child{font-weight:600;white-space:nowrap}
+.defs td{vertical-align:top}
+@media (max-width:640px){
+  .wrap{padding-inline:16px}
+  h1{font-size:22px}
+  .factors{grid-template-columns:repeat(2,1fr)}
+  .kpi .v{font-size:21px}
+}
+@media (prefers-reduced-motion:no-preference){.drawer{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
+</style>
+</head><body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Professional Services · Portfolio company template</div>
+      <h1>PS Command Center</h1>
+      <p class="sub">One place for PS leads to run the portfolio, utilisation, project financials, delivery operations and the services forecast. Figures in USD. Filters apply to every view unless noted.</p>
+    </div>
+    <div class="meta">
+      <span class="chip sample"><span class="dot" style="background:var(--warn)"></span>Anonymised sample data</span>
+      <span class="chip">Actuals to 30 Sep 2026</span>
+      <span class="chip">Forecast Oct 2026 – Dec 2027</span>
+      <span class="chip">Source: PSA (Kantata) + GL</span>
+    </div>
+  </header>
+
+  <div class="filters">
+    <div class="frow">
+      <div><span class="flabel">Engagement</span>
+        <div class="seg" id="f-eng" role="group" aria-label="Engagement type">
+          <button data-v="all" aria-pressed="true">All</button>
+          <button data-v="impl">Implementation</button>
+          <button data-v="ps">PS (non-implementation)</button>
+          <span class="sep"></span>
+          <button data-v="cr">Change requests</button>
+          <button data-v="adv">Advisory</button>
+          <button data-v="ms">Managed services</button>
+        </div>
+      </div>
+      <label><span class="flabel">Product</span>
+        <select id="f-prod"><option value="all">All products</option></select></label>
+      <label><span class="flabel">Region</span>
+        <select id="f-reg"><option value="all">All regions</option></select></label>
+    </div>
+    <nav class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-t="portfolio" aria-selected="true"><span class="tn">1</span>Portfolio</button>
+      <button role="tab" data-t="util"><span class="tn">2</span>Utilisation</button>
+      <button role="tab" data-t="project"><span class="tn">3</span>Project</button>
+      <button role="tab" data-t="ops"><span class="tn">4</span>Operations</button>
+      <button role="tab" data-t="forecast"><span class="tn">5</span>Forecast</button>
+      <button role="tab" data-t="defs"><span class="tn">i</span>KPI definitions</button>
+    </nav>
+  </div>
+
+  <!-- 1 PORTFOLIO -->
+  <section class="view" id="v-portfolio">
+    <div class="vhead"><div><h2>Project portfolio</h2><p>Health, schedule and financials for every active engagement. Open a project for its weekly updates and health drivers.</p></div>
+      <div class="seg" id="p-view"><button data-v="gantt" aria-pressed="true">Timeline</button><button data-v="cards">Project cards</button><button data-v="table">Table</button></div>
+    </div>
+    <div class="kpis" id="p-kpis"></div>
+    <div class="grid g-side">
+      <aside class="panel">
+        <h3>Portfolio health</h3>
+        <div class="donut"><canvas id="c-donut" aria-label="Health mix"></canvas><div class="c"><div><b id="p-score">–</b><span>health score</span></div></div></div>
+        <div class="ragbtns" id="p-rag"></div>
+        <div class="side-sec"><h4>Needs attention</h4><ul class="att" id="p-att"></ul></div>
+        <div class="side-sec"><h4>Implementations delayed vs baseline</h4><div class="aging" id="p-aging"></div></div>
+        <div class="side-sec"><h4>Backlog aging (remaining revenue)</h4><div class="aging" id="p-backlog"></div></div>
+      </aside>
+      <div class="panel" id="p-main"></div>
+    </div>
+  </section>
+
+  <!-- 2 UTILISATION -->
+  <section class="view" id="v-util" hidden>
+    <div class="vhead"><div><h2>Utilisation</h2><p>Internal delivery team, individual and portfolio level. Capacity is 140 hours per person per month. Engagement filters do not apply to people metrics.</p></div>
+      <div class="frow">
+        <div class="seg" id="u-per"><button data-v="ytd" aria-pressed="true">YTD</button><button data-v="q1">Q1</button><button data-v="q2">Q2</button><button data-v="q3">Q3</button><button data-v="l3">Last 3 mo</button></div>
+        <select id="u-role"><option value="all">All roles</option></select>
+      </div>
+    </div>
+    <div class="kpis" id="u-kpis"></div>
+    <div class="grid g-2-1">
+      <div class="panel"><div class="ph"><h3>Utilisation by month</h3><small>2026 · dashed = forecast</small></div><div class="chart"><canvas id="c-util"></canvas></div></div>
+      <div class="panel"><div class="ph"><h3>Billable utilisation by role</h3><small>by month</small></div><div class="tw"><table class="heat" id="u-heat"></table></div></div>
+    </div>
+    <div class="panel"><div class="ph"><h3>Individual utilisation</h3><small>sorted by billable utilisation · target 75%</small></div><div class="tw"><table id="u-table"></table></div></div>
+  </section>
+
+  <!-- 3 PROJECT -->
+  <section class="view" id="v-project" hidden>
+    <div class="vhead"><div><h2 id="pj-title">Project dashboard</h2><p id="pj-sub"></p></div>
+      <label><span class="flabel">Project</span><select id="pj-sel"></select></label>
+    </div>
+    <div class="kpis" id="pj-kpis"></div>
+    <div class="grid g-2-1">
+      <div class="panel"><div class="ph"><h3>Hours burn</h3><small>cumulative · baseline vs actual vs forecast</small></div><div class="chart"><canvas id="c-burn"></canvas></div></div>
+      <div class="panel"><div class="ph"><h3>Resourcing</h3><small>allocated vs actual hours</small></div><div class="tw"><table id="pj-res"></table></div></div>
+    </div>
+    <div class="panel"><div class="ph"><h3>Task tracker</h3><small>milestones and tasks</small></div><div class="tw"><table id="pj-tasks"></table></div></div>
+    <div class="panel"><div class="ph"><h3>Activity</h3><small>latest weekly status reports</small></div><div id="pj-act"></div></div>
+  </section>
+
+  <!-- 4 OPS -->
+  <section class="view" id="v-ops" hidden>
+    <div class="vhead"><div><h2>PS operations</h2><p>Who does the work, how much of it is billable, and where non-billable effort goes. FTE = project hours ÷ 130 hours per month.</p></div></div>
+    <div class="kpis" id="o-kpis"></div>
+    <div class="grid g2">
+      <div class="panel"><div class="ph"><h3>FTE on PS projects by delivery source</h3><small>2026 · lighter = forecast</small></div><div class="chart"><canvas id="c-fte"></canvas></div></div>
+      <div class="panel"><div class="ph"><h3>Billable vs non-billable hours</h3><small>internal team · 2026 YTD</small></div><div class="chart"><canvas id="c-bill"></canvas></div></div>
+    </div>
+    <div class="grid g2">
+      <div class="panel"><div class="ph"><h3>Partner utilisation</h3><small>2026 YTD</small></div><div class="tw"><table id="o-partner"></table></div></div>
+      <div class="panel"><div class="ph"><h3>Non-billable time by activity</h3><small>internal team · 2026 YTD hours</small></div><div class="chart sm"><canvas id="c-nbact"></canvas></div></div>
+    </div>
+    <div class="panel"><div class="ph"><h3>Non-billable hours by project</h3><small>unrecoverable effort on active projects</small></div><div class="tw"><table id="o-nbproj"></table></div></div>
+  </section>
+
+  <!-- 5 FORECAST -->
+  <section class="view" id="v-forecast" hidden>
+    <div class="vhead"><div><h2>PS forecast</h2><p>Services revenue, delivery cost and margin at macro and customer level. Actuals through Sep 2026, forecast thereafter, against budget and prior year.</p></div>
+      <div class="frow">
+        <div class="seg" id="fc-year"><button data-v="2025">2025</button><button data-v="2026" aria-pressed="true">2026</button><button data-v="2027">2027 fcst</button></div>
+        <div class="seg" id="fc-per"><button data-v="fy" aria-pressed="true">FY</button><button data-v="h1">H1</button><button data-v="h2">H2</button><button data-v="q1">Q1</button><button data-v="q2">Q2</button><button data-v="q3">Q3</button><button data-v="q4">Q4</button></div>
+      </div>
+    </div>
+    <div class="kpis" id="fc-kpis"></div>
+    <div class="grid g2">
+      <div class="panel"><div class="ph"><h3>Monthly revenue by engagement type</h3><small>lighter = forecast</small></div><div class="chart"><canvas id="c-rev"></canvas></div></div>
+      <div class="panel"><div class="ph"><h3>Monthly gross margin vs budget</h3><small>dashed = forecast</small></div><div class="chart"><canvas id="c-gm"></canvas></div></div>
+    </div>
+    <div class="panel"><div class="ph"><h3>PS P&amp;L by engagement type</h3><small>revenue = actual + forecast in period</small></div><div class="tw"><table id="fc-pl"></table></div></div>
+    <div class="panel"><div class="ph"><h3>Customer view</h3><small>top customers by services revenue in period</small></div><div class="tw"><table id="fc-cust"></table></div></div>
+  </section>
+
+  <!-- DEFS -->
+  <section class="view" id="v-defs" hidden>
+    <div class="vhead"><div><h2>KPI definitions and benchmarks</h2><p>Aligned to the Sumeru consolidated operating KPI pack (Professional Services and Onboarding Effectiveness tabs). Benchmarks from SPI Research's 2025/2026 PS Maturity Benchmark.</p></div></div>
+    <div class="panel"><div class="tw"><table class="defs" id="d-table"></table></div></div>
+    <div class="grid g2">
+      <div class="panel"><h3>Dashboard map</h3><div class="tw" style="margin-top:8px"><table id="d-map"></table></div></div>
+      <div class="panel"><h3>Connecting live data</h3>
+        <p class="note" style="font-size:13px;color:var(--ink-2)">This page runs on an embedded sample dataset shaped like a Kantata export. To make it live, replace the <span class="mono">DATA</span> block with records from these sources:</p>
+        <div class="tw"><table id="d-src"></table></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="drawer-root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+/* ============ SAMPLE DATA (deterministic, anonymised) ============ */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=mulberry32(20260930);
+const rnd=(a,b)=>a+R()*(b-a), rint=(a,b)=>Math.floor(rnd(a,b+1)), pick=a=>a[Math.floor(R()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const DAY=864e5, TODAY=new Date(2026,8,30);
+const M0=new Date(2024,0,1); const NM=48; // Jan 2024 .. Dec 2027
+const TODAY_M=(2026-2024)*12+8; // Sep 2026 = last actual month
+const mDate=i=>new Date(2024,i,1);
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const mLabel=i=>MON[i%12];
+const addDays=(d,n)=>new Date(d.getTime()+n*DAY);
+const fmtDate=d=>d.getDate()+' '+MON[d.getMonth()]+' '+String(d.getFullYear()).slice(2);
+
+const TYPES={impl:{label:'Implementation',grp:'impl',margin:.40,bud:[140e3,620e3],dur:[5,11]},
+  cr:{label:'Change request',grp:'ps',margin:.52,bud:[18e3,110e3],dur:[1,4]},
+  adv:{label:'Advisory',grp:'ps',margin:.46,bud:[30e3,170e3],dur:[2,6]},
+  ms:{label:'Managed services',grp:'ps',margin:.36,bud:[70e3,240e3],dur:[12,12]}};
+const TYPE_KEYS=['impl','cr','adv','ms'];
+const PRODUCTS=['Core Platform','Analytics Suite','Integration Hub'];
+const REGIONS=['North America','EMEA','APAC'];
+const PARTNERS=['Partner A','Partner B','Partner C','Partner D','Partner E'];
+const CUSTOMERS=['Aster','Birch','Cobalt','Dune','Ember','Fjord','Garnet','Harbor','Iris','Juniper','Kestrel','Lumen','Maple','Nimbus','Onyx','Pine','Quartz','Raven','Sierra','Tundra','Umber','Vale','Willow','Yarrow','Zephyr','Alder','Basalt','Cedar','Delta','Echo','Flint','Glade','Heron','Indigo'].map(n=>n+' Co.');
+const PMS=['PM-01','PM-02','PM-03','PM-04','PM-05','PM-06'];
+const RATE=95, PRATE=110; // blended internal / partner cost per hour
+
+function spread(start,end,total){ // monthly allocation by day overlap
+  const arr=new Array(NM).fill(0); const span=Math.max(1,(end-start)/DAY);
+  for(let i=0;i<NM;i++){const a=mDate(i),b=mDate(i+1);const o=(Math.min(b,end)-Math.max(a,start))/DAY;if(o>0)arr[i]=total*o/span;}
+  return arr;
+}
+const PROJECTS=[]; const typeBag=['impl','impl','impl','impl','cr','cr','cr','adv','adv','ms'];
+const projCount={};
+for(let i=0;i<78;i++){
+  const type=pick(typeBag), T=TYPES[type];
+  const cust=pick(CUSTOMERS);
+  const recency=Math.pow(R(),.62); // skew to recent starts
+  const start=addDays(new Date(2024,9,1),Math.floor(recency*((TODAY-new Date(2024,9,1))/DAY-6)));
+  const durM=rnd(T.dur[0],T.dur[1]); const baseEnd=addDays(start,Math.round(durM*30.4));
+  const sr=R(); const slip= sr<.55?0: sr<.82? rint(8,40) : rint(45,120);
+  const end=addDays(baseEnd,slip);
+  const budget=Math.round(rnd(T.bud[0],T.bud[1])/1000)*1000;
+  const tMargin=clamp(T.margin+rnd(-.06,.05),.2,.65);
+  const costBudget=budget*(1-tMargin);
+  const orr=R(); const overrun= orr<.55? rnd(-.06,.04) : orr<.85? rnd(.05,.2) : rnd(.2,.42);
+  const costFcst=costBudget*(1+overrun);
+  const internal= type==='impl'? rnd(.45,1): type==='ms'? rnd(.8,1): rnd(.65,1);
+  const partner=pick(PARTNERS);
+  const pm=pick(PMS); const product=pick(PRODUCTS), region=pick(REGIONS);
+  const status= end<TODAY? 'closed':'active';
+  const pct= clamp((TODAY-start)/(end-start),0,1);
+  const sentiment= clamp(Math.round(4.4-overrun*6-slip/60+rnd(-.8,.6)),1,5);
+  const crCount= type==='impl'? rint(0,4):0;
+  let score=Math.round(clamp(100-Math.max(0,overrun)*140-slip*0.32-(5-sentiment)*6+rnd(-4,4),18,99));
+  const health= score>=74?'G':score>=56?'A':'R';
+  projCount[cust]=(projCount[cust]||0)+1;
+  const name= type==='cr'? `${cust.replace(' Co.','')} — CR #${projCount[cust]}` : `${cust.replace(' Co.','')} — ${T.label}`;
+  const rev=spread(start,end,budget), cost=spread(start,end,costFcst), plan=spread(start,baseEnd,budget), planCost=spread(start,baseEnd,costBudget);
+  const hoursFcst=costFcst/RATE, hoursBud=costBudget/RATE;
+  const hoursTD=hoursFcst*pct;
+  const nonBill= type==='impl'||type==='adv' ? Math.max(0,hoursTD-hoursBud*pct) : 0;
+  const lastUpd=rint(1,16);
+  const ttv= type==='impl'? Math.round((durM*4.35)*rnd(.42,.6)+slip/7) : null;
+  PROJECTS.push({id:'P'+String(1001+i),name,cust,type,product,region,pm,partner,internal,start,baseEnd,end,slip,budget,costBudget,costFcst,overrun,tMargin,status,pct,
+    sentiment,crCount,score,health,rev,cost,plan,planCost,hoursFcst,hoursBud,hoursTD,nonBill,lastUpd,ttv,
+    nbReason:pick(['Scope absorbed','Rework after UAT','Data quality fixes','Warranty support','Estimation gap']),
+    risk:pick(['Customer data readiness','Integration dependency on client IT','Key-user availability','Scope creep in reporting','Third-party API limits','Change in client sponsor','Test environment delays'])});
+}
+// consultants
+const ROLES={'Solution Architect':.70,'Business Consultant':.61,'Consultant':.74,'Project Manager':.57,'Technical Consultant':.71};
+const PEOPLE=[]; const roleBag=['Solution Architect','Solution Architect','Business Consultant','Business Consultant','Business Consultant','Consultant','Consultant','Consultant','Consultant','Consultant','Consultant','Project Manager','Project Manager','Project Manager','Technical Consultant','Technical Consultant','Technical Consultant','Technical Consultant'];
+const CAP=140;
+for(let i=0;i<26;i++){
+  const role=i<roleBag.length?roleBag[i]:pick(Object.keys(ROLES)); const base=ROLES[role]+rnd(-.12,.1);
+  const m={};
+  for(let k=12;k<36;k++){ // 2025-2026
+    const season= (k%12===7? -.1 : k%12===11? -.06 : k%12===0? -.03 : 0);
+    const bill=clamp(base+season+rnd(-.07,.07),.2,.98);
+    const prod=clamp(bill+rnd(.04,.12),bill,1.05);
+    const tot=clamp(prod+rnd(.2,.32),prod,1.15);
+    const fc=clamp(bill+rnd(.06,.16),0,1);
+    m[k]={bill,prod,tot,fc};
+  }
+  PEOPLE.push({id:'C-'+String(i+1).padStart(2,'0'),role,region:pick(REGIONS),m});
+}
+const NB_ACT=[['Pre-sales support',.22],['Admin & internal meetings',.20],['Internal projects',.17],['Rework & warranty',.15],['Training & enablement',.14],['Bench / unassigned',.12]];
+
+/* ============ STATE & FILTERS ============ */
+const S={eng:'all',prod:'all',reg:'all',tab:'portfolio',pview:'gantt',rag:null,uper:'ytd',urole:'all',proj:null,fyear:2026,fper:'fy'};
+function engMatch(t){return S.eng==='all'||(S.eng==='impl'&&t==='impl')||(S.eng==='ps'&&t!=='impl')||S.eng===t}
+const filtered=()=>PROJECTS.filter(p=>engMatch(p.type)&&(S.prod==='all'||p.product===S.prod)&&(S.reg==='all'||p.region===S.reg));
+const active=()=>filtered().filter(p=>p.status==='active');
+const activeTypes=()=>TYPE_KEYS.filter(engMatch);
+
+/* ============ FORMAT HELPERS ============ */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function money(v,dp){const a=Math.abs(v),s=v<0?'−':'';if(a>=1e6)return s+'$'+(a/1e6).toFixed(dp??(a>=1e7?1:2))+'M';if(a>=1e3)return s+'$'+(a/1e3).toFixed(dp??0)+'K';return s+'$'+a.toFixed(0)}
+const pct=(v,dp=1)=>(v*100).toFixed(dp)+'%';
+const num=v=>Math.round(v).toLocaleString('en-US');
+const sum=a=>a.reduce((x,y)=>x+y,0);
+const median=a=>{if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+const HL={G:'On track',A:'Watch',R:'At risk'}, HIC={G:'●',A:'▲',R:'◆'};
+const pill=h=>`<span class="pill ${h}"><span class="ic" aria-hidden="true">${HIC[h]}</span>${HL[h]}</span>`;
+const delta=(v,good=true,fmt=pct)=>{const cls=(v>=0)===good?'up':'down';return `<span class="${cls}">${v>=0?'▲ +':'▼ '}${fmt(v)}</span>`};
+function kpi(k,v,d='',flag=''){return `<div class="kpi ${flag}"><div class="k">${k}</div><div class="v">${v}</div>${d?`<div class="d">${d}</div>`:''}</div>`}
+
+/* ============ CHART HELPERS ============ */
+const charts={};
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const alpha=(hex,a)=>hex+Math.round(a*255).toString(16).padStart(2,'0');
+function chartBase(){Chart.defaults.font.family=css('--f-body')||'system-ui';Chart.defaults.font.size=12;Chart.defaults.color=css('--muted');Chart.defaults.borderColor=css('--line');
+  Chart.defaults.plugins.tooltip.backgroundColor=css('--ink');Chart.defaults.plugins.tooltip.titleColor=css('--surface');Chart.defaults.plugins.tooltip.bodyColor=css('--surface');
+  Chart.defaults.plugins.tooltip.padding=9;Chart.defaults.plugins.tooltip.cornerRadius=6;Chart.defaults.plugins.tooltip.boxPadding=4;
+  Chart.defaults.plugins.legend.labels.usePointStyle=true;Chart.defaults.plugins.legend.labels.pointStyle='rectRounded';Chart.defaults.plugins.legend.labels.boxWidth=10;Chart.defaults.plugins.legend.labels.boxHeight=8;Chart.defaults.plugins.legend.labels.color=css('--ink-2');
+  Chart.defaults.maintainAspectRatio=false;Chart.defaults.animation=matchMedia('(prefers-reduced-motion: reduce)').matches?false:{duration:300};}
+function mk(id,cfg){if(charts[id])charts[id].destroy();const el=document.getElementById(id);if(!el)return;charts[id]=new Chart(el,cfg)}
+const gridY=(fmt,extra={})=>({grid:{color:css('--line')},border:{display:false},ticks:{callback:fmt,maxTicksLimit:6},...extra});
+const gridX=(extra={})=>({grid:{display:false},border:{color:css('--line-2')},...extra});
+const SER=()=>['--s1','--s2','--s3','--s4','--s5','--s6','--s7'].map(css);
+const TYPE_COLOR=()=>{const s=SER();return {impl:s[0],cr:s[1],adv:s[2],ms:s[3]}};
+
+/* ============ 1 PORTFOLIO ============ */
+function renderPortfolio(){
+  const all=active(); const list=S.rag? all.filter(p=>p.health===S.rag):all;
+  const closedRecent=filtered().filter(p=>p.status==='closed'&&(TODAY-p.end)/DAY<=90).length;
+  const over=all.filter(p=>p.overrun>.03), overdue=all.filter(p=>p.baseEnd<TODAY);
+  const revF=sum(all.map(p=>p.budget)), costF=sum(all.map(p=>p.costFcst)); const gm=revF?1-costF/revF:0;
+  const overAmt=sum(over.map(p=>p.costFcst-p.costBudget));
+  const ttvs=filtered().filter(p=>p.ttv&&(p.status==='closed'||p.pct>.6)).map(p=>p.ttv);
+  const backlog=sum(all.map(p=>sum(p.rev.slice(TODAY_M+1))));
+  const impl=all.filter(p=>p.type==='impl');
+  const avgImpl=impl.length? sum(impl.map(p=>(TODAY-p.start)/DAY/30.4))/impl.length:0;
+  const score=all.length?Math.round(sum(all.map(p=>p.score))/all.length):0;
+  $('#p-kpis').innerHTML=[
+    kpi('Active projects',all.length,`${closedRecent} closed in last 90 days`),
+    kpi('Over budget',over.length,`${money(overAmt)} forecast cost overrun`,over.length?'flag-r':''),
+    kpi('Overdue vs baseline',overdue.length,`${all.filter(p=>p.slip>0).length} with slipped end date`,overdue.length?'flag-a':''),
+    kpi('Blended forecast GM',pct(gm,0),`${gm>=.40?'<span class="up">at or above</span>':'<span class="down">below</span>'} 40% target · SPI avg 37.7%`),
+    kpi('Median time to value',ttvs.length?Math.round(median(ttvs))+'w':'–','implementations, kick-off to first value'),
+    kpi('Customers in implementation',new Set(impl.map(p=>p.cust)).size,`avg ${avgImpl.toFixed(1)} months since start`),
+    kpi('Backlog',money(backlog),'unrecognised revenue on active work')
+  ].join('');
+  // donut
+  const cnt={G:0,A:0,R:0}; all.forEach(p=>cnt[p.health]++);
+  $('#p-score').textContent=score||'–';
+  mk('c-donut',{type:'doughnut',data:{labels:['At risk','Watch','On track'],datasets:[{data:[cnt.R,cnt.A,cnt.G],backgroundColor:[css('--crit'),css('--warn'),css('--good')],borderColor:css('--surface'),borderWidth:2,hoverOffset:3}]},
+    options:{cutout:'72%',plugins:{legend:{display:false}},onClick:(e,els)=>{if(els.length){const h=['R','A','G'][els[0].index];S.rag=S.rag===h?null:h;renderPortfolio()}}}});
+  $('#p-rag').innerHTML=['R','A','G'].map(h=>`<button data-h="${h}" aria-pressed="${S.rag===h}"><b>${cnt[h]}</b><span>${pill(h)}</span></button>`).join('');
+  $('#p-rag').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.rag=S.rag===b.dataset.h?null:b.dataset.h;renderPortfolio()});
+  const att=[...all].sort((a,b)=>a.score-b.score).filter(p=>p.health!=='G'||p.lastUpd>10).slice(0,6);
+  $('#p-att').innerHTML=att.map(p=>`<li data-id="${p.id}"><span>${esc(p.name)}</span><span class="note">${p.health!=='G'?(p.overrun>.03?'+'+pct(p.overrun,0)+' cost':p.slip+'d slip'):'stale report'}</span></li>`).join('')||'<li class="note">Nothing flagged</li>';
+  $('#p-att').querySelectorAll('li[data-id]').forEach(li=>li.onclick=()=>openDrawer(li.dataset.id));
+  const dl=impl.filter(p=>p.slip>0);
+  $('#p-aging').innerHTML=[['≤30 days',dl.filter(p=>p.slip<=30).length],['31–60 days',dl.filter(p=>p.slip>30&&p.slip<=60).length],['60+ days',dl.filter(p=>p.slip>60).length]].map(([l,v])=>`<div><b>${v}</b><span>${l}</span></div>`).join('');
+  const bk=[0,0,0]; all.forEach(p=>p.rev.forEach((v,i)=>{if(i>TODAY_M){const o=i-TODAY_M;bk[o<=6?0:o<=12?1:2]+=v}}));
+  $('#p-backlog').innerHTML=[['0–6 mo',bk[0]],['6–12 mo',bk[1]],['12+ mo',bk[2]]].map(([l,v])=>`<div><b>${money(v)}</b><span>${l} · ${backlog?pct(v/backlog,0):'0%'}</span></div>`).join('');
+  // main
+  const main=$('#p-main');
+  const sorted=[...list].sort((a,b)=>a.end-b.end);
+  const ragNote=S.rag?`<span class="chip">Showing ${HL[S.rag]} only <button class="btn ghost" style="padding:0 6px;border:0" id="clr-rag">clear</button></span>`:'';
+  if(S.pview==='gantt'){
+    const g0=new Date(2025,6,1), g1=new Date(2027,5,30), span=g1-g0; const x=d=>clamp((d-g0)/span*100,0,100);
+    let months=''; for(let i=0;i<24;i+=2){const d=new Date(2025,6+i,1);months+=`<span style="left:${x(d)}%">${MON[d.getMonth()]} ${String(d.getFullYear()).slice(2)}</span>`}
+    const rows=sorted.map(p=>{const c=p.health==='G'?css('--good'):p.health==='A'?css('--warn'):css('--crit');
+      const l=x(p.start),w=Math.max(.6,x(p.end)-l);
+      return `<div class="grow" data-id="${p.id}" tabindex="0" role="button" aria-label="${esc(p.name)}"><div class="gl"><span class="dot" style="background:${c}"></span><span>${esc(p.name)}</span></div>
+      <div class="gtrack"><div class="gbar" style="left:${l}%;width:${w}%;background:${alpha(c,.28)}"><i style="width:${p.pct*100}%;background:${alpha(c,.85)}"></i></div>
+      ${p.slip>0?`<div class="gbase" style="left:${x(p.baseEnd)}%" title="Baseline end ${fmtDate(p.baseEnd)}"></div>`:''}
+      <div class="gend" style="left:${l+w}%">${fmtDate(p.end)}${p.baseEnd<TODAY?' · <span class="down">overdue</span>':''}</div></div></div>`}).join('');
+    main.innerHTML=`<div class="ph"><h3>Project timeline</h3><div class="legend">${ragNote}<span><span class="sw" style="background:${alpha(css('--ink-2'),.8)}"></span>% complete</span><span><span class="sw" style="width:2px;background:var(--ink-2)"></span>baseline end</span><span><span class="sw" style="width:0;border-left:1.5px dashed var(--accent);height:12px;border-radius:0"></span>today</span></div></div>
+      <div class="tw"><div class="gantt"><div class="ghead"><div class="note" style="padding:6px 2px">${sorted.length} projects · by end date</div><div class="gmonths">${months}</div></div>
+      <div class="gbody"><div style="position:absolute;left:230px;right:0;top:0;bottom:0;pointer-events:none"><div class="gtoday" style="left:${x(TODAY)}%"></div></div>${rows||'<p class="note">No projects match these filters.</p>'}</div></div></div>`;
+    main.querySelectorAll('.grow').forEach(r=>{r.onclick=()=>openDrawer(r.dataset.id);r.onkeydown=e=>{if(e.key==='Enter')openDrawer(r.dataset.id)}});
+  } else if(S.pview==='cards'){
+    main.innerHTML=`<div class="ph"><h3>Project cards</h3><div class="legend">${ragNote}<span class="note">sorted by health score, lowest first</span></div></div><div class="cards">${[...list].sort((a,b)=>a.score-b.score).map(p=>{
+      const burn=p.costFcst*p.pct/p.costBudget;const m=1-p.costFcst/p.budget;
+      return `<button class="pcard" data-id="${p.id}"><div class="t"><b>${esc(p.name)}</b>${pill(p.health)}</div>
+      <div class="row"><span>${TYPES[p.type].label} · ${p.product}</span><span>${p.pm}</span></div>
+      <div><div class="row"><span>Budget used ${pct(burn,0)} · complete ${pct(p.pct,0)}</span><span>${money(p.budget)}</span></div><div class="bar ${burn>p.pct+.05?'over':''}"><i style="width:${Math.min(100,burn*100)}%"></i></div></div>
+      <div class="row"><span>Fcst margin <b class="${m<.3?'down':''}">${pct(m,0)}</b></span><span>Go-live ${fmtDate(p.end)}${p.slip?` <span class="down">(+${p.slip}d)</span>`:''}</span></div>
+      <p>${esc(updates(p)[0].text)}</p><div class="row"><span class="${p.lastUpd>10?'warnt':''}">Updated ${p.lastUpd}d ago${p.lastUpd>10?' · stale':''}</span><span>Score ${p.score}</span></div></button>`}).join('')}</div>`;
+    main.querySelectorAll('.pcard').forEach(c=>c.onclick=()=>openDrawer(c.dataset.id));
+  } else {
+    main.innerHTML=`<div class="ph"><h3>All active projects</h3><div class="legend">${ragNote}</div></div><div class="tw"><table><thead><tr><th>Project</th><th>Type</th><th>Health</th><th class="n">Budget</th><th class="n">Cost fcst</th><th class="n">Overrun</th><th class="n">Fcst GM</th><th class="n">Complete</th><th>End</th><th class="n">Slip</th><th>PM</th></tr></thead><tbody>${
+      [...list].sort((a,b)=>a.score-b.score).map(p=>`<tr class="click" data-id="${p.id}"><td>${esc(p.name)}</td><td><span class="tag">${TYPES[p.type].label}</span></td><td>${pill(p.health)}</td><td class="n">${money(p.budget)}</td><td class="n">${money(p.costFcst)}</td><td class="n ${p.overrun>.03?'down':''}">${p.overrun>0?'+':''}${pct(p.overrun,0)}</td><td class="n">${pct(1-p.costFcst/p.budget,0)}</td><td class="n">${pct(p.pct,0)}</td><td>${fmtDate(p.end)}</td><td class="n ${p.slip>30?'down':''}">${p.slip?p.slip+'d':'–'}</td><td>${p.pm}</td></tr>`).join('')}</tbody></table></div>`;
+    main.querySelectorAll('tr.click').forEach(r=>r.onclick=()=>openDrawer(r.dataset.id));
+  }
+  const c=$('#clr-rag'); if(c)c.onclick=()=>{S.rag=null;renderPortfolio()};
+}
+function phase(p,x){const f=x??p.pct;return f<.15?'Discovery':f<.4?'Design & configuration':f<.7?'Build & integration':f<.9?'Testing (UAT)':'Go-live & hypercare'}
+function updates(p){
+  const r=mulberry32(parseInt(p.id.slice(1))); const out=[];
+  for(let w=0;w<3;w++){
+    const f=clamp(p.pct-w*.06,0,1), ph=phase(p,f), d=addDays(TODAY,-(p.lastUpd+w*7));
+    const done={Discovery:'Completed stakeholder workshops and current-state review.','Design & configuration':'Signed off solution design; configuration sprint underway.','Build & integration':'Core build complete; integration testing with client systems in progress.','Testing (UAT)':'UAT cycle running with key users; defects being triaged daily.','Go-live & hypercare':'Production cut-over complete; hypercare support in place.'}[ph];
+    const next={Discovery:'Finalise requirements backlog and confirm data sources.','Design & configuration':'Complete configuration and prepare data migration dry-run.','Build & integration':'Close integration defects and start UAT preparation.','Testing (UAT)':'Obtain UAT sign-off and confirm go-live date.','Go-live & hypercare':'Hand over to customer success and close project.'}[ph];
+    const risk= p.health==='G'&&r()<.6? 'No material risks.' : p.risk+(p.overrun>.05?`; cost tracking +${pct(p.overrun,0)} over budget.`:'.');
+    out.push({date:d,ph,health:w===0?p.health:(p.score+w*6>=74?'G':p.score+w*6>=56?'A':'R'),text:done,next,risk});
+  }
+  return out;
+}
+function openDrawer(id){
+  const p=PROJECTS.find(x=>x.id===id); if(!p)return; const u=updates(p); const m=1-p.costFcst/p.budget;
+  const f=[['Budget',p.overrun>.15?'R':p.overrun>.03?'A':'G',p.overrun>0?'+'+pct(p.overrun,0):'on budget'],['Schedule',p.slip>45?'R':p.slip>14?'A':'G',p.slip?p.slip+'d slip':'on plan'],['Scope',p.crCount>2?'A':'G',p.crCount+' change req.'],['Sentiment',p.sentiment<=2?'R':p.sentiment===3?'A':'G',p.sentiment+' / 5']];
+  $('#drawer-root').innerHTML=`<div class="scrim" id="scrim"></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dr-t"><button class="x" id="dr-x">Close</button>
+   <div class="eyebrow">${p.id} · ${TYPES[p.type].label} · ${p.product} · ${p.region}</div><h2 id="dr-t">${esc(p.name)}</h2>
+   <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">${pill(p.health)}<span class="chip">Health score ${p.score}</span><span class="chip">${phase(p)}</span><span class="chip">${p.pm}</span></div>
+   <div class="factors">${f.map(([k,h,v])=>`<div>${k}<b class="${h==='R'?'down':h==='A'?'warnt':'up'}">${HIC[h]} ${v}</b></div>`).join('')}</div>
+   <dl class="dl">${[['Budget (revenue)',money(p.budget)],['Recognised to date',money(p.budget*p.pct)],['Cost budget',money(p.costBudget)],['Cost forecast',money(p.costFcst)],['Forecast margin',pct(m,1)],['Target margin',pct(p.tMargin,1)],['Hours to date',num(p.hoursTD)],['Hours forecast',num(p.hoursFcst)],['Start',fmtDate(p.start)],['Forecast end',fmtDate(p.end)+(p.slip?` (baseline ${fmtDate(p.baseEnd)})`:'')],['Delivery',p.internal>.97?'Internal':`${pct(p.internal,0)} internal · ${p.partner}`],['Time to value',p.ttv?p.ttv+' weeks':'n/a']].map(([a,b])=>`<div><dt>${a}</dt><dd class="num">${b}</dd></div>`).join('')}</dl>
+   <h3 style="font-size:14px;margin:14px 0 8px">Weekly status reports</h3>
+   ${u.map(x=>`<div class="upd"><div class="dt">${fmtDate(x.date)} · ${x.ph} · ${pill(x.health)}</div><p><b>Progress:</b> ${x.text}</p><p><b>Next:</b> ${x.next}</p><p><b>Risks:</b> ${esc(x.risk)}</p></div>`).join('')}
+   ${p.lastUpd>10?'<p class="warnt" style="font-size:13px">▲ Latest status report is '+p.lastUpd+' days old.</p>':''}
+   <div style="margin-top:14px"><button class="btn" id="dr-open">Open project dashboard</button></div></aside>`;
+  const close=()=>{$('#drawer-root').innerHTML='';document.removeEventListener('keydown',esck)};
+  const esck=e=>{if(e.key==='Escape')close()}; document.addEventListener('keydown',esck);
+  $('#scrim').onclick=close;$('#dr-x').onclick=close;$('#dr-x').focus();
+  $('#dr-open').onclick=()=>{close();S.proj=p.id;setTab('project')};
+}
+
+/* ============ 2 UTILISATION ============ */
+const UPER={ytd:[24,32],q1:[24,26],q2:[27,29],q3:[30,32],l3:[30,32]};
+function renderUtil(){
+  const [a,b]=UPER[S.uper]; const ppl=PEOPLE.filter(p=>S.urole==='all'||p.role===S.urole);
+  const agg=(k,m0=a,m1=b,list=ppl)=>{let s=0,n=0;list.forEach(p=>{for(let m=m0;m<=m1;m++){s+=p.m[m][k];n++}});return n?s/n:0};
+  const pa=(k)=>{const len=b-a+1;return agg(k,a-len,a-1)}; // prior period
+  const fb=agg('fc'),ab=agg('bill'),pr=agg('prod'),to=agg('tot');
+  const dd=(v,pv)=>`<span class="${v>=pv?'up':'down'}">${v>=pv?'▲':'▼'} ${((v-pv)*100).toFixed(1)} pts</span> vs prior period`;
+  $('#u-kpis').innerHTML=[
+    kpi('Forecast billable util.',pct(fb),dd(fb,pa('fc'))),
+    kpi('Actual billable util.',pct(ab),`${dd(ab,pa('bill'))}<br>target 75% · SPI avg 66.4%`,ab>=.72?'flag-g':ab>=.62?'flag-a':'flag-r'),
+    kpi('Forecast variance',`<span class="${ab-fb<0?'down':'up'}">${((ab-fb)*100).toFixed(1)} pts</span>`,'actual minus forecast billable'),
+    kpi('Productive util.',pct(pr),dd(pr,pa('prod'))),
+    kpi('Total util.',pct(to),to>1?'<span class="warnt">▲ above 100% of capacity</span>':'logged vs capacity'),
+    kpi('People in scope',ppl.length,`${S.urole==='all'?'all roles':S.urole}`)
+  ].join('');
+  const ms=[...Array(12)].map((_,i)=>24+i), lab=ms.map(mLabel);
+  const line=(k)=>ms.map(m=>agg(k,m,m)*100);
+  const fcIdx=TODAY_M-24; const dashSeg={borderDash:c=>c.p1DataIndex>fcIdx?[5,4]:undefined};
+  const fcLine=k=>ms.map((m,i)=>i>fcIdx? agg('fc',m,m)*100 + (k==='bill'?0:k==='prod'?7:30): agg(k,m,m)*100);
+  const s=SER();
+  mk('c-util',{type:'line',data:{labels:lab,datasets:[
+    {label:'Total',data:fcLine('tot'),borderColor:s[6],backgroundColor:s[6],borderWidth:2,pointRadius:0,pointHoverRadius:5,segment:dashSeg,tension:.3},
+    {label:'Productive',data:fcLine('prod'),borderColor:s[2],backgroundColor:s[2],borderWidth:2,pointRadius:0,pointHoverRadius:5,segment:dashSeg,tension:.3},
+    {label:'Billable',data:fcLine('bill'),borderColor:s[0],backgroundColor:alpha(s[0],.12),fill:'origin',borderWidth:2.5,pointRadius:0,pointHoverRadius:5,segment:dashSeg,tension:.3},
+    {label:'Target 75%',data:ms.map(()=>75),borderColor:css('--muted'),borderWidth:1.5,borderDash:[2,3],pointRadius:0,pointHoverRadius:0}]},
+    options:{interaction:{mode:'index',intersect:false},scales:{y:gridY(v=>v+'%',{min:30,max:120}),x:gridX()},plugins:{tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`}}}}});
+  // heatmap
+  const roles=Object.keys(ROLES).filter(r=>S.urole==='all'||r===S.urole); const hm=ms.slice(0,TODAY_M-23);
+  const seq=['--seq0','--seq1','--seq2','--seq3','--seq4','--seq5'].map(css);
+  const cell=v=>{const i=clamp(Math.floor((v-.45)/.07),0,5);return `<td class="h" style="background:${seq[i]};color:${i>=3?(css('--seq0')):css('--ink')}" title="${pct(v)}">${Math.round(v*100)}</td>`};
+  $('#u-heat').innerHTML=`<thead><tr><th>Role</th>${hm.map(m=>`<th class="n">${mLabel(m)}</th>`).join('')}</tr></thead><tbody>${roles.map(r=>{const pl=PEOPLE.filter(p=>p.role===r);return `<tr><td style="white-space:nowrap">${r}</td>${hm.map(m=>cell(agg('bill',m,m,pl))).join('')}</tr>`}).join('')}</tbody>`;
+  // individuals
+  const rows=ppl.map(p=>{let bi=0,pr=0,to=0,n=0;for(let m=a;m<=b;m++){bi+=p.m[m].bill;pr+=p.m[m].prod;to+=p.m[m].tot;n++}return{p,bi:bi/n,pr:pr/n,to:to/n,cap:CAP*n}}).sort((x,y)=>y.bi-x.bi);
+  $('#u-table').innerHTML=`<thead><tr><th>Consultant</th><th>Role</th><th>Region</th><th class="n">Capacity h</th><th class="n">Billable h</th><th class="n">Non-billable h</th><th class="n">Billable</th><th style="min-width:120px">vs 75% target</th><th class="n">Productive</th><th class="n">Total</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="mono">${r.p.id}</td><td>${r.p.role}</td><td>${r.p.region}</td><td class="n">${num(r.cap)}</td><td class="n">${num(r.cap*r.bi)}</td><td class="n">${num(r.cap*(r.to-r.bi))}</td><td class="n"><b>${pct(r.bi)}</b></td><td><div class="bar ${r.bi<.6?'over':''}" style="position:relative"><i style="width:${Math.min(100,r.bi/1*100)}%"></i><span style="position:absolute;left:75%;top:-2px;bottom:-2px;width:1.5px;background:var(--ink)"></span></div></td><td class="n">${pct(r.pr)}</td><td class="n ${r.to>1?'warnt':''}">${pct(r.to)}</td></tr>`).join('')}</tbody>`;
+}
+
+/* ============ 3 PROJECT ============ */
+function renderProject(){
+  const list=active().sort((a,b)=>a.name.localeCompare(b.name));
+  const sel=$('#pj-sel');
+  if(!list.length){sel.innerHTML='';$('#pj-title').textContent='No active projects match these filters';['#pj-kpis','#pj-res','#pj-tasks','#pj-act'].forEach(s=>$(s).innerHTML='');return}
+  if(!S.proj||!list.find(p=>p.id===S.proj)) S.proj=[...list].sort((a,b)=>a.score-b.score)[0].id;
+  sel.innerHTML=list.map(p=>`<option value="${p.id}" ${p.id===S.proj?'selected':''}>${esc(p.name)} (${HL[p.health]})</option>`).join('');
+  const p=PROJECTS.find(x=>x.id===S.proj); const r=mulberry32(parseInt(p.id.slice(1))*7);
+  $('#pj-title').innerHTML=`${esc(p.name)} ${pill(p.health)}`;
+  $('#pj-sub').textContent=`${p.id} · ${TYPES[p.type].label} · ${p.product} · ${p.region} · ${p.pm} · ${fmtDate(p.start)} → ${fmtDate(p.end)}${p.slip?` (baseline ${fmtDate(p.baseEnd)})`:''}`;
+  const recog=p.budget*p.pct, inv=Math.floor(p.pct*4)/4*p.budget, mF=p.budget-p.costFcst, mTD=recog-p.costFcst*p.pct;
+  $('#pj-kpis').innerHTML=[
+    kpi('Revenue: project budget',money(p.budget,1)),kpi('Revenue: P&L recognition',money(recog,1),pct(p.pct,0)+' complete'),kpi('Invoiced to date',money(inv,1),'milestone billing'),
+    kpi('Cost forecast',money(p.costFcst,1),`budget ${money(p.costBudget,1)}`,p.overrun>.15?'flag-r':p.overrun>.03?'flag-a':''),kpi('Cost to date',money(p.costFcst*p.pct,1)),
+    kpi('Margin forecast',money(mF,1),`${pct(mF/p.budget)} vs ${pct(p.tMargin)} target`),kpi('Margin to date',money(mTD,1)),
+    kpi('Hours forecast',num(p.hoursFcst),`baseline ${num(p.hoursBud)}`),kpi('Hours to date',num(p.hoursTD),`${num(p.hoursTD-p.nonBill)} billable`),kpi('Remaining hours',num(p.hoursFcst-p.hoursTD))
+  ].join('');
+  // burn
+  const wk=Math.ceil((p.end-p.start)/DAY/7)+1, bw=Math.ceil((p.baseEnd-p.start)/DAY/7), tw=Math.floor((TODAY-p.start)/DAY/7);
+  const labels=[...Array(wk)].map((_,i)=>fmtDate(addDays(p.start,i*7)));
+  const base=labels.map((_,i)=>Math.min(1,i/bw)*p.hoursBud);
+  let acc=0; const act=labels.map((_,i)=>{if(i>tw)return null;acc=p.hoursTD*Math.pow(i/Math.max(1,tw),1.08);return acc});
+  const fc=labels.map((_,i)=>i<tw?null:p.hoursTD+(p.hoursFcst-p.hoursTD)*((i-tw)/Math.max(1,wk-1-tw)));
+  const s=SER();
+  mk('c-burn',{type:'line',data:{labels,datasets:[
+    {label:'Baseline',data:base,borderColor:css('--muted'),borderDash:[3,3],borderWidth:1.5,pointRadius:0},
+    {label:'Actual',data:act,borderColor:s[0],backgroundColor:alpha(s[0],.12),fill:'origin',borderWidth:2.5,pointRadius:0,pointHoverRadius:5},
+    {label:'Forecast',data:fc,borderColor:s[1],borderDash:[5,4],borderWidth:2,pointRadius:0,pointHoverRadius:5}]},
+    options:{interaction:{mode:'index',intersect:false},scales:{y:gridY(v=>num(v)+'h'),x:gridX({ticks:{maxTicksLimit:8,autoSkip:true}})},plugins:{tooltip:{callbacks:{label:c=>c.parsed.y==null?'':` ${c.dataset.label}: ${num(c.parsed.y)} h`}}}}});
+  // resources
+  const roleSet=p.type==='impl'?['Project Manager','Solution Architect','Consultant','Consultant','Technical Consultant']:p.type==='cr'?['Consultant','Technical Consultant']:p.type==='adv'?['Business Consultant','Solution Architect']:['Consultant','Technical Consultant','Project Manager'];
+  const w=roleSet.map(()=>.5+r()); const ws=sum(w);
+  const res=roleSet.map((role,i)=>{const pool=PEOPLE.filter(x=>x.role===role);const person=pool[Math.floor(r()*pool.length)]||PEOPLE[0];const alloc=p.hoursFcst*w[i]/ws;return{who:(i===roleSet.length-1&&p.internal<.97)?p.partner+' · consultant':person.id,role,alloc,act:alloc*p.pct*(.85+r()*.3)}});
+  $('#pj-res').innerHTML=`<thead><tr><th>Resource</th><th>Role</th><th class="n">Allocated h</th><th class="n">Actual h</th><th class="n">Burn</th></tr></thead><tbody>${res.map(x=>`<tr><td class="mono">${esc(x.who)}</td><td>${x.role}</td><td class="n">${num(x.alloc)}</td><td class="n">${num(x.act)}</td><td class="n">${pct(x.act/x.alloc,0)}</td></tr>`).join('')}</tbody><tfoot><tr><td>Total</td><td></td><td class="n">${num(sum(res.map(x=>x.alloc)))}</td><td class="n">${num(sum(res.map(x=>x.act)))}</td><td></td></tr></tfoot>`;
+  // tasks
+  const tasks=p.type==='impl'?[['Kick-off & discovery','milestone',.08],['Solution design','task',.12],['Configuration','task',.2],['Data migration','task',.14],['Integrations','task',.14],['User acceptance testing','task',.12],['Training & enablement','task',.08],['Go-live','milestone',.04],['Hypercare','task',.08]]
+    :p.type==='ms'?[['Service onboarding','milestone',.1],['Monthly service delivery','task',.7],['Quarterly business review','milestone',.1],['Optimisation backlog','task',.1]]
+    :[['Requirements & estimate','milestone',.15],['Build','task',.45],['Test','task',.25],['Deploy & handover','milestone',.15]];
+  let cum=0;
+  $('#pj-tasks').innerHTML=`<thead><tr><th>Task</th><th>Type</th><th>Status</th><th>Due</th><th class="n">Est. hours</th><th class="n">Actual hours</th><th class="n">Billable h</th><th style="min-width:110px">Progress</th></tr></thead><tbody>${tasks.map(([n,t,f])=>{
+    const st=cum, en=cum+f; cum=en; const prog=clamp((p.pct-st)/f,0,1); const est=p.hoursBud*f; const actual=est*prog*(1+Math.max(0,p.overrun)*1.2);
+    const status=prog>=1?'<span class="pill G">Done</span>':prog>0?'<span class="pill A" style="color:var(--ink-2);background:var(--surface-2)">In progress</span>':'<span class="pill X">Not started</span>';
+    const due=addDays(p.start,(p.end-p.start)/DAY*en);
+    return `<tr><td>${t==='milestone'?'◆ ':''}${n}</td><td><span class="tag">${t}</span></td><td>${status}</td><td>${fmtDate(due)}</td><td class="n">${num(est)}</td><td class="n ${actual>est*1.02?'down':''}">${actual?num(actual):'–'}</td><td class="n">${actual?num(Math.min(actual,est)):'–'}</td><td><div class="bar"><i style="width:${prog*100}%"></i></div></td></tr>`}).join('')}</tbody>`;
+  $('#pj-act').innerHTML=updates(p).map(x=>`<div class="upd"><div class="dt">${fmtDate(x.date)} · ${x.ph} · ${pill(x.health)}</div><p><b>Progress:</b> ${x.text} <b>Next:</b> ${x.next}</p><p><b>Risks:</b> ${esc(x.risk)}</p></div>`).join('');
+}
+
+/* ============ 4 OPERATIONS ============ */
+function renderOps(){
+  const ps=filtered(); const ms=[...Array(12)].map((_,i)=>24+i), lab=ms.map(mLabel);
+  const src=['Internal',...PARTNERS];
+  const fte={}; src.forEach(s=>fte[s]=ms.map(()=>0));
+  const phours={}; PARTNERS.forEach(x=>phours[x]={h:0,nb:0,proj:new Set()});
+  ps.forEach(p=>ms.forEach((m,i)=>{const h=p.cost[m]/RATE; if(!h)return; fte.Internal[i]+=h*p.internal/130; const ph=h*(1-p.internal); fte[p.partner][i]+=ph/130;
+    if(m<=TODAY_M&&ph>0){phours[p.partner].h+=ph;phours[p.partner].proj.add(p.id);phours[p.partner].nb+=ph*(p.overrun>0?p.overrun/(1+p.overrun):0)}}));
+  const s=SER(); const fcI=TODAY_M-24;
+  mk('c-fte',{type:'bar',data:{labels:lab,datasets:src.map((k,j)=>({label:k,data:fte[k],backgroundColor:fte[k].map((_,i)=>i>fcI?alpha(s[j],.45):s[j]),borderColor:css('--surface'),borderWidth:1,borderRadius:2,stack:'a'}))},
+    options:{interaction:{mode:'index',intersect:false},scales:{x:gridX({stacked:true}),y:gridY(v=>v,{stacked:true})},plugins:{tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(1)} FTE`,footer:it=>'Total: '+sum(it.map(i=>i.parsed.y)).toFixed(1)+' FTE'}}}}});
+  const ytd=ms.filter(m=>m<=TODAY_M);
+  const totH=sum(src.map(k=>sum(fte[k].slice(0,ytd.length))))*130, partH=sum(PARTNERS.map(k=>phours[k].h));
+  // billable vs non-billable (internal, consultants)
+  const bill=ytd.map(m=>sum(PEOPLE.map(p=>p.m[m].bill*CAP))), nb=ytd.map(m=>sum(PEOPLE.map(p=>(p.m[m].tot-p.m[m].bill)*CAP)));
+  mk('c-bill',{type:'bar',data:{labels:ytd.map(mLabel),datasets:[{label:'Billable',data:bill,backgroundColor:s[0],borderColor:css('--surface'),borderWidth:1,borderRadius:2,stack:'a'},{label:'Non-billable',data:nb,backgroundColor:s[3],borderColor:css('--surface'),borderWidth:1,borderRadius:2,stack:'a'}]},
+    options:{interaction:{mode:'index',intersect:false},scales:{x:gridX({stacked:true}),y:gridY(v=>num(v/1000)+'k h',{stacked:true})},plugins:{tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${num(c.parsed.y)} h`,footer:it=>'Billable share: '+pct(it[0].parsed.y/(it[0].parsed.y+(it[1]?.parsed.y||0)),0)}}}}});
+  const nbTot=sum(nb), bTot=sum(bill);
+  const nbp=ps.filter(p=>p.status==='active'&&p.nonBill>20).sort((a,b)=>b.nonBill-a.nonBill);
+  $('#o-kpis').innerHTML=[
+    kpi('PS FTE (Sep)',(fte.Internal[fcI]+sum(PARTNERS.map(k=>fte[k][fcI]))).toFixed(1),`${fte.Internal[fcI].toFixed(1)} internal`),
+    kpi('Partner share of hours',totH?pct(partH/totH,0):'–','2026 YTD, PS project hours'),
+    kpi('Partner cost YTD',money(partH*PRATE),`at $${PRATE}/h blended`),
+    kpi('Billable utilisation',pct(bTot/(PEOPLE.length*CAP*ytd.length)),'internal team YTD'),
+    kpi('Non-billable hours',num(nbTot),`${pct(nbTot/(nbTot+bTot),0)} of logged time`),
+    kpi('Unrecoverable project hours',num(sum(nbp.map(p=>p.nonBill))),`${nbp.length} projects · ${money(sum(nbp.map(p=>p.nonBill))*RATE)} cost`,nbp.length>5?'flag-a':'')
+  ].join('');
+  $('#o-partner').innerHTML=`<thead><tr><th>Delivery partner</th><th class="n">Avg FTE</th><th class="n">Hours</th><th class="n">Share</th><th class="n">Billable</th><th class="n">Projects</th><th class="n">Cost</th></tr></thead><tbody>${PARTNERS.map((k,j)=>{const x=phours[k];const af=sum(fte[k].slice(0,ytd.length))/ytd.length;const b=x.h?1-x.nb/x.h:0;
+    return `<tr><td><span class="sw" style="background:${s[j+1]};margin-right:6px"></span>${k}</td><td class="n">${af.toFixed(1)}</td><td class="n">${num(x.h)}</td><td class="n">${totH?pct(x.h/totH,0):'–'}</td><td class="n ${b<.9?'down':''}">${x.h?pct(b,0):'–'}</td><td class="n">${x.proj.size}</td><td class="n">${money(x.h*PRATE)}</td></tr>`}).join('')}</tbody><tfoot><tr><td>All partners</td><td class="n">${(partH/130/ytd.length).toFixed(1)}</td><td class="n">${num(partH)}</td><td class="n">${totH?pct(partH/totH,0):'–'}</td><td></td><td></td><td class="n">${money(partH*PRATE)}</td></tr></tfoot>`;
+  const acts=NB_ACT.map(([n,f])=>[n,nbTot*f]);
+  mk('c-nbact',{type:'bar',data:{labels:acts.map(a=>a[0]),datasets:[{label:'Hours',data:acts.map(a=>a[1]),backgroundColor:s[3],borderRadius:4,borderSkipped:'start',barThickness:16}]},
+    options:{indexAxis:'y',scales:{x:gridY(v=>num(v/1000)+'k'),y:gridX({grid:{display:false},ticks:{color:css('--ink-2')}})},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${num(c.parsed.x)} h · ${pct(c.parsed.x/nbTot,0)}`}}}}});
+  $('#o-nbproj').innerHTML=nbp.length?`<thead><tr><th>Project</th><th>Type</th><th>Health</th><th class="n">Hours to date</th><th class="n">Non-billable h</th><th class="n">% of hours</th><th class="n">Cost impact</th><th>Primary driver</th></tr></thead><tbody>${nbp.slice(0,12).map(p=>`<tr class="click" data-id="${p.id}"><td>${esc(p.name)}</td><td><span class="tag">${TYPES[p.type].label}</span></td><td>${pill(p.health)}</td><td class="n">${num(p.hoursTD)}</td><td class="n"><b>${num(p.nonBill)}</b></td><td class="n">${pct(p.nonBill/p.hoursTD,0)}</td><td class="n">${money(p.nonBill*RATE)}</td><td>${p.nbReason}</td></tr>`).join('')}</tbody>`:'<tbody><tr><td class="note">No unrecoverable hours for this selection. Change requests and managed services are billed on time and materials.</td></tr></tbody>';
+  $('#o-nbproj').querySelectorAll('tr.click').forEach(r=>r.onclick=()=>openDrawer(r.dataset.id));
+}
+
+/* ============ 5 FORECAST ============ */
+const FPER={fy:[0,11],h1:[0,5],h2:[6,11],q1:[0,2],q2:[3,5],q3:[6,8],q4:[9,11]};
+function renderForecast(){
+  const y0=(S.fyear-2024)*12, [pa,pb]=FPER[S.fper]; const ms=[];for(let i=pa;i<=pb;i++)ms.push(y0+i);
+  const ps=filtered(); const types=activeTypes(); const tc=TYPE_COLOR();
+  const bySum=(key,mm,list=ps)=>sum(list.map(p=>sum(mm.map(m=>p[key][m]||0))));
+  const budgetOf=(mm,list=ps)=>bySum('plan',mm,list)*1.04; // plan includes unbooked pipeline allowance
+  const budCost=(mm,list=ps)=>bySum('planCost',mm,list)*1.04;
+  const rev=bySum('rev',ms), cost=bySum('cost',ms), bud=budgetOf(ms), pyM=ms.map(m=>m-12), py=bySum('rev',pyM), pyC=bySum('cost',pyM);
+  const gm=rev-cost, gmp=rev?gm/rev:0, pygmp=py?(py-pyC)/py:0;
+  const act=ms.filter(m=>m<=TODAY_M), fc=ms.filter(m=>m>TODAY_M);
+  const backlog=sum(ps.filter(p=>p.status==='active').map(p=>sum(p.rev.slice(TODAY_M+1))));
+  const last3=bySum('rev',[TODAY_M-2,TODAY_M-1,TODAY_M])/3;
+  const consult=PEOPLE.filter(p=>p.m[32].bill>.3).length;
+  $('#fc-kpis').innerHTML=[
+    kpi('Services revenue',money(rev),`${py?delta((rev-py)/py):''} vs PY · ${act.length?money(bySum('rev',act))+' actual':'all forecast'}`),
+    kpi('Vs budget',`<span class="${rev>=bud?'up':'down'}">${rev>=bud?'+':''}${money(rev-bud)}</span>`,`budget ${money(bud)}`),
+    kpi('Delivery cost (COGS)',money(cost),py?delta((cost-pyC)/pyC,false)+' vs PY':''),
+    kpi('Gross profit',money(gm),py?delta((gm-(py-pyC))/Math.abs(py-pyC||1))+' vs PY':''),
+    kpi('Gross margin',pct(gmp),`${((gmp-pygmp)*100>=0?'<span class="up">▲ +':'<span class="down">▼ ')}${((gmp-pygmp)*100).toFixed(1)} pts</span> vs PY`,gmp>=.4?'flag-g':gmp>=.3?'flag-a':'flag-r'),
+    kpi('Backlog',money(backlog),`${last3?(backlog/last3).toFixed(1):'–'} months of work`),
+    kpi('Billable consultants',consult,'internal, active in Sep')
+  ].join('');
+  const lab=ms.map(m=>mLabel(m)+(m>TODAY_M?'*':''));
+  mk('c-rev',{type:'bar',data:{labels:lab,datasets:types.map(t=>({label:TYPES[t].label,data:ms.map(m=>sum(ps.filter(p=>p.type===t).map(p=>p.rev[m]))),backgroundColor:ms.map(m=>m>TODAY_M?alpha(tc[t],.45):tc[t]),borderColor:css('--surface'),borderWidth:1,borderRadius:2,stack:'a'}))},
+    options:{interaction:{mode:'index',intersect:false},scales:{x:gridX({stacked:true}),y:gridY(v=>money(v),{stacked:true})},plugins:{tooltip:{callbacks:{title:it=>it[0].label.replace('*',' (forecast)'),label:c=>` ${c.dataset.label}: ${money(c.parsed.y)}`,footer:it=>'Total: '+money(sum(it.map(i=>i.parsed.y)))}}}}});
+  const lastA=ms.findLastIndex(m=>m<=TODAY_M);
+  const s=SER();
+  mk('c-gm',{type:'line',data:{labels:lab,datasets:[
+    {label:'Gross margin',data:ms.map(m=>bySum('rev',[m])-bySum('cost',[m])),borderColor:s[0],backgroundColor:s[0],borderWidth:2.5,pointRadius:3,pointHoverRadius:6,tension:.3,segment:{borderDash:c=>c.p1DataIndex>lastA?[5,4]:undefined}},
+    {label:'Budget',data:ms.map(m=>budgetOf([m])-budCost([m])),borderColor:css('--muted'),borderDash:[2,3],borderWidth:1.5,pointRadius:0,pointHoverRadius:4,tension:.3}]},
+    options:{interaction:{mode:'index',intersect:false},scales:{y:gridY(v=>money(v)),x:gridX()},plugins:{tooltip:{callbacks:{title:it=>it[0].label.replace('*',' (forecast)'),label:c=>` ${c.dataset.label}: ${money(c.parsed.y)}`}}}}});
+  // P&L
+  const rowFor=(label,list,color)=>{const r=bySum('rev',ms,list),c=bySum('cost',ms,list),b=budgetOf(ms,list),p=bySum('rev',pyM,list),ra=bySum('rev',act,list);
+    return `<tr><td>${color?`<span class="sw" style="background:${color};margin-right:6px"></span>`:''}${label}</td><td class="n">${money(ra)}</td><td class="n">${money(r-ra)}</td><td class="n"><b>${money(r)}</b></td><td class="n">${money(b)}</td><td class="n ${r-b<0?'down':'up'}">${r-b>=0?'+':''}${money(r-b)}</td><td class="n">${money(c)}</td><td class="n">${money(r-c)}</td><td class="n">${r?pct((r-c)/r):'–'}</td><td class="n">${money(p)}</td><td class="n">${p?((r-p)/p>=0?'+':'')+pct((r-p)/p,0):'–'}</td></tr>`};
+  $('#fc-pl').innerHTML=`<thead><tr><th>Engagement type</th><th class="n">Actual</th><th class="n">Forecast</th><th class="n">Total</th><th class="n">Budget</th><th class="n">Var</th><th class="n">Cost</th><th class="n">GP</th><th class="n">GM %</th><th class="n">Prior year</th><th class="n">YoY</th></tr></thead>
+    <tbody>${types.map(t=>rowFor(TYPES[t].label,ps.filter(p=>p.type===t),tc[t])).join('')}</tbody><tfoot>${rowFor('Total PS',ps)}</tfoot>`;
+  // customers
+  const custs={}; ps.forEach(p=>{const r=sum(ms.map(m=>p.rev[m]));if(r<=0)return;const c=custs[p.cust]||(custs[p.cust]={r:0,c:0,b:0,t:new Set(),n:0,h:[]});c.r+=r;c.c+=sum(ms.map(m=>p.cost[m]));c.b+=sum(ms.map(m=>p.plan[m]));c.t.add(TYPES[p.type].label);c.n++;if(p.status==='active')c.h.push(p.health)});
+  const cl=Object.entries(custs).sort((a,b)=>b[1].r-a[1].r).slice(0,15);
+  const worst=h=>h.includes('R')?'R':h.includes('A')?'A':h.length?'G':null;
+  $('#fc-cust').innerHTML=cl.length?`<thead><tr><th>Customer</th><th>Engagements</th><th class="n">Projects</th><th class="n">Revenue</th><th class="n">vs plan</th><th class="n">GM %</th><th>Worst active health</th><th style="min-width:120px">Share of period</th></tr></thead><tbody>${cl.map(([n,c])=>`<tr><td>${esc(n)}</td><td>${[...c.t].map(t=>`<span class="tag">${t}</span>`).join(' ')}</td><td class="n">${c.n}</td><td class="n"><b>${money(c.r)}</b></td><td class="n ${c.r-c.b<0?'down':''}">${c.r-c.b>=0?'+':''}${money(c.r-c.b)}</td><td class="n ${1-c.c/c.r<.3?'down':''}">${pct(1-c.c/c.r,0)}</td><td>${worst(c.h)?pill(worst(c.h)):'<span class="note">closed</span>'}</td><td><div class="bar"><i style="width:${c.r/cl[0][1].r*100}%"></i></div></td></tr>`).join('')}</tbody>`:'<tbody><tr><td class="note">No revenue in this period for the current filters.</td></tr></tbody>';
+}
+
+/* ============ DEFINITIONS ============ */
+function renderDefs(){
+  const D=[
+   ['Implementation resources (FTEs)','Project hours logged on PS projects ÷ 130 working hours per month, split internal vs partner.','Operations','—'],
+   ['Utilisation rate (billable)','Billable hours ÷ available capacity (140 h/month per person).','Utilisation','Avg 66.4% (2025); 75%+ considered optimal'],
+   ['Utilisation rate (non-billable)','Non-billable logged hours ÷ capacity, broken out by activity.','Utilisation, Operations','—'],
+   ['Productive utilisation','Billable + non-billable client project hours ÷ capacity.','Utilisation','—'],
+   ['Forecast variance','Actual billable utilisation minus scheduled (forecast) billable utilisation.','Utilisation','—'],
+   ['Services revenue','Revenue recognised on PS projects (percentage of completion for fixed fee, hours × rate for T&M).','Forecast','Revenue per consultant ~$210K'],
+   ['Services revenue % of total revenue','Services revenue ÷ total company revenue. Needs GL total revenue feed.','Forecast (add GL feed)','—'],
+   ['Services COGS','Fully loaded delivery cost: internal cost rate × hours plus partner spend.','Forecast, Project','—'],
+   ['Services gross profit / margin','Services revenue − services COGS; margin = GP ÷ revenue.','Forecast, Portfolio','Project margin avg 37.7%'],
+   ['Services backlog','Contracted, unrecognised services revenue on active projects.','Portfolio, Forecast','—'],
+   ['# of billable consultants','Internal consultants with billable utilisation above 30% in the latest month.','Forecast','—'],
+   ['# of months of work','Backlog ÷ average monthly services revenue over the last three months.','Forecast','—'],
+   ['PS backlog aging','Backlog split by when it recognises: 0–6, 6–12, 12+ months.','Portfolio','—'],
+   ['Customers in implementation','Distinct customers with an active implementation project; with average months since start.','Portfolio','—'],
+   ['Customers delayed (30/60/90)','Active implementations whose forecast end is past baseline, by days of slip.','Portfolio','On-time delivery avg 73.8%'],
+   ['Budget overrun','Forecast delivery cost above budgeted cost; counted when above 3%.','Portfolio, Project','Avg project overrun 10.7%'],
+   ['Time to value','Weeks from kick-off to first value realised in production (implementations).','Portfolio','—'],
+   ['Health score','100 minus penalties for cost overrun, schedule slip and customer sentiment. On track ≥ 74, Watch 56–73, At risk < 56.','Portfolio','—'],
+   ['Partner utilisation','Partner hours on PS projects, share of total PS hours, billable share and cost.','Operations','—']];
+  $('#d-table').innerHTML=`<thead><tr><th>KPI</th><th>Definition used here</th><th>Where</th><th>Benchmark (SPI)</th></tr></thead><tbody>${D.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  $('#d-map').innerHTML=`<thead><tr><th>View</th><th>Purpose</th></tr></thead><tbody>${[
+   ['1 Portfolio','Aggregated portfolio reporting; project cards with weekly updates, health and financials.'],
+   ['2 Utilisation','Utilisation at individual and portfolio level, by role and month.'],
+   ['3 Project','Per-project financials, task tracker, activity and resourcing.'],
+   ['4 Operations','Partner utilisation, billable utilisation, non-billable activity by activity and by project.'],
+   ['5 Forecast','PS financials at macro and customer level vs budget and prior year.']].map(r=>`<tr><td style="white-space:nowrap"><b>${r[0]}</b></td><td>${r[1]}</td></tr>`).join('')}</tbody>`;
+  $('#d-src').innerHTML=`<thead><tr><th>Dataset</th><th>Kantata source</th></tr></thead><tbody>${[
+   ['Projects','Workspaces (budget, dates, status, custom fields for type/product/region)'],
+   ['Tasks & milestones','Stories'],['Hours','Time entries (billable flag, user, workspace)'],
+   ['People & roles','Users, roles, resource allocations'],['Weekly updates','Status reports / posts'],
+   ['Revenue & cost','Revenue recognition + invoices; GL for budget and total revenue']].map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td></tr>`).join('')}</tbody>`;
+}
+
+/* ============ WIRING ============ */
+const RENDER={portfolio:renderPortfolio,util:renderUtil,project:renderProject,ops:renderOps,forecast:renderForecast,defs:renderDefs};
+function render(){chartBase();RENDER[S.tab]()}
+function setTab(t){S.tab=t;document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
+  Object.keys(RENDER).forEach(k=>$('#v-'+k).hidden=k!==t);try{history.replaceState(null,'','#'+t)}catch(e){}render()}
+function seg(id,key,cb){const el=$(id);el.querySelectorAll('button').forEach(b=>b.onclick=()=>{el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));S[key]=isNaN(+b.dataset.v)?b.dataset.v:+b.dataset.v;(cb||render)()})}
+PRODUCTS.forEach(p=>$('#f-prod').insertAdjacentHTML('beforeend',`<option>${p}</option>`));
+REGIONS.forEach(p=>$('#f-reg').insertAdjacentHTML('beforeend',`<option>${p}</option>`));
+Object.keys(ROLES).forEach(p=>$('#u-role').insertAdjacentHTML('beforeend',`<option>${p}</option>`));
+$('#f-prod').onchange=e=>{S.prod=e.target.value;render()};$('#f-reg').onchange=e=>{S.reg=e.target.value;render()};
+$('#u-role').onchange=e=>{S.urole=e.target.value;render()};$('#pj-sel').onchange=e=>{S.proj=e.target.value;render()};
+seg('#f-eng','eng');seg('#p-view','pview');seg('#u-per','uper');seg('#fc-year','fyear');seg('#fc-per','fper');
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',render);
+new MutationObserver(render).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+const h=(location.hash||'').slice(1); setTab(RENDER[h]?h:'portfolio');
+</script>
+</body></html>
